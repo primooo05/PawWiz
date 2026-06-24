@@ -1,0 +1,110 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { lookupPlantToxicity } from './data/aspca.js';
+import { scanPlantWithVision, optimizeDiet, decodeBehavior } from './services/gemini.js';
+import { ToxicityScanRequest, ToxicityScanResult } from './types/shared.js';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Increase limit to allow base64 image uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(cors());
+
+// Health Check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Plant scan & ASPCA verification loop
+app.post('/api/scan', async (req, res) => {
+  const payload = req.body as ToxicityScanRequest;
+  
+  try {
+    let plantName = '';
+    let confidence = 1.0;
+    let aiExplanation = '';
+    let isAiIdentified = false;
+
+    // 1. If an image is provided, run Gemini Vision identification first
+    if (payload.image) {
+      const visionResult = await scanPlantWithVision(payload.image);
+      plantName = visionResult.plantName;
+      confidence = visionResult.confidence;
+      aiExplanation = visionResult.details;
+      isAiIdentified = true;
+    } else if (payload.plantNameQuery) {
+      plantName = payload.plantNameQuery;
+    } else {
+      res.status(400).json({ error: 'Either image or plantNameQuery must be provided.' });
+      return;
+    }
+
+    // 2. Query ASPCA database deterministically to prevent hallucination
+    const aspcaRecord = lookupPlantToxicity(plantName);
+
+    let result: ToxicityScanResult;
+
+    if (aspcaRecord) {
+      // Overwrite/enrich with deterministic ASPCA data
+      result = {
+        identifiedPlant: aspcaRecord.plantName,
+        scientificName: aspcaRecord.scientificName,
+        isToxic: aspcaRecord.isToxic,
+        severity: aspcaRecord.severity,
+        clinicalSigns: aspcaRecord.clinicalSigns,
+        actionRequired: aspcaRecord.actionRequired,
+        confidence: isAiIdentified ? confidence : 1.0,
+        dataSource: "ASPCA Database (Deterministic)",
+        aiAnalysisText: isAiIdentified ? aiExplanation : 'Retrieved directly from database index.'
+      };
+    } else {
+      // If not in database, handle safely
+      result = {
+        identifiedPlant: plantName,
+        scientificName: 'Unknown (Not in ASPCA Index)',
+        isToxic: false,
+        severity: 'None',
+        clinicalSigns: ['Unknown - Plant not registered in ASPCA library.'],
+        actionRequired: 'CAUTION: Plant is not in our local ASPCA index. We cannot guarantee safety. Treat as toxic/avoid contact, and consult a veterinary professional.',
+        confidence: isAiIdentified ? confidence : 0.5,
+        dataSource: "Gemini Vision (AI Model Verified)",
+        aiAnalysisText: isAiIdentified ? aiExplanation : 'Plant searched by text but not found in ASPCA reference indices.'
+      };
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error("Scan endpoint failure:", error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Diet optimization endpoint
+app.post('/api/diet', async (req, res) => {
+  try {
+    const plan = await optimizeDiet(req.body);
+    res.json(plan);
+  } catch (error) {
+    console.error("Diet endpoint failure:", error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Behavioral decoder endpoint
+app.post('/api/behavior', async (req, res) => {
+  try {
+    const decodeResult = await decodeBehavior(req.body);
+    res.json(decodeResult);
+  } catch (error) {
+    console.error("Behavior endpoint failure:", error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Backend server running on http://localhost:${PORT}`);
+});
