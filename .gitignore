@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Kiro CLI Local Binary
+kiro-cli.exe
+
+# Infisical
+.env.*

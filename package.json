@@ -6,10 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w packages/pawwiz-backend\" \"npm run dev -w packages/pawwiz-frontend\"",
+    "dev": "infisical run -- concurrently \"npm run dev -w packages/pawwiz-backend\" \"npm run dev -w packages/pawwiz-frontend\"",
     "build": "npm run build --workspaces --if-present"
   },
   "devDependencies": {
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.3",
+    "@infisical/cli": "^0.43.97"
   }
 }
