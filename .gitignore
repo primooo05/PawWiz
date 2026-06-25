@@ -24,7 +24,10 @@ dist-ssr
 *.sw?
 
 # Kiro CLI Local Binary
+.kiro
 kiro-cli.exe
 
 # Infisical
 .env.*
+.tokensave
+.agents
