@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import type { BehaviorDecodeResponse } from '../../../../pawwiz-backend/src/types/shared.js';
+import { useBehaviorDecoder } from '../../hooks/useBehaviorDecoder';
 
 interface BehaviorModalProps {
   isOpen: boolean;
@@ -8,48 +7,9 @@ interface BehaviorModalProps {
 }
 
 export default function BehaviorModal({ isOpen, onClose, apiBase }: BehaviorModalProps) {
-  const [vocal, setVocal] = useState('');
-  const [bodySigns, setBodySigns] = useState<string[]>([]);
-  const [context, setContext] = useState('');
-  const [decodeResult, setDecodeResult] = useState<BehaviorDecodeResponse | null>(null);
-  const [decodeLoading, setDecodeLoading] = useState(false);
+  const { vocal, setVocal, bodySigns, context, setContext, decodeResult, decodeLoading, toggleBodySign, handleDecodeBehavior } = useBehaviorDecoder(apiBase);
 
   if (!isOpen) return null;
-
-  const handleDecodeBehavior = async () => {
-    setDecodeLoading(true);
-    try {
-      const response = await fetch(`${apiBase}/api/behavior`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vocalDescription: vocal || 'Quiet / No sound',
-          bodyLanguageSigns: bodySigns.length > 0 ? bodySigns : ['Relaxed tail posture'],
-          context: context || 'General rest',
-        }),
-      });
-      if (!response.ok) throw new Error('Decoding failed.');
-      const data = await response.json();
-      setDecodeResult(data);
-    } catch (err) {
-      setDecodeResult({
-        vocalAnalysis: "Chirp vocalizations represent mild focus or acknowledgment.",
-        bodyLanguageAnalysis: "Observation indicates high alert tail position and blinking.",
-        decodedMeaning: "Cat is feeling playful and highly alert, but comfortable in its current context.",
-        catState: "Playful",
-        confidenceScore: 0.9,
-        actionPlan: ["Grab a feather toy", "Initiate bonding through brief interactive play"]
-      });
-    } finally {
-      setDecodeLoading(false);
-    }
-  };
-
-  const toggleBodySign = (sign: string) => {
-    setBodySigns(prev =>
-      prev.includes(sign) ? prev.filter(s => s !== sign) : [...prev, sign]
-    );
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">

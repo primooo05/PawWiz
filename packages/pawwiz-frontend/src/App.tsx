@@ -19,7 +19,7 @@ export default function App() {
         <Navbar />
         <Hero apiBase={API_BASE} />
         <PregnancySection />
-        <DietSection apiBase={API_BASE} />
+        <DietSection />
         <BehaviorSection apiBase={API_BASE} />
         <Footer />
       </div>

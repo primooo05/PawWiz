@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PregnancyModal from '../modals/PregnancyModal';
+import { useModalToggle } from '../../hooks/useModalToggle';
 
 interface GestationWeekDetail {
   week: number;
@@ -77,7 +78,7 @@ const WEEKS: GestationWeekDetail[] = [
 ];
 
 export default function PregnancySection() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, open, close } = useModalToggle();
   const [activeWeek, setActiveWeek] = useState<number>(5);
 
   const currentWeekData = WEEKS.find(w => w.week === activeWeek) || WEEKS[4];
@@ -98,13 +99,13 @@ export default function PregnancySection() {
           </div>
 
           {/* Heading with inline custom SVG paw icon */}
-          <h3 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight flex items-center gap-2">
+          <h3 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight flex items-center gap-2">
             <span>Monitor your Cat Pregnancy</span>
             <PlainPawIcon className="w-6 h-6 text-[#2ec4b6] flex-shrink-0 align-middle inline" />
           </h3>
 
           {/* Paragraph description */}
-          <p className="text-sm md:text-base text-slate-500 leading-relaxed font-medium">
+          <p className="text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
             From mating to kittening, monitor and track every stage of your cat's pregnancy with a prep guide! Calculate progress, track milestones, and receive tailored warnings.
           </p>
 
@@ -129,13 +130,13 @@ export default function PregnancySection() {
           {/* Button Row */}
           <div className="flex flex-wrap items-center gap-4">
             <button
-              onClick={() => setIsOpen(true)}
+              onClick={open}
               className="bg-[#e9c46a] hover:bg-[#e2b74c] active:scale-95 text-slate-900 font-extrabold px-8 py-3.5 rounded-full text-xs tracking-widest transition-all shadow-sm hover:shadow-[0_4px_12px_rgba(233,196,106,0.25)] hover:-translate-y-0.5"
             >
               GET STARTED
             </button>
             <button
-              onClick={() => setIsOpen(true)}
+              onClick={open}
               className="bg-transparent hover:bg-slate-100 border border-slate-200 text-slate-900 font-extrabold px-6 py-3.5 rounded-full text-xs tracking-widest transition-all hover:-translate-y-0.5 flex items-center gap-2"
             >
               <span>See weekly milestones</span>
@@ -237,7 +238,7 @@ export default function PregnancySection() {
 
       </div>
 
-      <PregnancyModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <PregnancyModal isOpen={isOpen} onClose={close} />
     </section>
   );
 }

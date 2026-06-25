@@ -1,104 +1,11 @@
-import { useState } from 'react';
-import type { ToxicityScanResult } from '../../../../pawwiz-backend/src/types/shared.js';
+import { usePlantScan } from '../../hooks/usePlantScan';
 
 interface HeroProps {
   apiBase: string;
 }
 
 export default function Hero({ apiBase }: HeroProps) {
-  const [plantQuery, setPlantQuery] = useState('');
-  const [scanResult, setScanResult] = useState<ToxicityScanResult | null>(null);
-  const [scanLoading, setScanLoading] = useState(false);
-  const [scanError, setScanError] = useState('');
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setScanLoading(true);
-    setScanError('');
-    setScanResult(null);
-
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = reader.result as string;
-      try {
-        const response = await fetch(`${apiBase}/api/scan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64String }),
-        });
-        if (!response.ok) throw new Error('Failed to analyze image.');
-        const data = await response.json();
-        setScanResult(data);
-      } catch (err) {
-        setScanError((err as Error).message || 'Server error. Using fallback offline scan.');
-        setScanResult({
-          identifiedPlant: "Peace Lily",
-          scientificName: "Spathiphyllum spp.",
-          isToxic: true,
-          severity: "Moderate",
-          clinicalSigns: ["Oral irritation", "Excessive drooling", "Vomiting", "Difficulty swallowing"],
-          actionRequired: "Fallback Simulation: seek vet guidance. Rinse mouth immediately.",
-          confidence: 0.9,
-          dataSource: "ASPCA Database (Deterministic)",
-          aiAnalysisText: "Offline simulator match."
-        });
-      } finally {
-        setScanLoading(false);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleTextSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!plantQuery.trim()) return;
-
-    setScanLoading(true);
-    setScanError('');
-    setScanResult(null);
-
-    try {
-      const response = await fetch(`${apiBase}/api/scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plantNameQuery: plantQuery }),
-      });
-      if (!response.ok) throw new Error('Plant query failed.');
-      const data = await response.json();
-      setScanResult(data);
-    } catch (err) {
-      const query = plantQuery.toLowerCase();
-      if (query.includes('lily')) {
-        setScanResult({
-          identifiedPlant: "Lily (Easter/Tiger)",
-          scientificName: "Lilium spp.",
-          isToxic: true,
-          severity: "Severe",
-          clinicalSigns: ["Vomiting", "Lethargy", "Kidney failure"],
-          actionRequired: "EMERGENCY: Seek veterinary attention immediately! High risk of renal failure.",
-          confidence: 1.0,
-          dataSource: "ASPCA Database (Deterministic)"
-        });
-      } else if (query.includes('spider')) {
-        setScanResult({
-          identifiedPlant: "Spider Plant",
-          scientificName: "Chlorophytum comosum",
-          isToxic: false,
-          severity: "None",
-          clinicalSigns: [],
-          actionRequired: "Completely safe. Cats love chewing the dangling leaves but it is non-toxic.",
-          confidence: 1.0,
-          dataSource: "ASPCA Database (Deterministic)"
-        });
-      } else {
-        setScanError('Unable to connect to service. Try searching "lily" or "spider plant" for offline demonstration.');
-      }
-    } finally {
-      setScanLoading(false);
-    }
-  };
+  const { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch } = usePlantScan(apiBase);
 
   return (
     <section id="home" className="w-full pt-10 pb-16 text-center bg-grid-pattern border-b border-slate-200/40" style={{ zoom: 1.25 }}>

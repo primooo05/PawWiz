@@ -19,3 +19,19 @@ body {
     linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
 }
+
+/* Custom scrollbar styling: thin, round thumb, and hidden navigation buttons */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #2ec4b6;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-button {
+  display: none;
+}

@@ -16,7 +16,7 @@ const ai = isApiKeyMissing ? null : new GoogleGenAI({ apiKey: API_KEY });
 
 // Models specified in backend pipeline
 const TEXT_MODEL = 'gemini-3.5-flash';
-const VISION_MODEL = 'gemini-3.5-pro';
+const VISION_MODEL = 'gemini-3.1-pro';
 
 export async function scanPlantWithVision(imageBase64: string): Promise<{ plantName: string; confidence: number; details: string }> {
   if (isApiKeyMissing || !ai) {

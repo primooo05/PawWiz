@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useGestationCalculator } from '../../hooks/useGestationCalculator';
 
 interface PregnancyModalProps {
   isOpen: boolean;
@@ -6,38 +6,9 @@ interface PregnancyModalProps {
 }
 
 export default function PregnancyModal({ isOpen, onClose }: PregnancyModalProps) {
-  const [matingDate, setMatingDate] = useState(new Date().toISOString().split('T')[0]);
-  const [gestationResult, setGestationResult] = useState<{
-    dueDate: string;
-    daysGested: number;
-    daysLeft: number;
-    milestone: string;
-  } | null>(null);
+  const { matingDate, setMatingDate, gestationResult, handleCalculateGestation } = useGestationCalculator();
 
   if (!isOpen) return null;
-
-  const handleCalculateGestation = (e: React.FormEvent) => {
-    e.preventDefault();
-    const mating = new Date(matingDate);
-    const due = new Date(mating);
-    due.setDate(mating.getDate() + 65); // Average gestation 65 days
-
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - mating.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    let milestone = "Initial stage. Ensure mother receives high-quality kitten formula kibble for nutrition.";
-    if (diffDays >= 14 && diffDays < 28) milestone = "Nipples will begin to swell and turn pink ('pinking up'). Schedule first prenatal vet check.";
-    if (diffDays >= 28 && diffDays < 42) milestone = "Kittens start forming shapes. Avoid rough play. Mother's abdomen will noticeably swell.";
-    if (diffDays >= 42) milestone = "Nearing birth. Set up a nesting box in a warm, quiet, draft-free location.";
-
-    setGestationResult({
-      dueDate: due.toDateString(),
-      daysGested: Math.min(diffDays, 65),
-      daysLeft: Math.max(65 - diffDays, 0),
-      milestone
-    });
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fadeIn">
