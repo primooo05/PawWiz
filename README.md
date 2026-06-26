@@ -34,26 +34,29 @@ This automatically links the workspaces and installs all dependencies for both t
 
 ---
 
-### Step 2: Configure Environment Variables
+### Step 2: Configure Environment Variables & Secrets
 
-1. Navigate to the backend directory:
-   ```bash
-   cd packages/pawwiz-backend
-   ```
-2. Create a `.env` file:
-   ```env
-   PORT=3001
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-   > [!NOTE]
-   > You can obtain an API key from the [Google AI Studio](https://aistudio.google.com/).
-   > If no `GEMINI_API_KEY` is provided, the backend will automatically enter **Mock Fallback Mode**, allowing you to test the complete user experience with simulated responses.
+This project uses **Infisical** for secret management. Secrets are injected at runtime; **do not** use local `.env` files.
+
+1. Ensure the Infisical CLI is installed.
+2. Initialize and authenticate with your project context.
+3. Secrets (like `DATABASE_URL`, `DIRECT_URL`, and `GEMINI_API_KEY`) will automatically inject during runtime commands.
 
 ---
 
-### Step 3: Run the Development Servers
+### Step 3: Run Database Migrations
 
-To run both the backend Express server and the frontend Vite server concurrently, run the following command in the **root** folder:
+For schema migrations, PgBouncer (port `6543`) in transaction mode cannot be used. We must connect directly to port `5432`. A utility script is provided at the root:
+
+```cmd
+migrate.bat <migration_name>
+```
+
+---
+
+### Step 4: Run the Development Servers
+
+To run both the backend Express server and the frontend Vite server concurrently with Infisical secrets, run in the **root** folder:
 ```bash
 npm run dev
 ```

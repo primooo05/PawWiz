@@ -1,11 +1,11 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { connectDatabase, disconnectDatabase } from './lib/prisma.js';
+import { registerRoutes } from './routes/index.js';
 import { lookupPlantToxicity } from './data/aspca.js';
 import { scanPlantWithVision, optimizeDiet, decodeBehavior } from './services/gemini.js';
 import { ToxicityScanRequest, ToxicityScanResult } from './types/shared.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +13,9 @@ const PORT = process.env.PORT || 3001;
 // Increase limit to allow base64 image uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
+
+// Register MRSC routes (profile, etc.)
+registerRoutes(app);
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -105,6 +108,29 @@ app.post('/api/behavior', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+/**
+ * Startup sequence:
+ * 1. Verify database connectivity (fail-fast if unreachable)
+ * 2. Start HTTP server
+ * 3. Register graceful shutdown hooks
+ */
+async function bootstrap(): Promise<void> {
+  await connectDatabase();
+
+  app.listen(PORT, () => {
+    console.log(`[Server] ✓ Running on http://localhost:${PORT}`);
+  });
+}
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await disconnectDatabase();
+  process.exit(0);
 });
+
+process.on('SIGTERM', async () => {
+  await disconnectDatabase();
+  process.exit(0);
+});
+
+bootstrap();
