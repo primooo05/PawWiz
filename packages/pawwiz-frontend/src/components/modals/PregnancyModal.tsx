@@ -1,4 +1,5 @@
 import { useGestationCalculator } from '../../hooks/useGestationCalculator';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface PregnancyModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface PregnancyModalProps {
 }
 
 export default function PregnancyModal({ isOpen, onClose }: PregnancyModalProps) {
+  useBodyScrollLock(isOpen);
   const { matingDate, setMatingDate, gestationResult, handleCalculateGestation } = useGestationCalculator();
 
   if (!isOpen) return null;

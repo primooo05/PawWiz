@@ -131,7 +131,8 @@ export default function PregnancySection() {
           <div className="flex flex-wrap items-center gap-4">
             <button
               onClick={open}
-              className="bg-[#e9c46a] hover:bg-[#e2b74c] active:scale-95 text-slate-900 font-extrabold px-8 py-3.5 rounded-full text-xs tracking-widest transition-all shadow-sm hover:shadow-[0_4px_12px_rgba(233,196,106,0.25)] hover:-translate-y-0.5"
+              className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-8 py-3.5 rounded-full text-xs tracking-widest transition-all duration-100
+                shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer"
             >
               GET STARTED
             </button>

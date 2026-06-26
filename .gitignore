@@ -31,3 +31,4 @@ kiro-cli.exe
 .env.*
 .tokensave
 .agents
+.codegraph

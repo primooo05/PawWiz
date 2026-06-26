@@ -8,7 +8,7 @@ export default function Hero({ apiBase }: HeroProps) {
   const { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch } = usePlantScan(apiBase);
 
   return (
-    <section id="home" className="w-full pt-10 pb-16 text-center bg-grid-pattern border-b border-slate-200/40" style={{ zoom: 1.25 }}>
+    <section id="home" className="w-full pt-24 md:pt-28 pb-16 text-center bg-grid-pattern border-b border-slate-200/40">
       {/* Centered Heading */}
       <div className="max-w-4xl mx-auto px-6 space-y-5">
         <h2 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">
@@ -29,35 +29,36 @@ export default function Hero({ apiBase }: HeroProps) {
             Is this Plant Safe to my Cats?
           </h3>
 
-          <form onSubmit={handleTextSearch} className="flex gap-2 bg-white rounded-full p-2.5 shadow-lg mt-6 max-w-2xl mx-auto relative z-10 transition-all duration-300 focus-within:ring-4 focus-within:ring-white/40">
-            <input
-              type="text"
-              placeholder="e.g., Spider Plant"
-              value={plantQuery}
-              onChange={(e) => setPlantQuery(e.target.value)}
-              className="flex-1 text-slate-800 text-sm md:text-base px-6 focus:outline-none placeholder-slate-400 font-semibold"
-            />
-
-            <label className="p-3 text-slate-400 hover:text-[#2ec4b6] cursor-pointer rounded-full hover:bg-slate-100 transition-all flex items-center justify-center">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+          <form onSubmit={handleTextSearch} className="mt-6 max-w-2xl mx-auto relative z-10 flex flex-col sm:flex-row gap-3">
+            {/* Input + icon row */}
+            <div className="flex-1 flex gap-2 bg-white rounded-full p-2 shadow-lg transition-all duration-300 focus-within:ring-4 focus-within:ring-white/40">
               <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
+                type="text"
+                placeholder="e.g., Spider Plant"
+                value={plantQuery}
+                onChange={(e) => setPlantQuery(e.target.value)}
+                className="flex-1 text-slate-800 text-sm px-4 focus:outline-none placeholder-slate-400 font-semibold min-w-0"
               />
-            </label>
+              <label className="shrink-0 p-2.5 text-slate-400 hover:text-[#2ec4b6] cursor-pointer rounded-full hover:bg-slate-100 transition-all flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+            </div>
 
+            {/* Submit button — full width on mobile, icon-only on sm+ */}
             <button
               type="submit"
-              className="bg-[#e9c46a] hover:bg-[#e2b74c] text-slate-900 rounded-full p-3.5 transition-all duration-300 flex items-center justify-center shadow-md active:scale-95"
+              className="w-full sm:w-auto bg-[#e9c46a] text-slate-900 rounded-full py-3.5 px-6 sm:p-3.5 flex items-center justify-center gap-2 font-extrabold text-xs tracking-wider
+                shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px]
+                hover:bg-[#f0cc74] transition-all duration-100 cursor-pointer"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
+              <span className="sm:hidden">SEARCH</span>
             </button>
           </form>
 
@@ -79,33 +80,46 @@ export default function Hero({ apiBase }: HeroProps) {
           )}
 
           {scanResult && (
-            <div className="mt-8 bg-slate-900/95 backdrop-blur-md text-slate-100 rounded-[28px] border border-slate-800/80 p-6 shadow-2xl animate-fadeIn animate-scaleUp max-w-xl mx-auto text-left relative z-10">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div>
-                  <h4 className="font-extrabold text-lg text-slate-50">{scanResult.identifiedPlant}</h4>
-                  <span className="text-xs text-slate-400 font-mono italic">{scanResult.scientificName}</span>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${scanResult.isToxic ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'
+            <div className="mt-6 relative z-10 max-w-2xl mx-auto w-full animate-fadeIn px-1">
+              <div className={`rounded-2xl border backdrop-blur-md overflow-hidden ${
+                scanResult.isToxic
+                  ? 'bg-rose-950/90 border-rose-700/50'
+                  : 'bg-emerald-950/90 border-emerald-700/50'
+              }`}>
+                {/* Row 1: badge + plant name + severity */}
+                <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/10">
+                  <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                    scanResult.isToxic ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'
                   }`}>
-                  {scanResult.isToxic ? 'TOXIC' : 'SAFE'}
-                </span>
-              </div>
-              <div className="mt-4 space-y-3 text-sm">
-                {scanResult.isToxic && (
-                  <p className="text-rose-400 font-semibold flex items-center">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 mr-2 animate-ping" />
-                    Severity: {scanResult.severity}
-                  </p>
-                )}
-                <p className="text-slate-300 font-medium leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">{scanResult.actionRequired}</p>
+                    {scanResult.isToxic ? '⚠ TOXIC' : '✓ SAFE'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-extrabold text-white text-sm leading-tight truncate">{scanResult.identifiedPlant}</p>
+                    {scanResult.scientificName && (
+                      <p className="text-[10px] text-white/50 font-mono italic truncate">{scanResult.scientificName}</p>
+                    )}
+                  </div>
+                  {scanResult.isToxic && scanResult.severity && (
+                    <span className="shrink-0 text-[10px] font-bold text-rose-300 bg-rose-900/60 px-2 py-0.5 rounded-md border border-rose-700/40">
+                      {scanResult.severity}
+                    </span>
+                  )}
+                </div>
+
+                {/* Row 2: action text */}
+                <div className="px-4 py-3">
+                  <p className="text-xs text-white/85 leading-relaxed">{scanResult.actionRequired}</p>
+                </div>
+
+                {/* Row 3: clinical signs */}
                 {scanResult.clinicalSigns && scanResult.clinicalSigns.length > 0 && (
-                  <div className="mt-3">
-                    <span className="text-xs text-slate-500 uppercase font-black tracking-widest block mb-2">Expected Clinical Signs:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {scanResult.clinicalSigns.map((s, i) => (
-                        <span key={i} className="bg-slate-800/80 text-xs px-2.5 py-1 rounded-md text-slate-300 border border-slate-700/60 font-medium">{s}</span>
-                      ))}
-                    </div>
+                  <div className="px-4 pb-4 flex flex-wrap gap-1.5">
+                    {scanResult.clinicalSigns.slice(0, 5).map((s, i) => (
+                      <span key={i} className="bg-white/10 text-white/75 text-[10px] px-2 py-0.5 rounded-full border border-white/10 font-medium">{s}</span>
+                    ))}
+                    {scanResult.clinicalSigns.length > 5 && (
+                      <span className="text-[10px] text-white/40 self-center">+{scanResult.clinicalSigns.length - 5} more</span>
+                    )}
                   </div>
                 )}
               </div>
