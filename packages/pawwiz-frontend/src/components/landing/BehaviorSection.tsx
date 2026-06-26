@@ -26,7 +26,8 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
           </p>
           <button
             onClick={() => setIsOpen(true)}
-            className="bg-[#e9c46a] hover:bg-[#e2b74c] active:scale-95 text-slate-900 font-extrabold px-6 py-3.5 rounded-xl text-xs tracking-wider transition-all shadow-sm hover:shadow-[0_4px_12px_rgba(233,196,106,0.3)] hover:-translate-y-0.5 cursor-pointer"
+            className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-6 py-3.5 rounded-xl text-xs tracking-wider transition-all duration-100
+              shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer"
           >
             GET TO KNOW YOUR CAT BETTER
           </button>
