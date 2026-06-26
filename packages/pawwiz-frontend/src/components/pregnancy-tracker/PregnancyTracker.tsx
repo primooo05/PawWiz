@@ -4,7 +4,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../../styles/datepicker-custom.css';
 import BottomNav from '../BottomNav';
-import wizMascot from '../../assets/Wiz_mascot.png';
+
 import pawWizText from '../../assets/PawWiz_Text_logo.png';
 
 // --- Types & Interfaces ---
@@ -49,7 +49,6 @@ const CatPregnancyTracker: React.FC = () => {
 
     const [matingDate, setMatingDate] = useState<string>(passedDate);
     const [isTracking, setIsTracking] = useState<boolean>(!!passedDate);
-    const [isMonthMenuOpen, setIsMonthMenuOpen] = useState<boolean>(false);
 
     const trackedDate = matingDate ? new Date(matingDate) : null;
     const initialDisplayDate = trackedDate ?? new Date();
@@ -99,6 +98,22 @@ const CatPregnancyTracker: React.FC = () => {
     const handleStartTracking = (e: React.FormEvent) => {
         e.preventDefault();
         if (matingDate) setIsTracking(true);
+    };
+
+    const changeCalendarMonth = (direction: -1 | 1) => {
+        setCalendarMonthIndex((previousMonth) => {
+            if (direction === -1 && previousMonth === 0) {
+                setCalendarYear((previousYear) => previousYear - 1);
+                return 11;
+            }
+
+            if (direction === 1 && previousMonth === 11) {
+                setCalendarYear((previousYear) => previousYear + 1);
+                return 0;
+            }
+
+            return previousMonth + direction;
+        });
     };
 
     // --- Dynamic Calendar Generation ---
@@ -155,7 +170,6 @@ const CatPregnancyTracker: React.FC = () => {
             {/* Top Navbar */}
             <nav className="flex items-center justify-between px-8 py-5 bg-white shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] relative z-20">
                 <div className="flex items-center gap-2">
-                    <img src={wizMascot} alt="PawWiz Mascot" className="h-8 w-auto object-contain" />
                     <img src={pawWizText} alt="PawWiz" className="h-6 w-auto object-contain ml-1" />
                 </div>
                 <div className="flex items-center gap-8 text-sm font-bold text-slate-500 uppercase tracking-wide">
@@ -202,12 +216,43 @@ const CatPregnancyTracker: React.FC = () => {
                                             }
                                         }}
                                         maxDate={new Date()}
-                                        showMonthDropdown
-                                        dropdownMode="select"
                                         className="w-full p-4 pr-12 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent font-medium text-slate-700"
                                         placeholderText="Select a date"
                                         dateFormat="MM/dd/yyyy"
                                         calendarClassName="custom-calendar"
+                                        renderCustomHeader={({
+                                            date,
+                                            decreaseMonth,
+                                            increaseMonth,
+                                            prevMonthButtonDisabled,
+                                            nextMonthButtonDisabled,
+                                        }) => (
+                                            <div className="flex justify-center items-center mb-4">
+                                                <div className="px-3 py-1.5 bg-[#FFEA30] border-2 border-slate-900 rounded-full font-bold text-slate-900 flex items-center gap-3 shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
+                                                    <button
+                                                        type="button"
+                                                        onClick={decreaseMonth}
+                                                        disabled={prevMonthButtonDisabled}
+                                                        aria-label="Previous Month"
+                                                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-900/20 bg-white text-base font-black leading-none hover:bg-slate-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {'<'}
+                                                    </button>
+                                                    <span className="min-w-[130px] text-center text-sm font-black select-none">
+                                                        {date.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={increaseMonth}
+                                                        disabled={nextMonthButtonDisabled}
+                                                        aria-label="Next Month"
+                                                        className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-900/20 bg-white text-base font-black leading-none hover:bg-slate-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {'>'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     />
                                     <button
                                         type="button"
@@ -279,42 +324,29 @@ const CatPregnancyTracker: React.FC = () => {
 
                             {/* TOP: Bold Calendar Wrapper */}
                             <div className="relative flex flex-col items-center">
-                                {/* Floating Month Button */}
+                                {/* Floating Month Navigator */}
                                 <div className="absolute -top-5 z-10">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsMonthMenuOpen((open) => !open)}
-                                        className="px-6 py-1.5 bg-[#FFEA30] border-2 border-slate-900 rounded-full font-bold text-slate-900 flex items-center gap-2 shadow-[2px_2px_0_0_rgba(15,23,42,1)]"
-                                    >
-                                        <span>📅</span> {currentMonthLabel} <span className="text-xs">▼</span>
-                                    </button>
-
-                                    {isMonthMenuOpen && (
-                                        <div className="absolute left-1/2 top-full mt-3 w-64 -translate-x-1/2 rounded-[1.25rem] border-2 border-slate-900 bg-white p-3 shadow-[4px_4px_0_0_rgba(15,23,42,1)]">
-                                            <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                                Choose Month
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {MONTHS.map((month, index) => (
-                                                    <button
-                                                        key={month}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setCalendarMonthIndex(index);
-                                                            setIsMonthMenuOpen(false);
-                                                        }}
-                                                        className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition-colors ${
-                                                            index === currentMonthIndex
-                                                                ? 'border-slate-900 bg-[#FFEA30] text-slate-900'
-                                                                : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-slate-100'
-                                                        }`}
-                                                    >
-                                                        {month}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                    <div className="px-3 py-1.5 bg-[#FFEA30] border-2 border-slate-900 rounded-full font-bold text-slate-900 flex items-center gap-3 shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
+                                        <button
+                                            type="button"
+                                            onClick={() => changeCalendarMonth(-1)}
+                                            aria-label="Previous month"
+                                            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-900/20 bg-white/90 text-base leading-none hover:bg-white"
+                                        >
+                                            {'<'}
+                                        </button>
+                                        <span className="min-w-[140px] text-center text-sm">
+                                            {currentMonthLabel} {currentYear}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => changeCalendarMonth(1)}
+                                            aria-label="Next month"
+                                            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-900/20 bg-white/90 text-base leading-none hover:bg-white"
+                                        >
+                                            {'>'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Calendar Container */}

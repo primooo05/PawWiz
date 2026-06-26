@@ -48,7 +48,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem = 'dashboard', onItemC
                                     : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-slate-50'
                             }`}
                         >
-                            <img src={item.icon} alt="" className="h-8 w-8 object-contain" />
+                            <img src={item.icon} alt="" className="h-10 w-10 object-contain" />
                         </button>
                     );
                 })}

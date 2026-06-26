@@ -10,12 +10,13 @@
 }
 
 .react-datepicker__header {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: #40C48E;
   border-bottom: 2px solid #0f172a;
   border-radius: 0.75rem 0.75rem 0 0;
-  padding: 1rem;
+  padding: 1.25rem 1rem 0.5rem 1rem;
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -121,7 +122,7 @@
 }
 
 .react-datepicker__day-name {
-  color: #64748b;
+  color: #0f172a;
   font-weight: 900;
   font-size: 0.75rem;
   text-transform: uppercase;
