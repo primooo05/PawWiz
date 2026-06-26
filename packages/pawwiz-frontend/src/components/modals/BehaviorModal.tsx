@@ -1,4 +1,5 @@
 import { useBehaviorDecoder } from '../../hooks/useBehaviorDecoder';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface BehaviorModalProps {
   isOpen: boolean;
@@ -7,6 +8,7 @@ interface BehaviorModalProps {
 }
 
 export default function BehaviorModal({ isOpen, onClose, apiBase }: BehaviorModalProps) {
+  useBodyScrollLock(isOpen);
   const { vocal, setVocal, bodySigns, context, setContext, decodeResult, decodeLoading, toggleBodySign, handleDecodeBehavior } = useBehaviorDecoder(apiBase);
 
   if (!isOpen) return null;

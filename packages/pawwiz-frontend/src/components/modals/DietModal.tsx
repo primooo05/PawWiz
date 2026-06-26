@@ -1,4 +1,5 @@
 import { useDietPlanner } from '../../hooks/useDietPlanner';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface DietModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface DietModalProps {
 }
 
 export default function DietModal({ isOpen, onClose }: DietModalProps) {
+  useBodyScrollLock(isOpen);
   const {
     isKg, weight, setWeight, age, setAge,
     activity, setActivity,

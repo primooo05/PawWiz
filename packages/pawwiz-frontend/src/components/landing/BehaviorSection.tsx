@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import BehaviorModal from '../modals/BehaviorModal';
+import naughtyCat from '../../assets/Naughty_Cat.svg';
+import catScratch from '../../assets/Cat_Scratch.svg';
 
 interface BehaviorSectionProps {
   apiBase: string;
@@ -12,12 +14,26 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
     <section id="behavior" className="w-full min-h-screen flex items-center justify-center border-b border-slate-100 relative bg-gradient-to-br from-slate-50/50 via-white to-amber-50/10">
       <div className="max-w-4xl w-full mx-auto px-6 py-12">
         <style>{`
-        @keyframes catSway {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-8px) rotate(3deg); }
+        @keyframes naughtyCatFall {
+          0% { transform: translateY(-130%) rotate(-5deg); opacity: 0; }
+          10% { transform: translateY(-130%) rotate(-5deg); opacity: 1; }
+          35% { transform: translateY(15%) rotate(10deg); opacity: 1; }
+          48% { transform: translateY(140%) rotate(25deg); opacity: 0; }
+          100% { transform: translateY(140%) rotate(25deg); opacity: 0; }
         }
-        .cat-mascot {
-          animation: catSway 4s ease-in-out infinite;
+        @keyframes scratchReveal {
+          0%, 22% { clip-path: inset(0 0 100% 0); opacity: 0; }
+          35% { clip-path: inset(0 0 0 0); opacity: 1; }
+          75% { opacity: 1; }
+          85% { opacity: 0; }
+          100% { opacity: 0; }
+        }
+        .naughty-cat {
+          animation: naughtyCatFall 5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        .scratch-mark {
+          animation: scratchReveal 5s ease-out infinite;
+          transform: translateY(-85px) scaleX(0.22);
         }
       `}</style>
 
@@ -61,33 +77,19 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
             </button>
           </div>
 
-          <div className="flex justify-center md:justify-end items-center cat-mascot select-none pointer-events-none pr-2">
-            <svg viewBox="0 0 100 100" className="w-24 h-24 md:w-36 md:h-36 drop-shadow-lg">
-              {/* Ears */}
-              <path d="M 20 40 L 10 15 L 40 30 Z" fill="#e9c46a" />
-              <path d="M 25 38 L 17 20 L 37 31 Z" fill="#f4a261" />
-              <path d="M 80 40 L 90 15 L 60 30 Z" fill="#e9c46a" />
-              <path d="M 75 38 L 83 20 L 63 31 Z" fill="#f4a261" />
-              {/* Head */}
-              <ellipse cx="50" cy="55" rx="38" ry="32" fill="#e9c46a" />
-              {/* Inner face details: Eyes */}
-              <circle cx="38" cy="50" r="5" fill="#2d3748" />
-              <circle cx="38" cy="48" r="1.5" fill="white" />
-              <circle cx="62" cy="50" r="5" fill="#2d3748" />
-              <circle cx="62" cy="48" r="1.5" fill="white" />
-              {/* Blush */}
-              <ellipse cx="28" cy="58" rx="5" ry="3" fill="#f4a261" opacity="0.6" />
-              <ellipse cx="72" cy="58" rx="5" ry="3" fill="#f4a261" opacity="0.6" />
-              {/* Nose */}
-              <polygon points="48,58 52,58 50,60" fill="#2d3748" />
-              {/* Mouth */}
-              <path d="M 46 63 Q 48 65 50 63 Q 52 65 54 63" stroke="#2d3748" strokeWidth="2" strokeLinecap="round" fill="none" />
-              {/* Whiskers */}
-              <line x1="15" y1="56" x2="3" y2="54" stroke="#2d3748" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-              <line x1="15" y1="60" x2="2" y2="60" stroke="#2d3748" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-              <line x1="85" y1="56" x2="97" y2="54" stroke="#2d3748" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-              <line x1="85" y1="60" x2="98" y2="60" stroke="#2d3748" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-            </svg>
+          <div className="flex justify-center md:justify-end items-center select-none pointer-events-none pr-2">
+            <div className="relative w-32 h-32 md:w-44 md:h-44 overflow-hidden flex items-center justify-center">
+              <img 
+                src={catScratch} 
+                alt="Scratch mark" 
+                className="absolute inset-0 w-full h-full object-contain scratch-mark" 
+              />
+              <img 
+                src={naughtyCat} 
+                alt="Naughty cat" 
+                className="absolute inset-0 w-full h-full object-contain naughty-cat" 
+              />
+            </div>
           </div>
         </div>
       </div>

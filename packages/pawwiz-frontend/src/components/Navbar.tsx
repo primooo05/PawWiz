@@ -71,6 +71,10 @@ export default function Navbar() {
       </div>
 
       {/* Mobile dropdown — ABSOLUTE so it overlays Hero content without causing layout shift */}
+      {/* 
+      - [x] Define standard modal animations in index.css
+      - [ ] Create PrivacyModal.tsx component with custom SVG icons (no emojis) and complete copy
+      */}
       <div
         className={`md:hidden absolute left-0 right-0 top-full
           bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-lg
