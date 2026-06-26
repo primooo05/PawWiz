@@ -8,7 +8,7 @@ export default function Hero({ apiBase }: HeroProps) {
   const { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch } = usePlantScan(apiBase);
 
   return (
-    <section id="home" className="w-full pt-10 pb-16 text-center bg-grid-pattern border-b border-slate-200/40">
+    <section id="home" className="w-full pt-24 md:pt-28 pb-16 text-center bg-grid-pattern border-b border-slate-200/40">
       {/* Centered Heading */}
       <div className="max-w-4xl mx-auto px-6 space-y-5">
         <h2 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">

@@ -6,10 +6,16 @@
   --font-sans: 'Outfit', sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #ffffff;
   color: #0f172a;
+  overflow-x: hidden;
 }
 
 /* Subtly colored layout grid lines to match layout screenshot */

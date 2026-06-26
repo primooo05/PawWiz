@@ -4,7 +4,7 @@ const NAV_LINKS = [
   { href: '#home', label: 'Home' },
   { href: '#monitoring', label: 'Monitoring' },
   { href: '#diet', label: 'Diet' },
-  { href: '#activities', label: 'Activities' },
+  { href: '#behavior', label: 'Behavior' },
 ];
 
 export default function Navbar() {
@@ -24,7 +24,7 @@ export default function Navbar() {
 
   return (
     // Close on outside click (ref on <nav> so hamburger doesn't fight the handler)
-    <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md sticky top-0 z-40 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)] relative">
+    <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
       <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center space-x-2 group cursor-pointer">

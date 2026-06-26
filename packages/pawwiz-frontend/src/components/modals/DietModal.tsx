@@ -1,4 +1,3 @@
-import type { DietPlan } from '../../../../pawwiz-backend/src/types/shared.js';
 import { useDietPlanner } from '../../hooks/useDietPlanner';
 
 interface DietModalProps {
@@ -11,7 +10,7 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
     isKg, weight, setWeight, age, setAge,
     activity, setActivity,
     selectedConditions, customCondition, setCustomCondition,
-    dietPlan, dietLoading, isPreviewMode,
+    dietPlan, dietLoading,
     toggleCondition, toggleUnit, handleCalculateDiet,
   } = useDietPlanner();
 
@@ -179,106 +178,55 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
           </div>
 
           {dietPlan && (
-            <div className="mt-8 relative">
-              {isPreviewMode ? (
-                <>
-                  {/* Blurred Content: Calories, Macros, and empty slots */}
-                  <div className="filter blur-sm pointer-events-none select-none opacity-20 space-y-5 bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 rounded-2xl border border-slate-200/60">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between font-extrabold border-b border-slate-200 pb-3">
-                        <span className="text-slate-600 text-sm">Target Calories:</span>
-                        <span className="text-[#2ec4b6] font-black text-lg">{dietPlan.dailyCalories} Kcal/day</span>
-                      </div>
-        
-                      <div className="space-y-2">
-                        <span className="text-slate-600 uppercase tracking-widest text-[10px] font-bold block">Macronutrient Split:</span>
-                        <div className="grid grid-cols-3 gap-3 text-center">
-                          <div className="bg-white/60 rounded-lg p-3 border border-slate-200/40">
-                            <div className="text-lg font-black text-slate-900">{dietPlan.macronutrientSplit.proteinPercent}%</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase">Protein</div>
-                          </div>
-                          <div className="bg-white/60 rounded-lg p-3 border border-slate-200/40">
-                            <div className="text-lg font-black text-slate-900">{dietPlan.macronutrientSplit.fatPercent}%</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase">Fats</div>
-                          </div>
-                          <div className="bg-white/60 rounded-lg p-3 border border-slate-200/40">
-                            <div className="text-lg font-black text-slate-900">{dietPlan.macronutrientSplit.carbsPercent}%</div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase">Carbs</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 border-t border-slate-200 pt-4">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recommended Foods:</div>
-                      <div className="text-sm text-slate-600">High-protein canned wet food, Premium salmon treats</div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Feeding Schedule:</div>
-                      <div className="text-sm text-slate-600">Three scheduled portions daily with optimal timing</div>
-                    </div>
-                  </div>
+            <div className="mt-6 relative overflow-hidden rounded-2xl">
+              {/* Blurred Content: Calories, Macros */}
+              <div className="filter blur-sm pointer-events-none select-none opacity-20 space-y-4 bg-slate-950 text-slate-100 p-5 rounded-2xl border border-slate-850/80 text-[11px]">
+                <div className="flex items-center justify-between border-b border-slate-900 pb-2 text-xs font-black">
+                  <span className="text-slate-400">Target Calories:</span>
+                  <span className="text-[#2ec4b6] font-black">{dietPlan.dailyCalories} Kcal/day</span>
+                </div>
   
-                  {/* Signup Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/70 backdrop-blur-[2px] rounded-2xl border border-[#e9c46a]/20 z-10 -translate-y-2">
-                    <div className="text-center space-y-3 p-4">
-                      <div className="text-sm font-extrabold text-slate-900">Get Full Meal Planning</div>
-                      <div className="text-xs text-slate-600 max-w-[220px] mx-auto">Detailed calorie targets, custom food recommendations, and health plans</div>
-                      <button className="bg-[#e9c46a] hover:bg-[#e2b74c] text-slate-900 font-bold px-6 py-2.5 rounded-full text-xs tracking-wider transition-all shadow-sm">
-                        Sign Up for Free
-                      </button>
+                <div className="space-y-1.5">
+                  <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black block">Macronutrient Split:</span>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-white/5 rounded-lg p-2 border border-slate-800/40">
+                      <div className="text-sm font-black text-slate-200">{dietPlan.macronutrientSplit.proteinPercent}%</div>
+                      <div className="text-[9px] font-bold text-slate-500 uppercase">Protein</div>
                     </div>
-                  </div>
-                </>
-              ) : (
-                /* Full Content for Authenticated Users (Unblurred) */
-                <div className="space-y-5 bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 rounded-2xl border border-slate-200/60">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between font-extrabold border-b border-slate-200 pb-3">
-                      <span className="text-slate-600 text-sm">Target Calories:</span>
-                      <span className="text-[#2ec4b6] font-black text-lg">{dietPlan.dailyCalories} Kcal/day</span>
+                    <div className="bg-white/5 rounded-lg p-2 border border-slate-800/40">
+                      <div className="text-sm font-black text-slate-200">{dietPlan.macronutrientSplit.fatPercent}%</div>
+                      <div className="text-[9px] font-bold text-slate-500 uppercase">Fats</div>
                     </div>
-      
-                    <div className="space-y-2">
-                      <span className="text-slate-600 uppercase tracking-widest text-[10px] font-bold block">Macronutrient Split:</span>
-                      <div className="grid grid-cols-3 gap-3 text-center">
-                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200/40">
-                          <div className="text-lg font-black text-slate-900">{dietPlan.macronutrientSplit.proteinPercent}%</div>
-                          <div className="text-[10px] font-bold text-slate-500 uppercase">Protein</div>
-                        </div>
-                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200/40">
-                          <div className="text-lg font-black text-slate-900">{dietPlan.macronutrientSplit.fatPercent}%</div>
-                          <div className="text-[10px] font-bold text-slate-500 uppercase">Fats</div>
-                        </div>
-                        <div className="bg-white/60 rounded-lg p-3 border border-slate-200/40">
-                          <div className="text-lg font-black text-slate-900">{dietPlan.macronutrientSplit.carbsPercent}%</div>
-                          <div className="text-[10px] font-bold text-slate-500 uppercase">Carbs</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t border-slate-200">
-                    <div>
-                      <span className="text-slate-600 uppercase tracking-widest text-[10px] font-bold block mb-2">Recommended Foods:</span>
-                      <p className="text-sm text-slate-700 font-medium leading-relaxed">{(dietPlan as DietPlan).recommendedFoods?.join(', ')}</p>
-                    </div>
-    
-                    <div>
-                      <span className="text-slate-600 uppercase tracking-widest text-[10px] font-bold block mb-2">Feeding Schedule:</span>
-                      <p className="text-sm text-slate-700 font-medium leading-relaxed">{(dietPlan as DietPlan).feedingSchedule}</p>
-                    </div>
-    
-                    <div>
-                      <span className="text-slate-600 uppercase tracking-widest text-[10px] font-bold block mb-2">Rationale:</span>
-                      <p className="text-sm text-slate-700 font-medium leading-relaxed">{(dietPlan as DietPlan).dietRationale}</p>
-                    </div>
-    
-                    <div className="border-t border-slate-200 pt-3">
-                      <span className="text-rose-500 font-bold uppercase tracking-widest text-[10px] block mb-2">Items to Avoid:</span>
-                      <p className="text-rose-600 font-medium text-sm leading-relaxed">{(dietPlan as DietPlan).avoidFoods?.join(', ')}</p>
+                    <div className="bg-white/5 rounded-lg p-2 border border-slate-800/40">
+                      <div className="text-sm font-black text-slate-200">{dietPlan.macronutrientSplit.carbsPercent}%</div>
+                      <div className="text-[9px] font-bold text-slate-500 uppercase">Carbs</div>
                     </div>
                   </div>
                 </div>
-              )}
+
+                <div className="space-y-1.5 border-t border-slate-900 pt-3">
+                  <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black block">Recommended Foods:</span>
+                  <p className="text-slate-300 font-medium">High-protein canned wet food, Premium salmon treats</p>
+                </div>
+              </div>
+
+              {/* Authentication Nudge Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center p-3 bg-slate-900/40 backdrop-blur-[1px]">
+                <div className="text-center space-y-2 w-full max-w-[280px]">
+                  <h4 className="text-[10px] font-black text-[#e9c46a] uppercase tracking-wider">🐾 Save to Cat's Profile?</h4>
+                  <p className="text-[9px] text-slate-200 leading-normal">
+                    Get custom daily feeding targets, custom food schedules, and log reports! Sign in to unlock.
+                  </p>
+                  <button 
+                    onClick={() => {
+                      alert("Sign Up or Sign In to start planning your cat's diets!");
+                    }}
+                    className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-3 py-1.5 rounded-lg text-[9px] tracking-wider transition-colors w-full cursor-pointer"
+                  >
+                    CREATE PROFILE / SIGN IN
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
