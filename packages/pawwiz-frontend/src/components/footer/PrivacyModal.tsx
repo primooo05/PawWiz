@@ -284,7 +284,7 @@ export default function PrivacyModal({ isOpen, onClose }: PrivacyModalProps) {
         <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end">
           <button
             onClick={onClose}
-            className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all duration-100 cursor-pointer shadow-sm"
+            className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all duration-100 cursor-pointer shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px]"
           >
             I Understand
           </button>

@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import PrivacyModal from './footer/PrivacyModal';
+import TermsModal from './footer/TermsModal';
+import AspcaModal from './footer/AspcaModal';
 
 export default function Footer() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isAspcaOpen, setIsAspcaOpen] = useState(false);
 
   return (
     <>
@@ -21,13 +25,25 @@ export default function Footer() {
             >
               Privacy
             </button>
-            <a href="#terms" className="hover:text-slate-600 transition-colors">Terms</a>
-            <a href="#aspca" className="hover:text-slate-600 transition-colors">ASPCA</a>
+            <button
+              onClick={() => setIsTermsOpen(true)}
+              className="hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              Terms
+            </button>
+            <button
+              onClick={() => setIsAspcaOpen(true)}
+              className="hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              ASPCA
+            </button>
             <a href="#contact" className="hover:text-slate-600 transition-colors">Contact us</a>
           </div>
         </div>
       </footer>
       <PrivacyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
+      <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
+      <AspcaModal isOpen={isAspcaOpen} onClose={() => setIsAspcaOpen(false)} />
     </>
   );
 }
