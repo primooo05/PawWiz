@@ -32,11 +32,6 @@ export default function DietSection({}: {}) {
             Precision Diet Calculator
           </h2>
 
-          <p className="text-sm md:text-base text-slate-500 leading-relaxed font-medium">
-            Science-backed meal planning tailored to your cat's weight, age, activity level,
-            and health conditions. Get calorie targets, macro splits, and food recommendations.
-          </p>
-
           {/* Stats */}
           <div className="flex items-center gap-6 border-y border-slate-200/50 py-4 max-w-md ml-4 md:ml-6">
             <div className="flex-1">
@@ -72,6 +67,17 @@ export default function DietSection({}: {}) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </button>
+          </div>
+
+          {/* Info & AI Assistant statement */}
+          <div className="space-y-3 pt-2">
+            <p className="text-sm text-slate-500 leading-relaxed font-medium">
+              Science-backed meal planning tailored to your cat's weight, age, activity level,
+              and health conditions. Get calorie targets, macro splits, and food recommendations.
+            </p>
+            <p className="text-xs italic text-slate-400 leading-relaxed font-medium">
+              Note: This is an AI assistant tool. You have the ability to tailor the inputs using our adjustment sliders to further discuss and plan a suitable diet for your cat.
+            </p>
           </div>
         </div>
 

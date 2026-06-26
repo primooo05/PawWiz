@@ -37,7 +37,6 @@ export default function Footer() {
             >
               ASPCA
             </button>
-            <a href="#contact" className="hover:text-slate-600 transition-colors">Contact us</a>
           </div>
         </div>
       </footer>

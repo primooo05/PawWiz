@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { href: '#monitoring', label: 'Monitoring' },
   { href: '#diet', label: 'Diet' },
   { href: '#behavior', label: 'Behavior' },
+  { href: '#contact', label: 'Contact' },
 ];
 
 export default function Navbar() {
