@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import Onboarding from './pages/Onboarding';
+import CatPregnancyTracker from './components/pregnancy-tracker/PregnancyTracker';
+import CatHeatTracker from './components/heat-tracker/CatHeatTracker';
 
 export function Router() {
   return (
@@ -13,10 +15,11 @@ export function Router() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/pregnancy-tracker" element={<CatPregnancyTracker />} />
+        <Route path="/heat-tracker" element={<CatHeatTracker />} />
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="/onboarding" element={<Onboarding />} />
     </Routes>
   );
 }
-
