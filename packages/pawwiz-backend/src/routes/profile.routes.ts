@@ -6,11 +6,16 @@
 
 import { Router } from 'express';
 import { createProfile, getProfile, updateProfile, deleteProfile } from '../controllers/profile.controller.js';
+import { authMiddleware } from '../middleware/auth.js';
+
+import { honeypotMiddleware } from '../middleware/honeypot.js';
+import { turnstileMiddleware } from '../middleware/turnstile.js';
 
 const profileRouter = Router();
 
-// TODO: Add authMiddleware once Supabase JWT verification is implemented (Task 6)
-profileRouter.post('/', createProfile);
+profileRouter.use(authMiddleware);
+
+profileRouter.post('/', honeypotMiddleware, turnstileMiddleware, createProfile);
 profileRouter.get('/', getProfile);
 profileRouter.patch('/', updateProfile);
 profileRouter.delete('/', deleteProfile);

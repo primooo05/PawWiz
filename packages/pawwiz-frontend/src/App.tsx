@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 
 // Landing Page Imports
 import Navbar from './components/Navbar';
@@ -16,31 +17,43 @@ import CatHeatTracker from './components/pregnancy-tracker/CatHeatTracker';
 
 const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
 
+// 1. The Layout Component (Navbar, Footer, Background stay visible on all pages)
+const MainLayout = () => (
+    <div className="min-h-screen bg-white text-slate-800 relative overflow-x-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(233,196,106,0.07),transparent_50%),radial-gradient(ellipse_at_bottom,rgba(46,196,182,0.07),transparent_50%)] pointer-events-none" />
+
+        <div className="relative z-10 pt-16 flex flex-col min-h-screen">
+            <Navbar />
+            {/* This Outlet is where your LandingPage or Trackers will be injected */}
+            <Outlet />
+            <ReturnToTop />
+            <Footer />
+        </div>
+    </div>
+);
+
+// 2. The Landing Page Component (Only contains the hero and sections)
 const LandingPage = () => (
-    <div className="relative z-10 pt-16">
-        <Navbar />
+    <>
         <Hero apiBase={API_BASE} />
         <PregnancySection />
         <DietSection />
         <BehaviorSection apiBase={API_BASE} />
         <ContactSection />
-        <ReturnToTop />
-        <Footer />
-    </div>
+    </>
 );
 
+// 3. Main App entry point
 export default function App() {
     return (
         <BrowserRouter>
-            <div className="min-h-screen bg-white text-slate-800 relative overflow-x-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(233,196,106,0.07),transparent_50%),radial-gradient(ellipse_at_bottom,rgba(46,196,182,0.07),transparent_50%)] pointer-events-none" />
-                <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/pregnancy-tracker" element={<CatPregnancyTracker />} />
-                    <Route path="/heat-tracker" element={<CatHeatTracker />} />
-                    <Route path="/pregnancy-tracker" element={<CatPregnancyTracker />} />
-                </Routes>
-            </div>
+            <Routes>
+                <Route path="/" element={<MainLayout />}>
+                    <Route index element={<LandingPage />} />
+                    <Route path="pregnancy-tracker" element={<CatPregnancyTracker />} />
+                    <Route path="heat-tracker" element={<CatHeatTracker />} />
+                </Route>
+            </Routes>
         </BrowserRouter>
     );
 }

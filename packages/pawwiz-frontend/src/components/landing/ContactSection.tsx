@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
 import akiCat from '../../assets/aki_cat.png';
-
-interface ContactFormData {
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  catDetails: string;
-  inquiryReason: string;
-  budgetTier: string;
-  message: string;
-}
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { contactSchema } from '../../schemas/features';
 
 const BUDGET_TIERS = [
   'Essential',
@@ -20,8 +12,8 @@ const BUDGET_TIERS = [
 ];
 
 export default function ContactSection() {
-  const [formData, setFormData] = useState<ContactFormData>({
-    fullName: '',
+  const form = useFormValidation(contactSchema, {
+    name: '',
     email: '',
     phoneNumber: '',
     catDetails: '',
@@ -30,58 +22,18 @@ export default function ContactSection() {
     message: '',
   });
 
-  const [errors, setErrors] = useState<Partial<Record<keyof ContactFormData, string>>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof ContactFormData, string>> = {};
-
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    } else if (formData.fullName.trim().length < 2) {
-      newErrors.fullName = 'Name must be at least 2 characters';
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email address is required';
-    } else if (!emailRegex.test(formData.email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.inquiryReason) {
-      newErrors.inquiryReason = 'Please select an inquiry reason';
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = 'Message details are required';
-    } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
+    if (form.validateAll()) {
       // Simulate submission
       setIsSubmitted(true);
     }
   };
 
   const handleReset = () => {
-    setFormData({
-      fullName: '',
-      email: '',
-      phoneNumber: '',
-      catDetails: '',
-      inquiryReason: '',
-      budgetTier: 'Essential',
-      message: '',
-    });
-    setErrors({});
+    form.reset();
     setIsSubmitted(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -126,13 +78,14 @@ export default function ContactSection() {
                     <input
                       type="text"
                       placeholder="e.g., Juan dela Cruz"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      value={form.values.name}
+                      onChange={(e) => form.handleChange('name', e.target.value)}
+                      onBlur={() => form.handleBlur('name')}
                       className={`w-full bg-white border-b-2 px-3 py-2 text-sm focus:outline-none transition-colors ${
-                        errors.fullName ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2ec4b6]'
+                        form.errors.name ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2ec4b6]'
                       }`}
                     />
-                    {errors.fullName && <span className="text-[10px] text-rose-500 font-semibold">{errors.fullName}</span>}
+                    {form.errors.name && <span className="text-[10px] text-rose-500 font-semibold">{form.errors.name}</span>}
                   </div>
 
                   <div className="flex flex-col gap-1.5">
@@ -140,13 +93,14 @@ export default function ContactSection() {
                     <input
                       type="email"
                       placeholder="e.g., juan@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      value={form.values.email}
+                      onChange={(e) => form.handleChange('email', e.target.value)}
+                      onBlur={() => form.handleBlur('email')}
                       className={`w-full bg-white border-b-2 px-3 py-2 text-sm focus:outline-none transition-colors ${
-                        errors.email ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2ec4b6]'
+                        form.errors.email ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2ec4b6]'
                       }`}
                     />
-                    {errors.email && <span className="text-[10px] text-rose-500 font-semibold">{errors.email}</span>}
+                    {form.errors.email && <span className="text-[10px] text-rose-500 font-semibold">{form.errors.email}</span>}
                   </div>
                 </div>
 
@@ -157,8 +111,8 @@ export default function ContactSection() {
                     <input
                       type="tel"
                       placeholder="e.g., +63 917 123 4567"
-                      value={formData.phoneNumber}
-                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                      value={form.values.phoneNumber || ''}
+                      onChange={(e) => form.handleChange('phoneNumber', e.target.value)}
                       className="w-full bg-white border-b-2 border-slate-200 focus:border-[#2ec4b6] px-3 py-2 text-sm focus:outline-none transition-colors"
                     />
                   </div>
@@ -168,8 +122,8 @@ export default function ContactSection() {
                     <input
                       type="text"
                       placeholder="e.g., Luna (Persian)"
-                      value={formData.catDetails}
-                      onChange={(e) => setFormData({ ...formData, catDetails: e.target.value })}
+                      value={form.values.catDetails || ''}
+                      onChange={(e) => form.handleChange('catDetails', e.target.value)}
                       className="w-full bg-white border-b-2 border-slate-200 focus:border-[#2ec4b6] px-3 py-2 text-sm focus:outline-none transition-colors"
                     />
                   </div>
@@ -180,11 +134,9 @@ export default function ContactSection() {
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Inquiry Reason*</label>
                   <div className="relative">
                     <select
-                      value={formData.inquiryReason}
-                      onChange={(e) => setFormData({ ...formData, inquiryReason: e.target.value })}
-                      className={`w-full bg-white border-b-2 px-3 py-2 text-sm focus:outline-none transition-colors appearance-none cursor-pointer ${
-                        errors.inquiryReason ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2ec4b6]'
-                      }`}
+                      value={form.values.inquiryReason || ''}
+                      onChange={(e) => form.handleChange('inquiryReason', e.target.value)}
+                      className={`w-full bg-white border-b-2 px-3 py-2 text-sm focus:outline-none transition-colors appearance-none cursor-pointer border-slate-200 focus:border-[#2ec4b6]`}
                     >
                       <option value="">Select a reason</option>
                       <option value="General Support">General Support & Feedback</option>
@@ -199,7 +151,6 @@ export default function ContactSection() {
                       </svg>
                     </div>
                   </div>
-                  {errors.inquiryReason && <span className="text-[10px] text-rose-500 font-semibold">{errors.inquiryReason}</span>}
                 </div>
 
                 {/* Care budget tier horizontal selector */}
@@ -210,9 +161,9 @@ export default function ContactSection() {
                       <button
                         key={tier}
                         type="button"
-                        onClick={() => setFormData({ ...formData, budgetTier: tier })}
+                        onClick={() => form.handleChange('budgetTier', tier)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
-                          formData.budgetTier === tier
+                          form.values.budgetTier === tier
                             ? 'bg-[#2ec4b6] border-[#2ec4b6] text-white shadow-md'
                             : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
                         }`}
@@ -229,20 +180,22 @@ export default function ContactSection() {
                   <textarea
                     placeholder="Tell us about the issue or question you have in details..."
                     rows={3}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    value={form.values.message}
+                    onChange={(e) => form.handleChange('message', e.target.value)}
+                    onBlur={() => form.handleBlur('message')}
                     className={`w-full bg-white border-b-2 px-3 py-2 text-sm focus:outline-none transition-colors resize-none ${
-                      errors.message ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2ec4b6]'
+                      form.errors.message ? 'border-rose-400 focus:border-rose-500' : 'border-slate-200 focus:border-[#2ec4b6]'
                     }`}
                   />
-                  {errors.message && <span className="text-[10px] text-rose-500 font-semibold">{errors.message}</span>}
+                  {form.errors.message && <span className="text-[10px] text-rose-500 font-semibold">{form.errors.message}</span>}
                 </div>
 
                 {/* Submit button */}
                 <div className="mt-2 text-left">
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 bg-[#2ec4b6] text-white px-6 py-3 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-100 shadow-[0_4px_0_0_#1e9c90] active:shadow-none active:translate-y-[4px] hover:bg-[#39d0c2] cursor-pointer"
+                    disabled={!form.isValid}
+                    className="inline-flex items-center gap-2 bg-[#2ec4b6] disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-100 shadow-[0_4px_0_0_#1e9c90] active:shadow-none active:translate-y-[4px] hover:bg-[#39d0c2] cursor-pointer"
                   >
                     Lets Connect
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">

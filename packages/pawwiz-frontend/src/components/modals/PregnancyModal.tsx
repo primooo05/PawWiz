@@ -8,7 +8,7 @@ interface PregnancyModalProps {
 
 export default function PregnancyModal({ isOpen, onClose }: PregnancyModalProps) {
   useBodyScrollLock(isOpen);
-  const { matingDate, setMatingDate, gestationResult, handleCalculateGestation } = useGestationCalculator();
+  const { form, gestationResult, handleCalculateGestation } = useGestationCalculator();
 
   if (!isOpen) return null;
 
@@ -30,14 +30,17 @@ export default function PregnancyModal({ isOpen, onClose }: PregnancyModalProps)
             <label className="text-xs text-slate-500 font-bold uppercase tracking-wider block mb-1">Mating / Conception Date:</label>
             <input
               type="date"
-              value={matingDate}
-              onChange={(e) => setMatingDate(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ec4b6]/40 font-semibold text-slate-800"
+              value={form.values.matingDate}
+              onChange={(e) => form.handleChange('matingDate', e.target.value)}
+              onBlur={() => form.handleBlur('matingDate')}
+              className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ec4b6]/40 font-semibold text-slate-800 ${form.errors.matingDate ? 'border-red-400' : 'border-slate-200'}`}
             />
+            {form.errors.matingDate && <p className="text-red-500 text-xs mt-1">{form.errors.matingDate}</p>}
           </div>
           <button
             type="submit"
-            className="w-full bg-[#2ec4b6] hover:bg-[#259b90] text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+            disabled={!form.isValid}
+            className="w-full bg-[#2ec4b6] hover:bg-[#259b90] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
           >
             Compute Milestones
           </button>

@@ -7,12 +7,28 @@ import { lookupPlantToxicity } from './data/aspca.js';
 import { scanPlantWithVision, optimizeDiet, decodeBehavior } from './services/gemini.js';
 import { ToxicityScanRequest, ToxicityScanResult } from './types/shared.js';
 
+import { helmetMiddleware } from './middleware/helmet.js';
+import { corsMiddleware } from './middleware/cors.js';
+import { contentTypeMiddleware } from './middleware/contentType.js';
+import { sanitizerMiddleware } from './middleware/sanitizer.js';
+
+import { validate } from './middleware/validate.js';
+import { scanSchema, dietSchema, behaviorSchema } from './schemas/index.js';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Increase limit to allow base64 image uploads
+// Security Middleware Pipeline
+app.use(helmetMiddleware);
+app.use(corsMiddleware);
+
+// JSON body parser with 10mb limit. Throws 413 if exceeded (handled by express internally).
 app.use(express.json({ limit: '10mb' }));
-app.use(cors());
+
+// Mutation constraints
+app.use(contentTypeMiddleware);
+app.use(sanitizerMiddleware);
+
 
 // Register MRSC routes (profile, etc.)
 registerRoutes(app);
@@ -23,7 +39,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Plant scan & ASPCA verification loop
-app.post('/api/scan', async (req, res) => {
+app.post('/api/scan', validate(scanSchema), async (req, res) => {
   const payload = req.body as ToxicityScanRequest;
   
   try {
@@ -87,7 +103,7 @@ app.post('/api/scan', async (req, res) => {
 });
 
 // Diet optimization endpoint
-app.post('/api/diet', async (req, res) => {
+app.post('/api/diet', validate(dietSchema), async (req, res) => {
   try {
     const plan = await optimizeDiet(req.body);
     res.json(plan);
@@ -98,7 +114,7 @@ app.post('/api/diet', async (req, res) => {
 });
 
 // Behavioral decoder endpoint
-app.post('/api/behavior', async (req, res) => {
+app.post('/api/behavior', validate(behaviorSchema), async (req, res) => {
   try {
     const decodeResult = await decodeBehavior(req.body);
     res.json(decodeResult);
