@@ -229,6 +229,106 @@ export function usePregnancyTracker() {
         }));
     };
 
+    const isDateLoggable = (year: number, monthIdx: number, dayNum: number) => {
+        if (!matingDate) return false;
+        const calendarDate = new Date(year, monthIdx, dayNum);
+        calendarDate.setHours(0, 0, 0, 0);
+
+        const baseDate = new Date(matingDate + 'T00:00:00');
+        baseDate.setHours(0, 0, 0, 0);
+
+        const todayVal = new Date();
+        todayVal.setHours(0, 0, 0, 0);
+
+        if (calendarDate.getTime() > todayVal.getTime()) {
+            return false;
+        }
+
+        const diffTime = calendarDate.getTime() - baseDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        return diffDays >= 0 && diffDays < 65;
+    };
+
+    const toggleSymptom = (dateStr: string, symptomLabel: string) => {
+        const activeLog = logs[dateStr] || { symptoms: [] };
+        const isAlreadyLogged = activeLog.symptoms.includes(symptomLabel);
+        const nextSymptoms = isAlreadyLogged
+            ? activeLog.symptoms.filter((s: string) => s !== symptomLabel)
+            : [...activeLog.symptoms, symptomLabel];
+        
+        const nextSeverities = { ...(activeLog.symptomSeverities || {}) };
+        if (!isAlreadyLogged) {
+            nextSeverities[symptomLabel] = 'Mild';
+        } else {
+            delete nextSeverities[symptomLabel];
+        }
+
+        saveLogForDate(dateStr, {
+            ...activeLog,
+            symptoms: nextSymptoms,
+            symptomSeverities: nextSeverities,
+        });
+    };
+
+    const today = new Date();
+    const todayStr = getLocalDateStr(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayLog = logs[todayStr] || { symptoms: [], moods: [] };
+    const todayLoggable = isDateLoggable(today.getFullYear(), today.getMonth(), today.getDate());
+
+    const [isWeightPickerOpen, setIsWeightPickerOpen] = useState(false);
+    const [intVal, setIntVal] = useState(4);
+    const [decVal, setDecVal] = useState(0);
+    const [unitVal, setUnitVal] = useState<'kg' | 'lbs'>('kg');
+
+    useEffect(() => {
+        if (isWeightPickerOpen && selectedDateStr) {
+            const activeLog = logs[selectedDateStr];
+            if (activeLog && activeLog.weight !== undefined) {
+                const w = activeLog.weight;
+                if (unitVal === 'lbs') {
+                    const totalLbs = w / 0.45359237;
+                    setIntVal(Math.floor(totalLbs));
+                    setDecVal(Math.round((totalLbs % 1) * 10));
+                } else {
+                    setIntVal(Math.floor(w));
+                    setDecVal(Math.round((w % 1) * 10));
+                }
+            }
+        }
+    }, [isWeightPickerOpen, selectedDateStr, logs, unitVal]);
+
+    const handleUnitChange = (newUnit: 'kg' | 'lbs') => {
+        if (newUnit === unitVal) return;
+        if (newUnit === 'lbs') {
+            const currentKg = intVal + decVal / 10;
+            const lbs = currentKg / 0.45359237;
+            setIntVal(Math.floor(lbs));
+            setDecVal(Math.round((lbs % 1) * 10));
+        } else {
+            const currentLbs = intVal + decVal / 10;
+            const kg = currentLbs * 0.45359237;
+            setIntVal(Math.floor(kg));
+            setDecVal(Math.round((kg % 1) * 10));
+        }
+        setUnitVal(newUnit);
+    };
+
+    const handleWeightPickerDone = () => {
+        if (!selectedDateStr) return;
+        const currentVal = intVal + decVal / 10;
+        let finalWeightKg = currentVal;
+        if (unitVal === 'lbs') {
+            finalWeightKg = currentVal * 0.45359237;
+        }
+        const activeLog = logs[selectedDateStr] || { symptoms: [] };
+        saveLogForDate(selectedDateStr, {
+            ...activeLog,
+            weight: parseFloat(finalWeightKg.toFixed(1))
+        });
+        setIsWeightPickerOpen(false);
+    };
+
     return {
         matingDate,
         setMatingDate,
@@ -255,5 +355,20 @@ export function usePregnancyTracker() {
         openLogForDate,
         closeBottomSheet,
         saveLogForDate,
+        isDateLoggable,
+        toggleSymptom,
+        todayStr,
+        todayLog,
+        todayLoggable,
+        isWeightPickerOpen,
+        setIsWeightPickerOpen,
+        intVal,
+        setIntVal,
+        decVal,
+        setDecVal,
+        unitVal,
+        setUnitVal,
+        handleUnitChange,
+        handleWeightPickerDone,
     };
 }

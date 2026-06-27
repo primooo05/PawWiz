@@ -15,7 +15,7 @@ import stressIcon from '../../assets/stress.png';
 import quietIcon from '../../assets/quiet.png';
 import calmIcon from '../../assets/calm.png';
 
-const SYMPTOMS = [
+export const SYMPTOMS = [
     { label: 'Nesting', icon: nestingIcon },
     { label: 'Appetite Up', icon: appetiteUpIcon },
     { label: 'Vomiting', icon: vomitingIcon },
@@ -96,6 +96,16 @@ interface DashboardViewProps {
     todayStr: string;
     todayLog: DailyLog;
     todayLoggable: boolean;
+    isWeightPickerOpen: boolean;
+    setIsWeightPickerOpen: (open: boolean) => void;
+    intVal: number;
+    setIntVal: (val: number) => void;
+    decVal: number;
+    setDecVal: (val: number) => void;
+    unitVal: 'kg' | 'lbs';
+    setUnitVal: (val: 'kg' | 'lbs') => void;
+    handleUnitChange: (newUnit: 'kg' | 'lbs') => void;
+    handleWeightPickerDone: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({

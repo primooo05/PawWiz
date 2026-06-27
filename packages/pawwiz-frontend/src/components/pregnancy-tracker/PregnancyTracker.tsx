@@ -32,6 +32,21 @@ const CatPregnancyTracker: React.FC = () => {
         openLogForDate,
         closeBottomSheet,
         saveLogForDate,
+        toggleSymptom,
+        isDateLoggable,
+        todayStr,
+        todayLog,
+        todayLoggable,
+        isWeightPickerOpen,
+        setIsWeightPickerOpen,
+        intVal,
+        setIntVal,
+        decVal,
+        setDecVal,
+        unitVal,
+        setUnitVal,
+        handleUnitChange,
+        handleWeightPickerDone,
     } = usePregnancyTracker();
 
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -42,44 +57,6 @@ const CatPregnancyTracker: React.FC = () => {
             setIsLoading(true);
         }
     };
-
-    const isDateLoggable = (year: number, monthIdx: number, dayNum: number) => {
-        if (!matingDate) return false;
-        const calendarDate = new Date(year, monthIdx, dayNum);
-        calendarDate.setHours(0, 0, 0, 0);
-
-        const baseDate = new Date(matingDate + 'T00:00:00');
-        baseDate.setHours(0, 0, 0, 0);
-
-        const todayVal = new Date();
-        todayVal.setHours(0, 0, 0, 0);
-
-        if (calendarDate.getTime() > todayVal.getTime()) {
-            return false;
-        }
-
-        const diffTime = calendarDate.getTime() - baseDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        return diffDays >= 0 && diffDays < 65;
-    };
-
-    const toggleSymptom = (dateStr: string, symptomLabel: string) => {
-        const activeLog = logs[dateStr] || { symptoms: [], notes: '' };
-        const isAlreadyLogged = activeLog.symptoms.includes(symptomLabel);
-        const nextSymptoms = isAlreadyLogged
-            ? activeLog.symptoms.filter((s: string) => s !== symptomLabel)
-            : [...activeLog.symptoms, symptomLabel];
-        saveLogForDate(dateStr, {
-            ...activeLog,
-            symptoms: nextSymptoms,
-        });
-    };
-
-    const today = new Date();
-    const todayStr = getLocalDateStr(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayLog = logs[todayStr] || { symptoms: [], moods: [] };
-    const todayLoggable = isDateLoggable(today.getFullYear(), today.getMonth(), today.getDate());
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20">
@@ -120,6 +97,16 @@ const CatPregnancyTracker: React.FC = () => {
                         todayStr={todayStr}
                         todayLog={todayLog}
                         todayLoggable={todayLoggable}
+                        isWeightPickerOpen={isWeightPickerOpen}
+                        setIsWeightPickerOpen={setIsWeightPickerOpen}
+                        intVal={intVal}
+                        setIntVal={setIntVal}
+                        decVal={decVal}
+                        setDecVal={setDecVal}
+                        unitVal={unitVal}
+                        setUnitVal={setUnitVal}
+                        handleUnitChange={handleUnitChange}
+                        handleWeightPickerDone={handleWeightPickerDone}
                     />
                 )}
             </main>
