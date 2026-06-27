@@ -18,7 +18,7 @@ const MONTHS = [
 
 export interface DailyLog {
     symptoms: string[];
-    mood?: string;
+    moods?: string[];
     weight?: number;
 }
 
@@ -35,17 +35,17 @@ const getInitialLogs = (matingDateStr: string): Record<string, DailyLog> => {
     return {
         [getOffsetDateStr(7)]: {
             symptoms: ['Nesting', 'Pinking Up'],
-            mood: 'Quiet',
+            moods: ['Quiet'],
             weight: 3.8,
         },
         [getOffsetDateStr(14)]: {
             symptoms: ['Appetite Up', 'Extra Sleep'],
-            mood: 'Affectionate',
+            moods: ['Affectionate'],
             weight: 4.1,
         },
         [getOffsetDateStr(21)]: {
             symptoms: ['Vomiting', 'Weight Gain'],
-            mood: 'Calm',
+            moods: ['Calm'],
             weight: 4.2,
         },
     };
