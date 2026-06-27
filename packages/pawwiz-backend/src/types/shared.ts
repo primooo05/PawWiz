@@ -1,5 +1,18 @@
 export type { PlantToxicityRecord } from '../data/aspca.js';
 
+export interface PlantLookupRequest {
+  plantName: string;
+}
+
+export interface PlantLookupResponse {
+  plantName: string;
+  scientificName: string;
+  isToxic: boolean;
+  clinicalSigns: string[];
+  severity: "None" | "Mild" | "Moderate" | "Severe";
+  actionRequired: string;
+}
+
 export interface ToxicityScanRequest {
   image?: string; // base64 encoded photo
   plantNameQuery?: string; // text search backup

@@ -8,6 +8,19 @@ export const scanSchema = z.object({
   { message: 'Either image or plantNameQuery must be provided' }
 );
 
+export const plantLookupRequestSchema = z.object({
+  plantName: z.string().min(1),
+});
+
+export const plantLookupResponseSchema = z.object({
+  plantName: z.string(),
+  scientificName: z.string(),
+  isToxic: z.boolean(),
+  clinicalSigns: z.array(z.string()),
+  severity: z.enum(['None', 'Mild', 'Moderate', 'Severe']),
+  actionRequired: z.string(),
+});
+
 export const dietSchema = z.object({
   weightKg: z.number().positive(),
   ageYears: z.number().nonnegative(),
