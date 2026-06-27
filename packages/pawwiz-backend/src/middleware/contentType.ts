@@ -4,8 +4,14 @@ export const contentTypeMiddleware = (req: Request, res: Response, next: NextFun
   const method = req.method;
   
   if (['POST', 'PUT', 'PATCH'].includes(method)) {
-    if (!req.is('application/json')) {
-      res.status(415).json({ error: 'Unsupported Media Type - application/json required' });
+    try {
+      if (!req.is('application/json')) {
+        res.status(415).json({ error: 'Unsupported Media Type - application/json required' });
+        return;
+      }
+    } catch (error) {
+      // req.is throws on malformed content-type headers like ";"
+      res.status(415).json({ error: 'Unsupported Media Type - malformed header' });
       return;
     }
   }
