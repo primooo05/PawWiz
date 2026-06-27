@@ -26,7 +26,7 @@ export const turnstileMiddleware = async (req: Request, res: Response, next: Nex
       body: formData,
     });
 
-    const data = await result.json();
+    const data = await result.json() as { success: boolean; 'error-codes'?: string[] };
     
     if (!data.success) {
       res.status(403).json({ error: 'Turnstile verification failed', codes: data['error-codes'] });
