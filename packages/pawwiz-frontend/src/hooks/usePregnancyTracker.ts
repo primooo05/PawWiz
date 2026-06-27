@@ -20,6 +20,8 @@ export interface DailyLog {
     symptoms: string[];
     moods?: string[];
     weight?: number;
+    symptomSeverities?: Record<string, 'Mild' | 'Moderate' | 'Severe'>;
+    temperature?: number;
 }
 
 const getInitialLogs = (matingDateStr: string): Record<string, DailyLog> => {

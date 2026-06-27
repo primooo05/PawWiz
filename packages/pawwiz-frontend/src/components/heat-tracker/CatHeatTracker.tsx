@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import wizMascot from '../../assets/Wiz_mascot.png';
-import pawWizText from '../../assets/PawWiz_Text_logo.png';
 
 const CatHeatTracker: React.FC = () => {
     const navigate = useNavigate();
@@ -29,24 +27,6 @@ const CatHeatTracker: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
-
-            {/* Top Navbar */}
-            <nav className="flex items-center justify-between px-8 py-4 bg-white border-b-2 border-slate-900 shadow-sm relative z-20">
-                <div className="flex items-center gap-2">
-                    <img src={wizMascot} alt="PawWiz Mascot" className="h-8 w-auto object-contain" />
-                    <img src={pawWizText} alt="PawWiz" className="h-6 w-auto object-contain ml-1" />
-                </div>
-                <div className="flex items-center gap-6 text-sm font-bold text-slate-600 uppercase tracking-wide">
-                    <button className="hover:text-pink-500 transition-colors">HOME</button>
-                    <button className="text-pink-500 border-b-2 border-pink-500 pb-1">MONITORING</button>
-                    <button className="hover:text-pink-500 transition-colors">DIET</button>
-                    <button className="hover:text-pink-500 transition-colors">ACTIVITIES</button>
-                    <button className="px-6 py-2 ml-4 text-slate-900 bg-yellow-300 border-2 border-slate-900 rounded-full hover:bg-yellow-400 hover:-translate-y-0.5 transition-all shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
-                        SIGN IN
-                    </button>
-                </div>
-            </nav>
-
             <main className="max-w-6xl mx-auto px-8 mt-12">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 

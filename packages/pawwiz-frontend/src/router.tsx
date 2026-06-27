@@ -4,7 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import CatPregnancyTracker from './components/pregnancy-tracker/PregnancyTracker';
-import CatHeatTracker from './components/pregnancy-tracker/CatHeatTracker';
+import CatHeatTracker from './components/heat-tracker/CatHeatTracker';
 
 export function Router() {
   return (

@@ -5,19 +5,6 @@ import SetupView from './SetupView';
 import DashboardView from './DashboardView';
 
 import { usePregnancyTracker } from '../../hooks/usePregnancyTracker';
-import pawWizText from '../../assets/PawWiz_Text_logo.png';
-
-interface NavItem {
-    label: string;
-    isActive?: boolean;
-}
-
-const NAV_ITEMS: NavItem[] = [
-    { label: 'HOME' },
-    { label: 'MONITORING', isActive: true },
-    { label: 'DIET' },
-    { label: 'ACTIVITIES' },
-];
 
 const CatPregnancyTracker: React.FC = () => {
     const {
@@ -96,27 +83,6 @@ const CatPregnancyTracker: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20">
-            {/* Top Navbar */}
-            <nav className="flex items-center justify-between px-8 py-5 bg-white shadow-[0_2px_10px_-3px_rgba(6,81,237,0.05)] relative z-20">
-                <div className="flex items-center gap-2">
-                    <img src={pawWizText} alt="PawWiz" className="h-6 w-auto object-contain ml-1" />
-                </div>
-                <div className="flex items-center gap-8 text-sm font-bold text-slate-500 uppercase tracking-wide">
-                    {NAV_ITEMS.map((item) => (
-                        <button
-                            key={item.label}
-                            className={`hover:text-teal-500 transition-colors ${item.isActive ? 'text-teal-500 border-b-[3px] border-teal-500 pb-1' : ''
-                                }`}
-                        >
-                            {item.label}
-                        </button>
-                    ))}
-                    <button className="px-8 py-2.5 ml-4 text-slate-900 bg-[#FFEA30] rounded-full hover:bg-yellow-400 transition-colors shadow-sm tracking-widest">
-                        SIGN IN
-                    </button>
-                </div>
-            </nav>
-
             {/* Main Content Area */}
             <main className="max-w-[1440px] px-8 py-12 mx-auto">
                 {!isTracking ? (

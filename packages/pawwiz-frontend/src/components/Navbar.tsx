@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import pawWizText from '../assets/PawWiz_Text_logo.png';
 
 const NAV_LINKS = [
   { href: '#home', label: 'Home' },
@@ -49,11 +50,10 @@ export default function Navbar() {
   return (
     // Close on outside click (ref on <nav> so hamburger doesn't fight the handler)
     <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
-      <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div className="max-w-[1440px] mx-auto px-8 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2 group cursor-pointer">
-          <span className="text-2xl group-hover:rotate-12 transition-transform duration-300">🐾</span>
-          <span className="text-xl font-black tracking-tight text-slate-900">PawWiz</span>
+          <img src={pawWizText} alt="PawWiz" className="h-6 w-auto object-contain ml-1" />
         </Link>
 
         {/* Desktop nav */}
