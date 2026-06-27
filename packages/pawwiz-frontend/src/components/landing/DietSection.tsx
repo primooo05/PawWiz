@@ -1,15 +1,18 @@
 import { useState } from "react";
 import DietModal from "../modals/DietModal";
 import WizChatDemo from "./WizChatDemo/WizChatDemo";
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function DietSection({}: {}) {
   const [isOpen, setIsOpen] = useState(false);
+  const sectionRef = useScrollReveal<HTMLElement>();
 
   return (
     <section
+      ref={sectionRef}
       id="diet"
-      className="w-full min-h-screen flex items-center justify-center border-b border-slate-100 relative bg-gradient-to-br from-amber-50/15 via-white to-slate-50/40"
+      className="scroll-mt-20 w-full min-h-screen flex items-center justify-center border-b border-slate-100 relative bg-gradient-to-br from-amber-50/15 via-white to-slate-50/40"
     >
 
 
@@ -21,19 +24,19 @@ export default function DietSection({}: {}) {
 
         {/* ── LEFT COLUMN ─────────────────────────────────────────── */}
         <div className="space-y-8 text-left">
-          <div className="flex items-center gap-2">
+          <div className="reveal-item stagger-1 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-[#e9c46a] rotate-45 flex-shrink-0" />
             <span className="text-[10px] font-black tracking-[0.25em] text-[#e9c46a] uppercase">
               NUTRITION OPTIMIZATION
             </span>
           </div>
 
-          <h2 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase">
+          <h2 className="reveal-item stagger-2 text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase">
             Precision Diet Calculator
           </h2>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 border-y border-slate-200/50 py-4 max-w-md ml-4 md:ml-6">
+          <div className="reveal-item stagger-3 flex items-center gap-6 border-y border-slate-200/50 py-4 max-w-md ml-4 md:ml-6">
             <div className="flex-1">
               <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">45% Protein</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Optimal Ratio</span>
@@ -51,7 +54,7 @@ export default function DietSection({}: {}) {
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="reveal-item stagger-4 flex flex-wrap items-center gap-4">
             <button
               onClick={() => setIsOpen(true)}
               className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-8 py-3.5 rounded-full text-xs tracking-widest transition-all duration-100 shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer"
@@ -82,7 +85,9 @@ export default function DietSection({}: {}) {
         </div>
 
         {/* ── RIGHT COLUMN: Chat Demo ──────────────────────────────── */}
-        <WizChatDemo />
+        <div className="reveal-item stagger-5">
+          <WizChatDemo />
+        </div>
 
       </div>
 

@@ -60,16 +60,18 @@ export default function Navbar() {
         <div className="hidden md:flex items-center space-x-8">
           {NAV_LINKS.map(link => {
             const isHome = location.pathname === '/';
-            const targetUrl = isHome ? link.href : `/${link.href}`;
             return (
               <a
                 key={link.href}
-                href={targetUrl}
+                href={isHome ? link.href : `/${link.href}`}
                 className="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors"
                 onClick={(e) => {
+                  e.preventDefault();
                   if (isHome) {
-                    e.preventDefault();
                     document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                    window.history.replaceState(null, '', link.href);
+                  } else {
+                    navigate(`/${link.href}`);
                   }
                 }}
               >
@@ -104,6 +106,7 @@ export default function Navbar() {
           <button
             onClick={() => setMenuOpen(prev => !prev)}
             aria-label="Toggle menu"
+            aria-expanded={menuOpen}
             className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
           >
             {/* Animated hamburger → X */}
@@ -131,16 +134,18 @@ export default function Navbar() {
         <div className="px-5 py-3 flex flex-col gap-1">
           {NAV_LINKS.map((link, i) => {
             const isHome = location.pathname === '/';
-            const targetUrl = isHome ? link.href : `/${link.href}`;
             return (
               <a
                 key={link.href}
-                href={targetUrl}
+                href={isHome ? link.href : `/${link.href}`}
                 onClick={(e) => {
+                  e.preventDefault();
                   setMenuOpen(false);
                   if (isHome) {
-                    e.preventDefault();
                     document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                    window.history.replaceState(null, '', link.href);
+                  } else {
+                    navigate(`/${link.href}`);
                   }
                 }}
                 className="text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-3 rounded-lg transition-all"

@@ -3,8 +3,11 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ReturnToTop from './components/ReturnToTop';
 import { Outlet } from 'react-router-dom';
+import { useScrollToTop } from './hooks/useScrollToTop';
 
 export default function App() {
+  useScrollToTop();
+
   return (
     <div className="min-h-screen bg-white text-slate-800 relative">
       {/* Premium background radial glows */}

@@ -1,4 +1,5 @@
 import { usePlantScan } from '../../hooks/usePlantScan';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 interface HeroProps {
   apiBase: string;
@@ -6,21 +7,22 @@ interface HeroProps {
 
 export default function Hero({ apiBase }: HeroProps) {
   const { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch } = usePlantScan(apiBase);
+  const sectionRef = useScrollReveal<HTMLElement>(0.08);
 
   return (
-    <section id="home" className="w-full pt-24 md:pt-28 pb-16 text-center bg-grid-pattern border-b border-slate-200/40">
+    <section ref={sectionRef} id="home" className="scroll-mt-20 w-full pt-24 md:pt-28 pb-16 text-center bg-grid-pattern border-b border-slate-200/40">
       {/* Centered Heading */}
       <div className="max-w-4xl mx-auto px-6 space-y-5">
-        <h2 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">
+        <h2 className="reveal-item stagger-1 text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">
           YOUR <span className="text-[#e9c46a] drop-shadow-[0_2px_10px_rgba(233,196,106,0.15)]">CAT</span> JUST ATE A <span className="text-[#2ec4b6] drop-shadow-[0_2px_10px_rgba(46,196,182,0.15)]">LEAF</span>. IS IT <span className="text-rose-500 drop-shadow-[0_2px_10px_rgba(239,68,68,0.15)]">DANGEROUS</span>?
         </h2>
-        <p className="text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
+        <p className="reveal-item stagger-2 text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
           PawWiz will tell you immediately before it became an emergency! Plant Toxicity Checker, Feeding guide, and Pregnancy Monitoring, Health Tracker built for furparents!
         </p>
       </div>
 
       {/* Large Full-width-ready Green Toxicity Search Box */}
-      <div className="max-w-5xl mx-auto px-4 md:px-6 mt-12">
+      <div className="reveal-item stagger-3 max-w-5xl mx-auto px-4 md:px-6 mt-12">
         <div className="w-full bg-[#2ec4b6] py-16 md:py-20 px-6 md:px-12 rounded-3xl md:rounded-[56px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_25px_60px_-15px_rgba(46,196,182,0.3)] text-center text-white relative overflow-hidden">
           {/* Subtle graphic accent inside green card */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full filter blur-2xl pointer-events-none -mr-20 -mt-20" />
