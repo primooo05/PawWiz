@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 const NAV_LINKS = [
   { href: '#home', label: 'Home' },
@@ -11,6 +14,26 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLElement>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -28,34 +51,56 @@ export default function Navbar() {
     <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
       <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center space-x-2 group cursor-pointer">
+        <Link to="/" className="flex items-center space-x-2 group cursor-pointer">
           <span className="text-2xl group-hover:rotate-12 transition-transform duration-300">🐾</span>
           <span className="text-xl font-black tracking-tight text-slate-900">PawWiz</span>
-        </div>
+        </Link>
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center space-x-8">
-          {NAV_LINKS.map(link => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
-          <button className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
-            shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer">
-            SIGN IN
-          </button>
+          {NAV_LINKS.map(link => {
+            const isHome = location.pathname === '/';
+            const targetUrl = isHome ? link.href : `/${link.href}`;
+            return (
+              <a
+                key={link.href}
+                href={targetUrl}
+                className="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors"
+                onClick={(e) => {
+                  if (isHome) {
+                    e.preventDefault();
+                    document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              >
+                {link.label}
+              </a>
+            );
+          })}
+          {user ? (
+            <button onClick={handleLogout} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100 cursor-pointer">
+              LOGOUT
+            </button>
+          ) : (
+            <Link to="/login" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
+              shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center">
+              SIGN IN
+            </Link>
+          )}
         </div>
 
         {/* Mobile: Sign In + Hamburger */}
         <div className="flex items-center gap-3 md:hidden">
-          <button className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
-            shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer">
-            SIGN IN
-          </button>
+          {user ? (
+            <button onClick={handleLogout} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100 cursor-pointer">
+              LOGOUT
+            </button>
+          ) : (
+            <Link to="/login" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
+              shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center">
+              SIGN IN
+            </Link>
+          )}
           <button
             onClick={() => setMenuOpen(prev => !prev)}
             aria-label="Toggle menu"
@@ -84,24 +129,34 @@ export default function Navbar() {
         style={{ willChange: 'max-height, opacity, transform' }}
       >
         <div className="px-5 py-3 flex flex-col gap-1">
-          {NAV_LINKS.map((link, i) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className="text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-3 rounded-lg transition-all"
-              style={{
-                transform: menuOpen ? 'translateX(0)' : 'translateX(-8px)',
-                opacity: menuOpen ? 1 : 0,
-                transitionProperty: 'transform, opacity',
-                transitionDuration: '250ms, 250ms',
-                transitionTimingFunction: 'ease, ease',
-                transitionDelay: menuOpen ? `${i * 40}ms, ${i * 40}ms` : '0ms, 0ms',
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link, i) => {
+            const isHome = location.pathname === '/';
+            const targetUrl = isHome ? link.href : `/${link.href}`;
+            return (
+              <a
+                key={link.href}
+                href={targetUrl}
+                onClick={(e) => {
+                  setMenuOpen(false);
+                  if (isHome) {
+                    e.preventDefault();
+                    document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-3 rounded-lg transition-all"
+                style={{
+                  transform: menuOpen ? 'translateX(0)' : 'translateX(-8px)',
+                  opacity: menuOpen ? 1 : 0,
+                  transitionProperty: 'transform, opacity',
+                  transitionDuration: '250ms, 250ms',
+                  transitionTimingFunction: 'ease, ease',
+                  transitionDelay: menuOpen ? `${i * 40}ms, ${i * 40}ms` : '0ms, 0ms',
+                }}
+              >
+                {link.label}
+              </a>
+            );
+          })}
         </div>
       </div>
     </nav>

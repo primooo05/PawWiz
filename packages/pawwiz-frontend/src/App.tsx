@@ -1,15 +1,8 @@
 
 import Navbar from './components/Navbar';
-import Hero from './components/landing/Hero';
-import PregnancySection from './components/landing/PregnancySection';
-import DietSection from './components/landing/DietSection';
-import BehaviorSection from './components/landing/BehaviorSection';
-import ContactSection from './components/landing/ContactSection';
 import Footer from './components/Footer';
 import ReturnToTop from './components/ReturnToTop';
-
-// Smart api base detection
-const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+import { Outlet } from 'react-router-dom';
 
 export default function App() {
   return (
@@ -17,13 +10,11 @@ export default function App() {
       {/* Premium background radial glows */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(233,196,106,0.07),transparent_50%),radial-gradient(ellipse_at_bottom,rgba(46,196,182,0.07),transparent_50%)] pointer-events-none" />
       
-      <div className="relative z-10 pt-16">
+      <div className="relative z-10 pt-16 flex flex-col min-h-screen">
         <Navbar />
-        <Hero apiBase={API_BASE} />
-        <PregnancySection />
-        <DietSection />
-        <BehaviorSection apiBase={API_BASE} />
-        <ContactSection />
+        <main className="flex-grow">
+          <Outlet />
+        </main>
         <Footer />
         <ReturnToTop />
       </div>

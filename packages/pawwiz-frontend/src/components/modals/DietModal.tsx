@@ -9,9 +9,8 @@ interface DietModalProps {
 export default function DietModal({ isOpen, onClose }: DietModalProps) {
   useBodyScrollLock(isOpen);
   const {
-    isKg, weight, setWeight, age, setAge,
-    activity, setActivity,
-    selectedConditions, customCondition, setCustomCondition,
+    form,
+    isKg,
     dietPlan, dietLoading,
     toggleCondition, toggleUnit, handleCalculateDiet,
   } = useDietPlanner();
@@ -54,8 +53,8 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-[#2ec4b6]">
                     {isKg 
-                      ? (weight >= 13 ? "13.0+ kg" : `${weight.toFixed(1)} kg`) 
-                      : (weight >= 28.6 ? "28.6+ lbs" : `${weight.toFixed(1)} lbs`)
+                      ? (form.values.weight >= 13 ? "13.0+ kg" : `${form.values.weight.toFixed(1)} kg`) 
+                      : (form.values.weight >= 28.6 ? "28.6+ lbs" : `${form.values.weight.toFixed(1)} lbs`)
                     }
                   </span>
                   <div className="bg-slate-100 p-0.5 rounded-lg flex items-center border border-slate-200/50">
@@ -81,8 +80,9 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
                 min={isKg ? "1" : "2.2"}
                 max={isKg ? "13" : "28.6"}
                 step={isKg ? "0.1" : "0.2"}
-                value={weight}
-                onChange={(e) => setWeight(parseFloat(e.target.value))}
+                value={form.values.weight}
+                onChange={(e) => form.handleChange('weight', parseFloat(e.target.value))}
+                onBlur={() => form.handleBlur('weight')}
                 className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
               />
             </div>
@@ -91,15 +91,16 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
             <div className="space-y-3">
               <div className="flex justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
                 <span>Age:</span>
-                <span className="font-extrabold text-[#2ec4b6]">{age} years</span>
+                <span className="font-extrabold text-[#2ec4b6]">{form.values.age} years</span>
               </div>
               <input
                 type="range"
                 min="1"
                 max="20"
                 step="1"
-                value={age}
-                onChange={(e) => setAge(parseInt(e.target.value))}
+                value={form.values.age}
+                onChange={(e) => form.handleChange('age', parseInt(e.target.value))}
+                onBlur={() => form.handleBlur('age')}
                 className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
               />
             </div>
@@ -112,9 +113,9 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
                   <button
                     key={lvl}
                     type="button"
-                    onClick={() => setActivity(lvl)}
+                    onClick={() => form.handleChange('activity', lvl)}
                     className={`flex-1 py-3 text-xs font-bold rounded-xl capitalize border transition-all cursor-pointer ${
-                      activity === lvl
+                      form.values.activity === lvl
                         ? 'bg-[#2ec4b6]/10 border-[#2ec4b6] text-[#2ec4b6] shadow-sm'
                         : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
                     }`}
@@ -124,11 +125,11 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
                 ))}
               </div>
               
-              {activity && (
+              {form.values.activity && (
                 <p className="text-[11px] text-slate-500 font-medium italic mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/40">
-                  {activity === 'sedentary' && "Sedentary: Mainly indoors, sleeps most of the day, low active play."}
-                  {activity === 'moderate' && "Moderate: Typical indoor cat, active play sessions, normal energy."}
-                  {activity === 'active' && "Active: High energy, outdoor explorer, constant active play / zoomies."}
+                  {form.values.activity === 'sedentary' && "Sedentary: Mainly indoors, sleeps most of the day, low active play."}
+                  {form.values.activity === 'moderate' && "Moderate: Typical indoor cat, active play sessions, normal energy."}
+                  {form.values.activity === 'active' && "Active: High energy, outdoor explorer, constant active play / zoomies."}
                 </p>
               )}
             </div>
@@ -143,12 +144,12 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
                     type="button"
                     onClick={() => toggleCondition(cond)}
                     className={`py-3 px-3 text-left text-[11px] font-bold rounded-xl border transition-all truncate cursor-pointer ${
-                      selectedConditions.includes(cond)
+                      form.values.selectedConditions.includes(cond)
                         ? 'bg-[#2ec4b6]/10 border-[#2ec4b6] text-[#2ec4b6] shadow-sm'
                         : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'
                     }`}
                   >
-                    {selectedConditions.includes(cond) ? '✓ ' : '+ '} {cond}
+                    {form.values.selectedConditions.includes(cond) ? '✓ ' : '+ '} {cond}
                   </button>
                 ))}
               </div>
@@ -158,8 +159,8 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
                 <input
                   type="text"
                   placeholder="e.g. Hyperthyroidism, Arthritis"
-                  value={customCondition}
-                  onChange={(e) => setCustomCondition(e.target.value)}
+                  value={form.values.customCondition || ''}
+                  onChange={(e) => form.handleChange('customCondition', e.target.value)}
                   className="w-full text-xs font-semibold px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:border-[#2ec4b6] focus:bg-white text-slate-700 placeholder-slate-400 transition-all"
                 />
               </div>
@@ -168,14 +169,14 @@ export default function DietModal({ isOpen, onClose }: DietModalProps) {
             <button
               type="button"
               onClick={handleCalculateDiet}
-              disabled={dietLoading || !activity}
+              disabled={dietLoading || !form.isValid}
               className={`w-full font-extrabold py-4 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer ${
-                !activity 
+                !form.isValid 
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
                   : 'bg-[#2ec4b6] hover:bg-[#259b90] text-white'
               }`}
             >
-              {dietLoading ? 'Calculating...' : !activity ? 'Select Activity First' : 'Generate Plan'}
+              {dietLoading ? 'Calculating...' : !form.isValid ? 'Select Activity First' : 'Generate Plan'}
             </button>
           </div>
 

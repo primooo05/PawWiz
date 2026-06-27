@@ -1,32 +1,34 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fc from 'fast-check';
 import jwt from 'jsonwebtoken';
 import { authMiddleware } from '../auth.js';
 import type { Request, Response, NextFunction } from 'express';
 
 describe('Auth Middleware', () => {
-  let mockReq: Partial<Request>;
-  let mockRes: Partial<Response>;
-  let mockNext: NextFunction;
+  const TEST_SECRET = 'test-secret';
 
   beforeEach(() => {
-    mockRes = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    };
-    mockNext = vi.fn();
+    vi.stubEnv('SUPABASE_JWT_SECRET', TEST_SECRET);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('should populate req.user and call next when provided a valid JWT', async () => {
     const validSubs = fc.uuid();
-    const testSecret = process.env.SUPABASE_JWT_SECRET as string;
     
     await fc.assert(
       fc.asyncProperty(validSubs, async (sub) => {
-        const token = jwt.sign({ sub, email: 'test@example.com' }, testSecret, { expiresIn: '1h' });
-        mockReq = { headers: { authorization: `Bearer ${token}` } };
+        const token = jwt.sign({ sub, email: 'test@example.com' }, TEST_SECRET, { expiresIn: '1h' });
+        const mockReq = { headers: { authorization: `Bearer ${token}` } } as Partial<Request>;
+        const mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn(),
+        } as unknown as Response;
+        const mockNext = vi.fn();
         
-        authMiddleware(mockReq as Request, mockRes as Response, mockNext);
+        authMiddleware(mockReq as Request, mockRes, mockNext);
         
         expect(mockNext).toHaveBeenCalled();
         expect(mockReq.user?.sub).toBe(sub);
@@ -34,21 +36,37 @@ describe('Auth Middleware', () => {
     );
   });
 
-  it('should reject with 401 when token is invalid or missing', async () => {
+  it('should reject with 401 when token is invalid or tampered', async () => {
     const invalidTokens = fc.string();
     
     await fc.assert(
       fc.asyncProperty(invalidTokens, async (token) => {
-        mockReq = { headers: { authorization: `Bearer ${token}` } };
-        authMiddleware(mockReq as Request, mockRes as Response, mockNext);
+        const mockReq = { headers: { authorization: `Bearer ${token}` } } as Partial<Request>;
+        const mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn(),
+        } as unknown as Response;
+        const mockNext = vi.fn();
+
+        authMiddleware(mockReq as Request, mockRes, mockNext);
+        
         expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Unauthorized - Invalid token' });
       })
     );
   });
 
   it('should reject with 401 when Authorization header is missing', () => {
-    mockReq = { headers: {} };
-    authMiddleware(mockReq as Request, mockRes as Response, mockNext);
+    const mockReq = { headers: {} } as Partial<Request>;
+    const mockRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    } as unknown as Response;
+    const mockNext = vi.fn();
+
+    authMiddleware(mockReq as Request, mockRes, mockNext);
+    
     expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: 'Unauthorized - Missing or invalid token format' });
   });
 });
