@@ -46,6 +46,81 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
+  const [activeSection, setActiveSection] = useState('home');
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const navContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll spy observer
+  useEffect(() => {
+    const isHome = location.pathname === '/';
+    if (!isHome) {
+      setActiveSection('');
+      return;
+    }
+
+    const sections = NAV_LINKS.map(link => link.href.replace('#', ''));
+    const observerOptions = {
+      root: null,
+      rootMargin: '-30% 0px -60% 0px',
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, observerOptions);
+
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [location.pathname]);
+
+  // Update sliding indicator style
+  useEffect(() => {
+    if (!activeSection) {
+      setIndicatorStyle({ left: 0, width: 0 });
+      return;
+    }
+
+    const container = navContainerRef.current;
+    if (!container) return;
+
+    const activeLink = container.querySelector(`[data-section="${activeSection}"]`) as HTMLElement;
+    if (activeLink) {
+      setIndicatorStyle({
+        left: activeLink.offsetLeft,
+        width: activeLink.offsetWidth,
+      });
+    } else {
+      setIndicatorStyle({ left: 0, width: 0 });
+    }
+  }, [activeSection]);
+
+  // Handle window resize for indicator
+  useEffect(() => {
+    const handleResize = () => {
+      if (!activeSection) return;
+      const container = navContainerRef.current;
+      if (!container) return;
+      const activeLink = container.querySelector(`[data-section="${activeSection}"]`) as HTMLElement;
+      if (activeLink) {
+        setIndicatorStyle({
+          left: activeLink.offsetLeft,
+          width: activeLink.offsetWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeSection]);
+
   return (
     // Close on outside click (ref on <nav> so hamburger doesn't fight the handler)
     <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
@@ -57,14 +132,28 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center space-x-8">
+        <div ref={navContainerRef} className="hidden md:flex items-center space-x-8 relative py-1">
+          {/* Sliding indicator line */}
+          <div
+            className="absolute bottom-[-10px] h-[3px] bg-[#2ec4b6] rounded-full transition-all duration-300 ease-out"
+            style={{
+              left: indicatorStyle.left,
+              width: indicatorStyle.width,
+              opacity: activeSection ? 1 : 0,
+            }}
+          />
           {NAV_LINKS.map(link => {
             const isHome = location.pathname === '/';
+            const sectionId = link.href.replace('#', '');
+            const isActive = activeSection === sectionId;
             return (
               <a
                 key={link.href}
                 href={isHome ? link.href : `/${link.href}`}
-                className="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors"
+                data-section={sectionId}
+                className={`text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
+                  isActive ? 'text-[#2ec4b6]' : 'text-slate-500 hover:text-slate-900'
+                }`}
                 onClick={(e) => {
                   e.preventDefault();
                   if (isHome) {
@@ -84,9 +173,9 @@ export default function Navbar() {
               LOGOUT
             </button>
           ) : (
-            <Link to="/login" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
+            <Link to="/onboarding" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
               shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center">
-              SIGN IN
+              GET STARTED
             </Link>
           )}
         </div>
@@ -98,9 +187,9 @@ export default function Navbar() {
               LOGOUT
             </button>
           ) : (
-            <Link to="/login" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
+            <Link to="/onboarding" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
               shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center">
-              SIGN IN
+              GET STARTED
             </Link>
           )}
           <button
@@ -148,7 +237,11 @@ export default function Navbar() {
                     navigate(`/${link.href}`);
                   }
                 }}
-                className="text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-3 rounded-lg transition-all"
+                className={`text-xs font-bold uppercase tracking-wider px-3 py-3 rounded-lg transition-all ${
+                  activeSection === link.href.replace('#', '')
+                    ? 'text-[#2ec4b6] bg-slate-50'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
                 style={{
                   transform: menuOpen ? 'translateX(0)' : 'translateX(-8px)',
                   opacity: menuOpen ? 1 : 0,

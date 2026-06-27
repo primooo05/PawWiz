@@ -94,3 +94,40 @@ body {
 .stagger-4 { transition-delay: 240ms; }
 .stagger-5 { transition-delay: 320ms; }
 .stagger-6 { transition-delay: 400ms; }
+
+/* Onboarding float animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* Ripple animation */
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-span {
+  position: absolute;
+  border-radius: 50%;
+  background-color: #2ec4b6;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: ripple 600ms ease-out;
+}
+
+
