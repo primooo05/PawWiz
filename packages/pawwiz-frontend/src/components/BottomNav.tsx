@@ -29,7 +29,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem = 'dashboard', onItemC
     return (
         <nav
             aria-label="Bottom navigation"
-            className={`mx-auto w-fit rounded-[1.75rem] border-2 border-slate-200 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)] backdrop-blur ${className}`}
+            className={`mx-auto w-fit rounded-[1.75rem] border-2 border-slate-900 bg-[#15AFB4] px-5 py-3 shadow-[0_4px_0_0_#1e293b] ${className}`}
         >
             <div className="flex items-center gap-6 sm:gap-8">
                 {NAV_ITEMS.map((item) => {
@@ -42,13 +42,20 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem = 'dashboard', onItemC
                             onClick={() => onItemClick?.(item.key)}
                             aria-label={item.label}
                             aria-current={isActive ? 'page' : undefined}
-                            className={`flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all duration-200 ${
+                            className={`flex h-14 w-16 items-center justify-center rounded-[1.25rem] border-2 transition-all duration-200 ${
                                 isActive
-                                    ? 'border-teal-500 bg-teal-50 shadow-[0_6px_16px_rgba(20,184,166,0.15)]'
-                                    : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-slate-50'
+                                    ? 'border-slate-900 bg-[#FFB870]'
+                                    : 'border-transparent bg-transparent hover:bg-black/10'
                             }`}
                         >
-                            <img src={item.icon} alt="" className="h-10 w-10 object-contain" />
+                            <img
+                                src={item.icon}
+                                alt=""
+                                className="h-10 w-10 object-contain"
+                                style={{
+                                    filter: isActive ? 'brightness(0)' : 'brightness(0) invert(1)',
+                                }}
+                            />
                         </button>
                     );
                 })}
