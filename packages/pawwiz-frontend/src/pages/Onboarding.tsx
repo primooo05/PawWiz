@@ -6,6 +6,7 @@ import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
 import { OnboardingScreen4 } from '../components/onboarding/OnboardingScreen4';
 import { OnboardingScreen5 } from '../components/onboarding/OnboardingScreen5';
 import { OnboardingScreen6 } from '../components/onboarding/OnboardingScreen6';
+import { useOnboarding } from '../hooks/useOnboarding';
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -18,22 +19,74 @@ export default function Onboarding() {
     setSearchParams({ step: nextStep.toString() });
   };
 
-  const [ownerName, setOwnerName] = useState('');
+  const {
+    sessionId,
+    ownerName,
+    setOwnerName,
+    catsCount,
+    setCatsCount,
+    customCatsCount,
+    setCustomCatsCount,
+    catName,
+    setCatName,
+    catBreed,
+    setCatBreed,
+    catMarking,
+    setCatMarking,
+    catSex,
+    setCatSex,
+    catLifeStage,
+    setCatLifeStage,
+    initializeSession,
+    fetchSession,
+    submitStep,
+  } = useOnboarding();
 
-  
-  // Screen 3 states
-  const [catsCount, setCatsCount] = useState('');
-  const [customCatsCount, setCustomCatsCount] = useState('');
-
-  // Screen 4 states
-  const [catName, setCatName] = useState('');
-  const [catBreed, setCatBreed] = useState('');
-  const [catMarking, setCatMarking] = useState('');
-  const [catSex, setCatSex] = useState('');
-  const [catLifeStage, setCatLifeStage] = useState('');
+  const [loadingGuard, setLoadingGuard] = useState(false);
+  const [initialChecked, setInitialChecked] = useState(false);
 
   const [rippleStyle, setRippleStyle] = useState<React.CSSProperties | null>(null);
   const [isClicked, setIsClicked] = useState(false);
+
+  // Routing Guard to prevent step tampering and flow skipping
+  useEffect(() => {
+    let active = true;
+
+    const runGuard = async () => {
+      if (step === 1) {
+        if (active) setInitialChecked(true);
+        return;
+      }
+
+      if (!sessionId) {
+        if (active) {
+          setStep(1);
+          setInitialChecked(true);
+        }
+        return;
+      }
+
+      if (active) setLoadingGuard(true);
+      const data = await fetchSession(sessionId);
+      if (!active) return;
+      setLoadingGuard(false);
+
+      if (!data) {
+        setStep(1);
+      } else if (step > data.step) {
+        setStep(data.step);
+      }
+      setInitialChecked(true);
+    };
+
+    runGuard();
+
+    return () => {
+      active = false;
+    };
+  }, [step, sessionId, fetchSession]);
+
+
 
   // Transition and Typing states
   const [isTransitioning, setIsTransitioning] = useState(
@@ -102,13 +155,18 @@ export default function Onboarding() {
     }, 450);
   };
 
-  const handleCreateAccountClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCreateAccountClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsTransitioning(true);
     
     // Scale up to cover screen over 2 seconds (matching the 2000ms duration)
+    const session = await initializeSession();
     setTimeout(() => {
-      setStep(2);
+      if (session) {
+        setStep(2);
+      } else {
+        setStep(2); // Fallback
+      }
       setIsTransitioning(false);
     }, 2000);
   };
@@ -151,7 +209,8 @@ export default function Onboarding() {
     }, 2000);
   };
 
-  const handleNextClick = () => {
+
+  const handleNextClick = async () => {
     if (isTyping) return; // Prevent double clicks
     
     if (step === 2) {
@@ -167,7 +226,7 @@ export default function Onboarding() {
       let currentText = '';
       let index = 0;
 
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         if (index < fullText.length) {
           currentText += fullText[index];
           setBubbleText(currentText);
@@ -177,14 +236,23 @@ export default function Onboarding() {
           setIsTyping(false);
           
           if (hasName) {
-            // Delay circular scale transition to start AFTER typing finishes
-            setTimeout(() => {
-              setIsTransitioning(true);
+            const success = await submitStep(2, { ownerName: nameToUse });
+            if (success) {
+              // Delay circular scale transition to start AFTER typing finishes
               setTimeout(() => {
-                setStep(3);
-                setIsTransitioning(false);
-              }, 2000);
-            }, 1000); // Trigger transition 1 second after typing finishes
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  setStep(3);
+                  setIsTransitioning(false);
+                }, 2000);
+              }, 1000); // Trigger transition 1 second after typing finishes
+            } else {
+              setBubbleText("Oh no, I couldn't save your name. Try again, meow!");
+              setTimeout(() => {
+                setShowBubble(false);
+                setBubbleText('');
+              }, 3000);
+            }
           } else {
             // If empty, let them try again. Hide bubble after 3s so they can edit
             setTimeout(() => {
@@ -205,7 +273,7 @@ export default function Onboarding() {
       let currentText = '';
       let index = 0;
 
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         if (index < fullText.length) {
           currentText += fullText[index];
           setBubbleText(currentText);
@@ -214,14 +282,31 @@ export default function Onboarding() {
           clearInterval(interval);
           setIsTyping(false);
 
-          // Transition to Step 4 after typing finishes
-          setTimeout(() => {
-            setIsTransitioning(true);
+          if (hasCats) {
+            const success = await submitStep(3, { catsCount, customCatsCount });
+            if (success) {
+              // Transition to Step 4 after typing finishes
+              setTimeout(() => {
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  setStep(4);
+                  setIsTransitioning(false);
+                }, 2000);
+              }, 1000);
+            } else {
+              setBubbleText("Oh no, I couldn't save the cat count. Try again, meow!");
+              setTimeout(() => {
+                setShowBubble(false);
+                setBubbleText('');
+              }, 3000);
+            }
+          } else {
+            // Hide bubble after 3s so they can edit
             setTimeout(() => {
-              setStep(4);
-              setIsTransitioning(false);
-            }, 2000);
-          }, 1000);
+              setShowBubble(false);
+              setBubbleText('');
+            }, 3000);
+          }
         }
       }, 45);
     } else if (step === 4) {
@@ -245,7 +330,7 @@ export default function Onboarding() {
       let currentText = '';
       let index = 0;
 
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         if (index < fullText.length) {
           currentText += fullText[index];
           setBubbleText(currentText);
@@ -255,14 +340,23 @@ export default function Onboarding() {
           setIsTyping(false);
 
           if (isValid) {
-            // Transition to Step 5 after typing finishes
-            setTimeout(() => {
-              setIsTransitioning(true);
+            const success = await submitStep(4, { catName, catBreed, catMarking, catSex });
+            if (success) {
+              // Transition to Step 5 after typing finishes
               setTimeout(() => {
-                setStep(5);
-                setIsTransitioning(false);
-              }, 2000);
-            }, 1000);
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  setStep(5);
+                  setIsTransitioning(false);
+                }, 2000);
+              }, 1000);
+            } else {
+              setBubbleText("Oh no, I couldn't save your cat details. Try again, meow!");
+              setTimeout(() => {
+                setShowBubble(false);
+                setBubbleText('');
+              }, 3000);
+            }
           } else {
             // Hide bubble after 3s so they can edit
             setTimeout(() => {
@@ -289,7 +383,7 @@ export default function Onboarding() {
       let currentText = '';
       let index = 0;
 
-      const interval = setInterval(() => {
+      const interval = setInterval(async () => {
         if (index < fullText.length) {
           currentText += fullText[index];
           setBubbleText(currentText);
@@ -299,14 +393,23 @@ export default function Onboarding() {
           setIsTyping(false);
 
           if (isValid) {
-            // Transition to Step 6 after typing finishes
-            setTimeout(() => {
-              setIsTransitioning(true);
+            const success = await submitStep(5, { catLifeStage });
+            if (success) {
+              // Transition to Step 6 after typing finishes
               setTimeout(() => {
-                setStep(6);
-                setIsTransitioning(false);
-              }, 2000);
-            }, 1000);
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  setStep(6);
+                  setIsTransitioning(false);
+                }, 2000);
+              }, 1000);
+            } else {
+              setBubbleText("Oh no, I couldn't save your cat's life stage. Try again, meow!");
+              setTimeout(() => {
+                setShowBubble(false);
+                setBubbleText('');
+              }, 3000);
+            }
           } else {
             // Hide bubble after 3s so they can edit
             setTimeout(() => {
@@ -338,8 +441,21 @@ export default function Onboarding() {
     }
   };
 
+
+  if (loadingGuard || (step > 1 && !initialChecked)) {
+    return (
+      <div className="min-h-screen w-full bg-white bg-grid-pattern flex flex-col justify-center items-center">
+        <div className="w-16 h-16 border-4 border-[#2ec4b6] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-slate-600 font-extrabold text-lg tracking-wider animate-pulse">
+          Syncing with Wiz...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center py-12 px-6">
+
 
       {/* Decorative Circles */}
       <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left z-50 ${
