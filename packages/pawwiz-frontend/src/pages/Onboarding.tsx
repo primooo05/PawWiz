@@ -13,7 +13,11 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const step = parseInt(searchParams.get('step') || '1', 10);
+
+  // Clamp step to valid range [1..6]. If the param is NaN or out-of-range,
+  // fall back to 1 to prevent blank renders or unexpected behavior.
+  const rawStep = parseInt(searchParams.get('step') || '1', 10);
+  const step = Number.isNaN(rawStep) || rawStep < 1 || rawStep > 6 ? 1 : rawStep;
 
   const setStep = (newStep: number | ((prev: number) => number)) => {
     const nextStep = typeof newStep === 'function' ? newStep(step) : newStep;
