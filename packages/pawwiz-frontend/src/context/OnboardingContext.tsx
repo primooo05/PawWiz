@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useOnboarding } from '../hooks/useOnboarding';
 
@@ -34,6 +34,12 @@ interface OnboardingContextValue {
   setCatSex: (v: string) => void;
   catLifeStage: string;
   setCatLifeStage: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (v: string) => void;
+  catsAdded: number;
+  setCatsAdded: (v: number | ((prev: number) => number)) => void;
 
   // API methods
   initializeSession: () => Promise<any>;
@@ -51,9 +57,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const [searchParams, setSearchParams] = useSearchParams();
   const onboarding = useOnboarding();
 
-  // Clamp step to valid range [1..6]
+  // Password state (local to frontend, never persisted to backend session)
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  // Track how many cats the user has actually added profiles for
+  const [catsAdded, setCatsAdded] = useState(0);
+
+  // Clamp step to valid range [1..7]
   const rawStep = parseInt(searchParams.get('step') || '1', 10);
-  const step = Number.isNaN(rawStep) || rawStep < 1 || rawStep > 6 ? 1 : rawStep;
+  const step = Number.isNaN(rawStep) || rawStep < 1 || rawStep > 7 ? 1 : rawStep;
 
   const setStep = useCallback(
     (newStep: number | ((prev: number) => number)) => {
@@ -88,6 +100,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         setCatSex: onboarding.setCatSex,
         catLifeStage: onboarding.catLifeStage,
         setCatLifeStage: onboarding.setCatLifeStage,
+        password,
+        setPassword,
+        confirmPassword,
+        setConfirmPassword,
+        catsAdded,
+        setCatsAdded,
         initializeSession: onboarding.initializeSession,
         fetchSession: onboarding.fetchSession,
         submitStep: onboarding.submitStep,

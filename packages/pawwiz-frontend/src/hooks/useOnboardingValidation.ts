@@ -68,6 +68,43 @@ export function validateStep5(catLifeStage: string): ValidationResult {
   return { isValid: true, message: `Awesome! A wonderful ${catLifeStage.toLowerCase()} cat!` };
 }
 
+export function validateStep7(password: string, confirmPassword: string): ValidationResult {
+  if (password.length === 0) {
+    return { isValid: false, message: "You need a password to protect your profile, meow!" };
+  }
+  if (password.length < 12) {
+    return { isValid: false, message: "Password must be at least 12 characters long!" };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { isValid: false, message: "Add an uppercase letter to make it stronger!" };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { isValid: false, message: "Add a lowercase letter too, meow!" };
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(password)) {
+    return { isValid: false, message: "Spice it up with a special character!" };
+  }
+  if (/\s/.test(password)) {
+    return { isValid: false, message: "No spaces allowed in passwords, meow!" };
+  }
+  if (confirmPassword.length === 0) {
+    return { isValid: false, message: "Please confirm your password, meow!" };
+  }
+  if (password !== confirmPassword) {
+    return { isValid: false, message: "Passwords don't match! Try again, meow!" };
+  }
+
+  return { isValid: true, message: "Purr-fect! Your account is being created..." };
+}
+
+/**
+ * Resolves the total number of cats the user indicated they have.
+ */
+export function getResolvedCatsCount(catsCount: string, customCatsCount: string): number {
+  const parsed = parseCatsCount(catsCount, customCatsCount);
+  return parsed ?? 1;
+}
+
 /**
  * Parses the cats count from either the preset option or custom text input.
  */

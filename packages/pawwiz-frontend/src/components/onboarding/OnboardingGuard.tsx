@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect } from 'react';
 import { useOnboardingContext } from '../../context/OnboardingContext';
 
 /**
@@ -42,7 +42,12 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
       }
 
       // Client-side fast rejection: step ahead of known session progress
-      if (initialChecked && sessionStep > 0 && step > sessionStep) {
+      // Step 7 is client-only (password entry), allowed once backend step >= 5
+      if (initialChecked && sessionStep > 0 && step > sessionStep && step !== 7) {
+        if (active) setStep(sessionStep);
+        return;
+      }
+      if (initialChecked && step === 7 && sessionStep < 5) {
         if (active) setStep(sessionStep);
         return;
       }
@@ -65,7 +70,9 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
 
       if (!data) {
         setStep(1);
-      } else if (step > data.step) {
+      } else if (step > data.step && step !== 7) {
+        setStep(data.step);
+      } else if (step === 7 && data.step < 5) {
         setStep(data.step);
       }
       setInitialChecked(true);
@@ -79,7 +86,7 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
   }, [step, sessionId, fetchSession, initialChecked, sessionStep, setStep]);
 
   // Show spinner while guarding
-  const isStepAhead = initialChecked && sessionStep > 0 && step > sessionStep;
+  const isStepAhead = initialChecked && sessionStep > 0 && step > sessionStep && step !== 7;
 
   if (loadingGuard || (step > 1 && !initialChecked) || isStepAhead) {
     return (

@@ -6,6 +6,7 @@ import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
 import { OnboardingScreen4 } from '../components/onboarding/OnboardingScreen4';
 import { OnboardingScreen5 } from '../components/onboarding/OnboardingScreen5';
 import { OnboardingScreen6 } from '../components/onboarding/OnboardingScreen6';
+import { OnboardingScreen7 } from '../components/onboarding/OnboardingScreen7';
 import { OnboardingGuard } from '../components/onboarding/OnboardingGuard';
 import { OnboardingProvider, useOnboardingContext } from '../context/OnboardingContext';
 import { useTypewriter } from '../hooks/useTypewriter';
@@ -14,8 +15,11 @@ import {
   validateStep3,
   validateStep4,
   validateStep5,
+  validateStep7,
   getOtherCatsText,
+  getResolvedCatsCount,
 } from '../hooks/useOnboardingValidation';
+import { supabase } from '../lib/supabase';
 
 export default function Onboarding() {
   return (
@@ -53,6 +57,12 @@ function OnboardingView() {
     setCatSex,
     catLifeStage,
     setCatLifeStage,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    catsAdded,
+    setCatsAdded,
     initializeSession,
     submitStep,
   } = useOnboardingContext();
@@ -82,21 +92,26 @@ function OnboardingView() {
     }
   }, [location.state]);
 
-  // Show static bubble when entering steps 3-6
+  // Show static bubble when entering steps 3-7
   useEffect(() => {
     if (isTransitioning) return;
+
+    const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
 
     const messages: Record<number, string> = {
       3: 'How many cats do you have?',
       4: 'Wiz would like to know them!',
       5: 'How old is your Cat? Meow',
-      6: `Would you like to create a separate profile for other ${getOtherCatsText(catsCount, customCatsCount)}?`,
+      6: catsAdded >= totalCats
+        ? `You only have ${totalCats} remember? You can add more later!`
+        : `Would you like to create a separate profile for other ${getOtherCatsText(catsCount, customCatsCount)}?`,
+      7: "Enter your strongest password you can think of! Just make sure you don't forget! meow",
     };
 
     if (messages[step]) {
       showStaticBubble(messages[step]);
     }
-  }, [step, isTransitioning, catsCount, customCatsCount, showStaticBubble]);
+  }, [step, isTransitioning, catsCount, customCatsCount, catsAdded, showStaticBubble]);
 
   // --- Navigation helpers ---
 
@@ -111,7 +126,15 @@ function OnboardingView() {
 
   const handleBackClick = () => {
     if (isTyping) return;
-    transitionTo(step - 1);
+
+    // Custom back navigation based on current step
+    if (step === 7) {
+      // Going back from step 7: go to step 6 if multi-cat, else step 5
+      const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
+      transitionTo(totalCats > 1 ? 6 : 5);
+    } else {
+      transitionTo(step - 1);
+    }
   };
 
   const handleAlreadyHaveAccountClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -143,6 +166,15 @@ function OnboardingView() {
 
   const handleAddOtherBabies = () => {
     if (isTyping) return;
+
+    const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
+
+    // If user already added the max number of cats they indicated, show fallback message
+    if (catsAdded >= totalCats) {
+      showStaticBubble(`You only have ${totalCats} remember? You can add more later!`);
+      return;
+    }
+
     setIsTransitioning(true);
     setTimeout(() => {
       setCatName('');
@@ -233,7 +265,9 @@ function OnboardingView() {
       });
     } else if (step === 5) {
       if (sessionStep > 5 && !isStep5Dirty) {
-        transitionTo(6);
+        // Determine next step based on cat count
+        const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
+        transitionTo(totalCats > 1 ? 6 : 7);
         return;
       }
 
@@ -244,7 +278,12 @@ function OnboardingView() {
             const success = await submitStep(5, { catLifeStage });
             if (success) {
               setIsStep5Dirty(false);
-              setTimeout(() => transitionTo(6), 300);
+              // Increment cats added counter
+              setCatsAdded((prev: number) => prev + 1);
+              // If only 1 cat, skip step 6 and go directly to step 7
+              const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
+              const nextStep = totalCats > 1 ? 6 : 7;
+              setTimeout(() => transitionTo(nextStep), 300);
             } else {
               showStaticBubble("Oh no, I couldn't save your cat's life stage. Try again, meow!");
               setTimeout(() => hideBubble(), 3000);
@@ -255,11 +294,60 @@ function OnboardingView() {
         },
       });
     } else if (step === 6) {
-      startTyping("Purr-fect! Let's get your account set up now.", {
-        onComplete: () => {
-          setTimeout(() => navigate('/register'), 800);
+      // "Create Profile" on step 6 now transitions to step 7 (password)
+      transitionTo(7);
+    } else if (step === 7) {
+      const result = validateStep7(password, confirmPassword);
+      startTyping(result.message, {
+        onComplete: async () => {
+          if (result.isValid) {
+            await handleAccountCreation();
+          } else {
+            setTimeout(() => hideBubble(), 3000);
+          }
         },
       });
+    }
+  };
+
+  const handleAccountCreation = async () => {
+    try {
+      // 1. Create Supabase Auth account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: ownerEmail,
+        password: password,
+      });
+
+      if (authError) throw new Error(authError.message);
+      if (!authData.user) throw new Error('Failed to create account');
+
+      // 2. Create profile on backend
+      const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+      const response = await fetch(`${API_BASE}/api/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          supabaseUserId: authData.user.id,
+          displayName: ownerName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to create profile');
+      }
+
+      // Success — navigate to login
+      startTyping("Meow-velous! Your account is ready! Redirecting...", {
+        onComplete: () => {
+          setTimeout(() => navigate('/login?registered=true'), 800);
+        },
+      });
+    } catch (err: any) {
+      showStaticBubble(err.message || "Something went wrong creating your account. Try again!");
+      setTimeout(() => hideBubble(), 4000);
     }
   };
 
@@ -341,6 +429,18 @@ function OnboardingView() {
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
           handleAddOtherBabies={handleAddOtherBabies}
+        />
+        <OnboardingScreen7
+          active={step === 7 && !isTransitioning}
+          password={password}
+          setPassword={setPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          isTyping={isTyping}
+          showBubble={showBubble && step === 7}
+          bubbleText={bubbleText}
+          handleCreateProfileClick={handleNextClick}
+          handleBackClick={handleBackClick}
         />
       </div>
     </div>

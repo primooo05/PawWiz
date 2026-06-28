@@ -89,7 +89,7 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
               isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
             }`}
           >
-            Create Profile
+            Next
           </button>
         </div>
 
