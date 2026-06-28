@@ -4,7 +4,7 @@ import CycleProgressCard from './CycleProgressCard';
 import CalendarModule from './CalendarModule';
 import TodaySymptomsCard from './TodaySymptomsCard';
 import SymptomLogForm from './SymptomLogForm';
-import WeightPickerModal from './WeightPickerModal';
+import WeightPickerModal from '../modals/WeightPickerModal';
 import ConfirmationDialog from '../modals/ConfirmationDialog';
 import { useWeightManager } from '../../hooks/useWeightManager';
 import { AnimatePresence } from 'motion/react';

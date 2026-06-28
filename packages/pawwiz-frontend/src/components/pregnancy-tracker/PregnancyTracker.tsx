@@ -5,8 +5,10 @@ import SetupView from './SetupView';
 import DashboardView from './DashboardView';
 
 import { usePregnancyTracker } from '../../hooks/usePregnancyTracker';
+import { useNavigate } from 'react-router-dom';
 
 const CatPregnancyTracker: React.FC = () => {
+    const navigate = useNavigate();
     const {
         matingDate,
         setMatingDate,
@@ -47,6 +49,16 @@ const CatPregnancyTracker: React.FC = () => {
         e.preventDefault();
         if (matingDate) {
             setIsLoading(true);
+        }
+    };
+
+    const handleNavigation = (item: string) => {
+        if (item === 'calendar') {
+            navigate('/pregnancy-tracker');
+        } else if (item === 'dashboard') {
+            navigate('/');
+        } else if (item === 'diet-reco') {
+            navigate('/diet-recommender');
         }
     };
 
@@ -95,7 +107,7 @@ const CatPregnancyTracker: React.FC = () => {
             </main>
 
             <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-                <BottomNav activeItem="calendar" className="w-full max-w-sm md:w-auto md:scale-110" />
+                <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-sm md:w-auto md:scale-110" />
             </div>
 
             {isLoading && (
