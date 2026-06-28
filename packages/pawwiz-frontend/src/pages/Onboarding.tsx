@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
 import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
@@ -10,8 +10,16 @@ import { OnboardingScreen6 } from '../components/onboarding/OnboardingScreen6';
 export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const step = parseInt(searchParams.get('step') || '1', 10);
+
+  const setStep = (newStep: number | ((prev: number) => number)) => {
+    const nextStep = typeof newStep === 'function' ? newStep(step) : newStep;
+    setSearchParams({ step: nextStep.toString() });
+  };
+
   const [ownerName, setOwnerName] = useState('');
+
   
   // Screen 3 states
   const [catsCount, setCatsCount] = useState('');
