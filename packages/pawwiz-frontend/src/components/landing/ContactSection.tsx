@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import akiCat from '../../assets/aki_cat.png';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { contactSchema } from '../../schemas/features';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 const BUDGET_TIERS = [
   'Essential',
@@ -23,6 +24,7 @@ export default function ContactSection() {
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const sectionRef = useScrollReveal<HTMLElement>(0.08);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +41,7 @@ export default function ContactSection() {
   };
 
   return (
-    <section id="contact" className="w-full py-12 md:py-16 bg-[#2ec4b6] flex items-center justify-center px-4 md:px-8">
+    <section ref={sectionRef} id="contact" className="scroll-mt-20 w-full py-12 md:py-16 bg-[#2ec4b6] flex items-center justify-center px-4 md:px-8">
       {/* Outer Card with curved outline to match image mockup */}
       <div className="w-full max-w-5xl bg-white rounded-3xl md:rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden p-6 md:p-8 flex flex-col justify-between relative">
         
@@ -47,7 +49,7 @@ export default function ContactSection() {
           <div className="grid md:grid-cols-12 gap-6 items-stretch flex-1">
             {/* Left Column: Headline and Mascot illustration */}
             <div className="md:col-span-5 flex flex-col justify-start gap-y-6 text-left pr-0 md:pr-4">
-              <div>
+              <div className="reveal-item stagger-1">
                 <h2 className="text-2xl md:text-3.5xl font-black text-slate-900 leading-tight tracking-tight uppercase">
                   Let's Make <span className="text-[#2ec4b6]">Kitty Care</span> Worry-Free.
                 </h2>
@@ -57,7 +59,7 @@ export default function ContactSection() {
               </div>
 
               {/* Aki the Cat Image Placeholder */}
-              <div className="flex flex-col justify-start items-start">
+              <div className="reveal-item stagger-2 flex flex-col justify-start items-start">
                 <div className="w-full max-w-[280px] aspect-square rounded-3xl overflow-hidden border-4 border-slate-100 shadow-md bg-slate-100 flex items-center justify-center">
                   <img src={akiCat} alt="Aki the Cat" className="w-full h-full object-cover" />
                 </div>
@@ -68,7 +70,7 @@ export default function ContactSection() {
             </div>
 
             {/* Right Column: Contact Form */}
-            <div className="md:col-span-7 flex flex-col justify-center">
+            <div className="reveal-item stagger-3 md:col-span-7 flex flex-col justify-center">
               <form onSubmit={handleSubmit} className="bg-slate-50/70 p-5 md:p-6 rounded-2xl border border-slate-100 flex flex-col gap-3.5 text-left">
                 
                 {/* Full name & Email side-by-side or stacked */}

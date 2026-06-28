@@ -31,6 +31,8 @@ export default function ReturnToTop() {
           : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
       }`}
       aria-label="Return to top"
+      aria-hidden={!isVisible}
+      tabIndex={isVisible ? 0 : -1}
     >
       <svg
         className="w-6 h-6 stroke-[3]"

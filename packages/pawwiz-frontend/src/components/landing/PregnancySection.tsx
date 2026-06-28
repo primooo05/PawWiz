@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import PregnancyModal from '../modals/PregnancyModal';
 import { useModalToggle } from '../../hooks/useModalToggle';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useProfilePanel, type ProfileData } from '../../hooks/useProfilePanel';
 
 interface GestationWeekDetail {
   week: number;
@@ -80,18 +83,25 @@ const WEEKS: GestationWeekDetail[] = [
 export default function PregnancySection() {
   const { isOpen, open, close } = useModalToggle();
   const [activeWeek, setActiveWeek] = useState<number>(5);
+  const sectionRef = useScrollReveal<HTMLElement>();
+  const location = useLocation();
+  const locationState = location.state as { displayName?: string; catName?: string } | null;
+  const optimisticData = locationState?.displayName && locationState?.catName
+    ? { displayName: locationState.displayName, catName: locationState.catName }
+    : undefined;
+  const { profile, isLoading, isAuthenticated } = useProfilePanel(optimisticData);
 
   const currentWeekData = WEEKS.find(w => w.week === activeWeek) || WEEKS[4];
 
   return (
-    <section id="monitoring" className="w-full min-h-screen flex items-center justify-center border-b border-slate-100 relative bg-[#faf9f6] overflow-hidden">
+    <section ref={sectionRef} id="monitoring" className="scroll-mt-20 w-full min-h-screen flex items-center justify-center border-b border-slate-100 relative bg-[#faf9f6] overflow-hidden">
       
       <div className="max-w-5xl w-full mx-auto px-8 py-16 grid md:grid-cols-2 gap-16 items-center">
         
         {/* Left Column: Typography, Indented Stats, and Buttons */}
         <div className="space-y-8 text-left">
           {/* Eyebrow tag (Editorial Japanese-minimalist style) */}
-          <div className="flex items-center gap-2">
+          <div className="reveal-item stagger-1 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-[#2ec4b6] rotate-45 flex-shrink-0" />
             <span className="text-[10px] font-black tracking-[0.25em] text-[#2ec4b6] uppercase">
               LIFECYCLE TRACKING
@@ -99,18 +109,18 @@ export default function PregnancySection() {
           </div>
 
           {/* Heading with inline custom SVG paw icon */}
-          <h3 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight flex items-center gap-2">
+          <h3 className="reveal-item stagger-2 text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight flex items-center gap-2">
             <span>Monitor your Cat Pregnancy</span>
             <PlainPawIcon className="w-6 h-6 text-[#2ec4b6] flex-shrink-0 align-middle inline" />
           </h3>
 
           {/* Paragraph description */}
-          <p className="text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
+          <p className="reveal-item stagger-3 text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
             From mating to kittening, monitor and track every stage of your cat's pregnancy with a prep guide! Calculate progress, track milestones, and receive tailored warnings.
           </p>
 
           {/* Horizontal stat row (Indented slightly for genuine asymmetry) */}
-          <div className="flex items-center gap-6 border-y border-slate-200/50 py-4 max-w-md ml-4 md:ml-6">
+          <div className="reveal-item stagger-4 flex items-center gap-6 border-y border-slate-200/50 py-4 max-w-md ml-4 md:ml-6">
             <div className="flex-1">
               <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">63–67 days</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Gestation Period</span>
@@ -127,8 +137,11 @@ export default function PregnancySection() {
             </div>
           </div>
 
+          {/* Profile Panel */}
+          <ProfilePanel profile={profile} isLoading={isLoading} isAuthenticated={isAuthenticated} />
+
           {/* Button Row */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="reveal-item stagger-5 flex flex-wrap items-center gap-4">
             <button
               onClick={open}
               className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-8 py-3.5 rounded-full text-xs tracking-widest transition-all duration-100
@@ -149,7 +162,7 @@ export default function PregnancySection() {
         </div>
 
         {/* Right Column: WEEK PROGRESS PREVIEW Card (Clean journal dashboard format without visual box) */}
-        <div className="relative w-full max-w-sm mx-auto transform rotate-1 md:-rotate-2 md:translate-y-12 z-20 transition-all duration-500 hover:rotate-0 hover:scale-[1.02]">
+        <div className="reveal-item stagger-6 relative w-full max-w-sm mx-auto transform rotate-1 md:-rotate-2 md:translate-y-12 z-20 transition-all duration-500 hover:rotate-0 hover:scale-[1.02]">
           {/* Behind/around the card: one soft blurred color blob (teal, 15% opacity, ~200px, bottom-right) */}
           <div className="absolute -right-16 -bottom-16 w-[200px] h-[200px] bg-[#2ec4b6]/15 rounded-full filter blur-3xl pointer-events-none -z-10" />
 
@@ -241,5 +254,35 @@ export default function PregnancySection() {
 
       <PregnancyModal isOpen={isOpen} onClose={close} />
     </section>
+  );
+}
+
+function ProfilePanel({ profile, isLoading, isAuthenticated }: {
+  profile: ProfileData | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}) {
+  if (isLoading) {
+    return <div className="w-full h-20 rounded-xl bg-slate-100 animate-pulse" />;
+  }
+
+  if (!isAuthenticated || !profile) {
+    return (
+      <div className="rounded-xl border border-[#2ec4b6]/20 bg-[#f0faf9] p-4 text-sm">
+        <p className="font-bold text-slate-700">Track your cat's pregnancy journey</p>
+        <a href="/register" className="mt-2 inline-block text-[#2ec4b6] font-extrabold underline text-xs">
+          Create your free profile →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[#2ec4b6]/20 bg-[#f0faf9] p-4 space-y-1">
+      <p className="text-xs font-black text-[#2ec4b6] uppercase tracking-wider">Your Cat's Profile</p>
+      <p className="font-extrabold text-slate-900">{profile.catName}</p>
+      {profile.catBreed && <p className="text-sm text-slate-600">{profile.catBreed}</p>}
+      <p className="text-xs text-slate-500">{profile.catLifeStage} · owned by {profile.displayName}</p>
+    </div>
   );
 }

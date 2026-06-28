@@ -32,7 +32,8 @@ kiro-cli.exe
 .tokensave
 .agents
 .codegraph
+.rtk
 
-#Obsidian
+# ObsidianVault
 PawWiz-Context/.obsidian/
-PawWiz-Context/
+PawWiz-Context/.trash/

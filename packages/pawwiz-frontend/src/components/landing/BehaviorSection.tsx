@@ -2,6 +2,7 @@ import { useState } from 'react';
 import BehaviorModal from '../modals/BehaviorModal';
 import naughtyCat from '../../assets/Naughty_Cat.svg';
 import catScratch from '../../assets/Cat_Scratch.svg';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 interface BehaviorSectionProps {
   apiBase: string;
@@ -9,9 +10,10 @@ interface BehaviorSectionProps {
 
 export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const sectionRef = useScrollReveal<HTMLElement>();
 
   return (
-    <section id="behavior" className="w-full min-h-screen flex items-center justify-center border-b border-slate-100 relative bg-gradient-to-br from-slate-50/50 via-white to-amber-50/10">
+    <section ref={sectionRef} id="behavior" className="scroll-mt-20 w-full min-h-screen flex items-center justify-center border-b border-slate-100 relative bg-gradient-to-br from-slate-50/50 via-white to-amber-50/10">
       <div className="max-w-4xl w-full mx-auto px-6 py-12">
         <style>{`
         @keyframes naughtyCatFall {
@@ -39,21 +41,21 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
 
       {/* Main Title & Subtitle styled to match other sections */}
       <div className="space-y-5 text-center mb-10">
-        <div className="flex items-center justify-center gap-2">
+        <div className="reveal-item stagger-1 flex items-center justify-center gap-2">
           <span className="w-1.5 h-1.5 bg-[#2ec4b6] rotate-45 flex-shrink-0" />
           <span className="text-[10px] font-black tracking-[0.25em] text-[#2ec4b6] uppercase">
             Cognitive Translation
           </span>
         </div>
-        <h2 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">
+        <h2 className="reveal-item stagger-2 text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">
           WHY IS MY CAT LIKE THIS?
         </h2>
-        <p className="text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
+        <p className="reveal-item stagger-3 text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
           Ask "why does my cat do X?" — get a vet-informed explanation tailored to your cat's age, breed, and profile. From dead mouse gifts to 3 AM zoomies.
         </p>
       </div>
 
-      <div className="bg-[#2ec4b6] p-8 md:p-12 rounded-3xl md:rounded-[40px] text-left text-white shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_20px_50px_rgba(46,196,182,0.18)] relative overflow-hidden group">
+      <div className="reveal-item stagger-4 bg-[#2ec4b6] p-8 md:p-12 rounded-3xl md:rounded-[40px] text-left text-white shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_20px_50px_rgba(46,196,182,0.18)] relative overflow-hidden group">
         {/* Decorative inner background halo */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full filter blur-3xl pointer-events-none -mr-24 -mt-24 transition-transform duration-700 group-hover:scale-110" />
 

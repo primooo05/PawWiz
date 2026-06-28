@@ -14,14 +14,19 @@ import { profileService } from '../services/profile.service.js';
  */
 export const createProfile = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub;
-  const { displayName } = req.body;
+  const { displayName, onboardingSessionId } = req.body;
 
-  const profile = await profileService.createProfile(supabaseUserId, displayName);
+  const profile = await profileService.createProfile(supabaseUserId, displayName, onboardingSessionId);
 
   res.status(201).json({
     id: profile.id,
     supabaseUserId: profile.supabaseUserId,
     displayName: profile.displayName,
+    catName: profile.catName,
+    catBreed: profile.catBreed,
+    catMarking: profile.catMarking,
+    catSex: profile.catSex,
+    catLifeStage: profile.catLifeStage,
     createdAt: profile.createdAt,
   });
 });
@@ -39,6 +44,11 @@ export const getProfile = withErrorHandling(async (req: Request, res: Response) 
     id: profile.id,
     supabaseUserId: profile.supabaseUserId,
     displayName: profile.displayName,
+    catName: profile.catName,
+    catBreed: profile.catBreed,       // null when not set
+    catMarking: profile.catMarking,   // null when not set
+    catSex: profile.catSex,
+    catLifeStage: profile.catLifeStage,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
   });

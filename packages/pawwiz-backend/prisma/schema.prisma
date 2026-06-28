@@ -14,8 +14,33 @@ model Profile {
   id             String   @id @default(cuid())
   supabaseUserId String   @unique @map("supabase_user_id")
   displayName    String   @map("display_name")
+  catName        String   @map("cat_name")
+  catBreed       String?  @map("cat_breed")
+  catMarking     String?  @map("cat_marking")
+  catSex         String   @map("cat_sex")
+  catLifeStage   String   @map("cat_life_stage")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("profiles")
 }
+
+model OnboardingSession {
+  id              String   @id @default(uuid())
+  step            Int      @default(1)
+  ownerName       String?  @map("owner_name")
+  ownerEmail      String?  @map("owner_email")
+  catsCount       String?  @map("cats_count")
+  customCatsCount String?  @map("custom_cats_count")
+  catName         String?  @map("cat_name")
+  catBreed        String?  @map("cat_breed")
+  catMarking      String?  @map("cat_marking")
+  catSex          String?  @map("cat_sex")
+  catLifeStage    String?   @map("cat_life_stage")
+  consumedAt      DateTime? @map("consumed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("onboarding_sessions")
+}
+

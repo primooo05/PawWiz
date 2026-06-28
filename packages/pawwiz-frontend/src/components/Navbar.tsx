@@ -47,8 +47,93 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [menuOpen]);
 
+  const [activeSection, setActiveSection] = useState('home');
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+  const navContainerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll spy observer
+  useEffect(() => {
+    const isHome = location.pathname === '/';
+    if (!isHome) {
+      setActiveSection('');
+      return;
+    }
+
+    const sections = NAV_LINKS.map(link => link.href.replace('#', ''));
+    const observerOptions = {
+      root: null,
+      rootMargin: '-30% 0px -60% 0px',
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, observerOptions);
+
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [location.pathname]);
+
+  // Update sliding indicator style
+  useEffect(() => {
+    if (!activeSection) {
+      setIndicatorStyle({ left: 0, width: 0 });
+      return;
+    }
+
+    const container = navContainerRef.current;
+    if (!container) return;
+
+    const activeLink = container.querySelector(`[data-section="${activeSection}"]`) as HTMLElement;
+    if (activeLink) {
+      setIndicatorStyle({
+        left: activeLink.offsetLeft,
+        width: activeLink.offsetWidth,
+      });
+    } else {
+      setIndicatorStyle({ left: 0, width: 0 });
+    }
+  }, [activeSection]);
+
+  // Handle window resize for indicator
+  useEffect(() => {
+    const handleResize = () => {
+      if (!activeSection) return;
+      const container = navContainerRef.current;
+      if (!container) return;
+      const activeLink = container.querySelector(`[data-section="${activeSection}"]`) as HTMLElement;
+      if (activeLink) {
+        setIndicatorStyle({
+          left: activeLink.offsetLeft,
+          width: activeLink.offsetWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeSection]);
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleGetStartedClick = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      navigate('/onboarding', { state: { animateIn: true } });
+    }, 2000);
+  };
+
   return (
-    // Close on outside click (ref on <nav> so hamburger doesn't fight the handler)
+    <>
+      {/* Close on outside click (ref on <nav> so hamburger doesn't fight the handler) */}
     <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
       <div className="max-w-[1440px] mx-auto px-8 py-4 flex items-center justify-between">
         {/* Logo */}
@@ -57,19 +142,34 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center space-x-8">
+        <div ref={navContainerRef} className="hidden md:flex items-center space-x-8 relative py-1">
+          {/* Sliding indicator line */}
+          <div
+            className="absolute bottom-[-10px] h-[3px] bg-[#2ec4b6] rounded-full transition-all duration-300 ease-out"
+            style={{
+              left: indicatorStyle.left,
+              width: indicatorStyle.width,
+              opacity: activeSection ? 1 : 0,
+            }}
+          />
           {NAV_LINKS.map(link => {
             const isHome = location.pathname === '/';
-            const targetUrl = isHome ? link.href : `/${link.href}`;
+            const sectionId = link.href.replace('#', '');
+            const isActive = activeSection === sectionId;
             return (
               <a
                 key={link.href}
-                href={targetUrl}
-                className="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors"
+                href={isHome ? link.href : `/${link.href}`}
+                data-section={sectionId}
+                  className={`text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${isActive ? 'text-[#2ec4b6]' : 'text-slate-500 hover:text-slate-900'
+                }`}
                 onClick={(e) => {
+                  e.preventDefault();
                   if (isHome) {
-                    e.preventDefault();
                     document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                    window.history.replaceState(null, '', link.href);
+                  } else {
+                    navigate(`/${link.href}`);
                   }
                 }}
               >
@@ -82,10 +182,10 @@ export default function Navbar() {
               LOGOUT
             </button>
           ) : (
-            <Link to="/login" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
-              shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center">
-              SIGN IN
-            </Link>
+            <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
+              shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center border-none">
+              GET STARTED
+            </button>
           )}
         </div>
 
@@ -96,14 +196,15 @@ export default function Navbar() {
               LOGOUT
             </button>
           ) : (
-            <Link to="/login" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
-              shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center">
-              SIGN IN
-            </Link>
+            <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
+              shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center border-none">
+              GET STARTED
+            </button>
           )}
           <button
             onClick={() => setMenuOpen(prev => !prev)}
             aria-label="Toggle menu"
+            aria-expanded={menuOpen}
             className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
           >
             {/* Animated hamburger → X */}
@@ -131,19 +232,25 @@ export default function Navbar() {
         <div className="px-5 py-3 flex flex-col gap-1">
           {NAV_LINKS.map((link, i) => {
             const isHome = location.pathname === '/';
-            const targetUrl = isHome ? link.href : `/${link.href}`;
             return (
               <a
                 key={link.href}
-                href={targetUrl}
+                href={isHome ? link.href : `/${link.href}`}
                 onClick={(e) => {
+                  e.preventDefault();
                   setMenuOpen(false);
                   if (isHome) {
-                    e.preventDefault();
                     document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                    window.history.replaceState(null, '', link.href);
+                  } else {
+                    navigate(`/${link.href}`);
                   }
                 }}
-                className="text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-3 py-3 rounded-lg transition-all"
+                className={`text-xs font-bold uppercase tracking-wider px-3 py-3 rounded-lg transition-all ${
+                  activeSection === link.href.replace('#', '')
+                    ? 'text-[#2ec4b6] bg-slate-50'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
                 style={{
                   transform: menuOpen ? 'translateX(0)' : 'translateX(-8px)',
                   opacity: menuOpen ? 1 : 0,
@@ -159,6 +266,14 @@ export default function Navbar() {
           })}
         </div>
       </div>
-    </nav>
+      </nav>
+
+      {/* Decorative Circles expanding on click */}
+      <div className={`fixed inset-0 pointer-events-none z-[9999] overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+        <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 transition-transform duration-[2000ms] ease-in-out origin-top-right ${isTransitioning ? 'scale-[12]' : 'scale-0'}`} />
+        <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+      </div>
+    </>
   );
 }
