@@ -5,6 +5,8 @@ interface OnboardingScreen2Props {
   active: boolean;
   ownerName: string;
   setOwnerName: (name: string) => void;
+  ownerEmail: string;
+  setOwnerEmail: (email: string) => void;
   isTyping: boolean;
   showBubble: boolean;
   bubbleText: string;
@@ -16,6 +18,8 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
   active,
   ownerName,
   setOwnerName,
+  ownerEmail,
+  setOwnerEmail,
   isTyping,
   showBubble,
   bubbleText,
@@ -40,6 +44,16 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
           placeholder="Your Name (e.g., Ayla)"
           className="w-full px-5 py-4 border-2 border-[#2ec4b6] rounded-2xl outline-none focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-20 text-slate-800 font-semibold placeholder-slate-400 bg-white shadow-sm transition-all"
           disabled={isTyping || !active}
+        />
+        <input
+          type="email"
+          value={ownerEmail}
+          onChange={(e) => setOwnerEmail(e.target.value)}
+          placeholder="Your Email (e.g., ayla@example.com)"
+          className="w-full px-5 py-4 border-2 border-[#2ec4b6] rounded-2xl outline-none focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-20 text-slate-800 font-semibold placeholder-slate-400 bg-white shadow-sm transition-all"
+          disabled={isTyping || !active}
+          aria-invalid={showBubble}
+          aria-describedby="email-error"
         />
       </div>
 

@@ -24,6 +24,7 @@ model OnboardingSession {
   id              String   @id @default(uuid())
   step            Int      @default(1)
   ownerName       String?  @map("owner_name")
+  ownerEmail      String?  @map("owner_email")
   catsCount       String?  @map("cats_count")
   customCatsCount String?  @map("custom_cats_count")
   catName         String?  @map("cat_name")

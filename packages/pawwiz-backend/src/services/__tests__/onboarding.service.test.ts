@@ -21,6 +21,7 @@ describe('Onboarding Service', () => {
       id: 'mock-session-id',
       step: 1,
       ownerName: null,
+      ownerEmail: null,
       catsCount: null,
       customCatsCount: null,
       catName: null,
@@ -45,11 +46,12 @@ describe('Onboarding Service', () => {
     await expect(onboardingService.getSession('invalid-id')).rejects.toThrow('Onboarding session not found');
   });
 
-  it('should validate and update step 2 (ownerName)', async () => {
+  it('should validate and update step 2 (ownerName + ownerEmail)', async () => {
     const mockSession = {
       id: 'session-id',
       step: 1,
       ownerName: null,
+      ownerEmail: null,
       catsCount: null,
       customCatsCount: null,
       catName: null,
@@ -64,14 +66,17 @@ describe('Onboarding Service', () => {
     vi.mocked(onboardingRepository.update).mockResolvedValueOnce({
       ...mockSession,
       ownerName: 'Ayla',
+      ownerEmail: 'ayla@example.com',
       step: 3
     });
 
-    const updated = await onboardingService.updateStep('session-id', 2, { ownerName: 'Ayla' });
+    const updated = await onboardingService.updateStep('session-id', 2, { ownerName: 'Ayla', ownerEmail: 'ayla@example.com' });
     expect(updated.ownerName).toBe('Ayla');
+    expect(updated.ownerEmail).toBe('ayla@example.com');
     expect(updated.step).toBe(3);
     expect(onboardingRepository.update).toHaveBeenCalledWith('session-id', {
       ownerName: 'Ayla',
+      ownerEmail: 'ayla@example.com',
       step: 3
     });
   });
@@ -81,6 +86,7 @@ describe('Onboarding Service', () => {
       id: 'session-id',
       step: 1,
       ownerName: null,
+      ownerEmail: null,
       catsCount: null,
       customCatsCount: null,
       catName: null,
@@ -93,7 +99,7 @@ describe('Onboarding Service', () => {
     };
     vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(mockSession);
 
-    await expect(onboardingService.updateStep('session-id', 2, { ownerName: '' })).rejects.toThrow();
+    await expect(onboardingService.updateStep('session-id', 2, { ownerName: '', ownerEmail: 'test@example.com' })).rejects.toThrow();
   });
 
   it('should reject step 2 update with ownerName shorter than 2 characters', async () => {
@@ -101,6 +107,7 @@ describe('Onboarding Service', () => {
       id: 'session-id',
       step: 1,
       ownerName: null,
+      ownerEmail: null,
       catsCount: null,
       customCatsCount: null,
       catName: null,
@@ -113,7 +120,7 @@ describe('Onboarding Service', () => {
     };
     vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(mockSession);
 
-    await expect(onboardingService.updateStep('session-id', 2, { ownerName: 'A' })).rejects.toThrow();
+    await expect(onboardingService.updateStep('session-id', 2, { ownerName: 'A', ownerEmail: 'test@example.com' })).rejects.toThrow();
   });
 
   it('should prevent jumping to step 3 if step 2 ownerName is missing', async () => {
@@ -121,6 +128,7 @@ describe('Onboarding Service', () => {
       id: 'session-id',
       step: 1,
       ownerName: null,
+      ownerEmail: null,
       catsCount: null,
       customCatsCount: null,
       catName: null,
@@ -143,6 +151,7 @@ describe('Onboarding Service', () => {
       id: 'session-id',
       step: 2,
       ownerName: 'Ayla',
+      ownerEmail: 'ayla@example.com',
       catsCount: null,
       customCatsCount: null,
       catName: null,

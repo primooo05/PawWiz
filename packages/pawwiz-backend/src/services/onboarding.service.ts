@@ -47,6 +47,7 @@ class OnboardingService {
       const parsed = onboardingStep2Schema.parse(data);
       updateData = {
         ownerName: parsed.ownerName,
+        ownerEmail: parsed.ownerEmail,
         step: Math.max(session.step, 3), // Unlock step 3
       };
     } else if (step === 3) {

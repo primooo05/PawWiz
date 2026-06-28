@@ -10,6 +10,7 @@ export function useOnboarding() {
 
   // Form states
   const [ownerName, setOwnerName] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
   const [catsCount, setCatsCount] = useState('');
   const [customCatsCount, setCustomCatsCount] = useState('');
   const [catName, setCatName] = useState('');
@@ -56,6 +57,7 @@ export function useOnboarding() {
       const data = await res.json();
       setSessionStep(data.step);
       setOwnerName(data.ownerName || '');
+      setOwnerEmail(data.ownerEmail || '');
       setCatsCount(data.catsCount || '');
       setCustomCatsCount(data.customCatsCount || '');
       setCatName(data.catName || '');
@@ -111,6 +113,7 @@ export function useOnboarding() {
     setSessionId(null);
     setSessionStep(1);
     setOwnerName('');
+    setOwnerEmail('');
     setCatsCount('');
     setCustomCatsCount('');
     setCatName('');
@@ -127,6 +130,8 @@ export function useOnboarding() {
     error,
     ownerName,
     setOwnerName,
+    ownerEmail,
+    setOwnerEmail,
     catsCount,
     setCatsCount,
     customCatsCount,

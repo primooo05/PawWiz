@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
 import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
@@ -24,6 +25,8 @@ export default function Onboarding() {
     sessionStep,
     ownerName,
     setOwnerName,
+    ownerEmail,
+    setOwnerEmail,
     catsCount,
     setCatsCount,
     customCatsCount,
@@ -72,8 +75,26 @@ export default function Onboarding() {
         return;
       }
 
+      // Client-side fast rejection: if we already know the session step and the
+      // requested step exceeds it, redirect immediately without a network call.
+      if (initialChecked && sessionStep > 0 && step > sessionStep) {
+        if (active) setStep(sessionStep);
+        return;
+      }
+
       if (active) setLoadingGuard(true);
+
+      // Safety-net timeout: if the network call takes too long, fall back to step 1
+      const timeout = setTimeout(() => {
+        if (active) {
+          setLoadingGuard(false);
+          setStep(1);
+          setInitialChecked(true);
+        }
+      }, 5000);
+
       const data = await fetchSession(sessionId);
+      clearTimeout(timeout);
       if (!active) return;
       setLoadingGuard(false);
 
@@ -241,6 +262,7 @@ export default function Onboarding() {
       setShowBubble(true);
 
       const nameToUse = ownerName.trim();
+      const emailToUse = ownerEmail.trim();
       let isValid = true;
       let fullText = '';
 
@@ -249,6 +271,12 @@ export default function Onboarding() {
         isValid = false;
       } else if (nameToUse.length < 2) {
         fullText = "Name must be at least 2 characters, meow!";
+        isValid = false;
+      } else if (emailToUse.length === 0) {
+        fullText = "I need your email too! Every cat parent needs one, meow!";
+        isValid = false;
+      } else if (!z.string().email().safeParse(emailToUse).success) {
+        fullText = "Hmm, that doesn't look like a valid email. Try again, meow!";
         isValid = false;
       } else {
         fullText = `Meow, ${nameToUse}! So glad to meet you! 🐾`;
@@ -267,7 +295,7 @@ export default function Onboarding() {
           setIsTyping(false);
 
           if (isValid) {
-            const success = await submitStep(2, { ownerName: nameToUse });
+            const success = await submitStep(2, { ownerName: nameToUse, ownerEmail: emailToUse });
             if (success) {
               setIsStep2Dirty(false);
               // Delay circular scale transition to start AFTER typing finishes
@@ -557,7 +585,11 @@ export default function Onboarding() {
   };
 
 
-  if (loadingGuard || (step > 1 && !initialChecked)) {
+  // Block rendering when: loading guard is active, initial check hasn't completed,
+  // OR the user is trying to view a step they haven't legitimately reached yet.
+  const isStepAhead = initialChecked && sessionStep > 0 && step > sessionStep;
+
+  if (loadingGuard || (step > 1 && !initialChecked) || isStepAhead) {
     return (
       <div className="min-h-screen w-full bg-white bg-grid-pattern flex flex-col justify-center items-center">
         <div className="w-16 h-16 border-4 border-[#2ec4b6] border-t-transparent rounded-full animate-spin mb-4" />
@@ -594,6 +626,8 @@ export default function Onboarding() {
           active={step === 2 && !isTransitioning}
           ownerName={ownerName}
           setOwnerName={(v) => { setOwnerName(v); setIsStep2Dirty(true); }}
+          ownerEmail={ownerEmail}
+          setOwnerEmail={(v) => { setOwnerEmail(v); setIsStep2Dirty(true); }}
           isTyping={isTyping}
           showBubble={showBubble && step === 2}
           bubbleText={bubbleText}
