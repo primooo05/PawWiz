@@ -209,3 +209,25 @@
 .react-datepicker-wrapper input {
   width: 100% !important;
 }
+
+@media (max-width: 420px) {
+  .custom-calendar {
+    padding: 0.5rem !important;
+  }
+  .react-datepicker__day {
+    width: 2rem !important;
+    height: 2rem !important;
+    font-size: 0.8rem !important;
+    border-radius: 0.5rem !important;
+  }
+  .react-datepicker__day-name {
+    font-size: 0.65rem !important;
+  }
+  .react-datepicker__day-names {
+    gap: 0.25rem !important;
+  }
+  .react-datepicker__week {
+    gap: 0.25rem !important;
+  }
+}
+

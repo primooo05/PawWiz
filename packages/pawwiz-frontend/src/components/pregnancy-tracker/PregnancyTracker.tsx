@@ -32,21 +32,13 @@ const CatPregnancyTracker: React.FC = () => {
         openLogForDate,
         closeBottomSheet,
         saveLogForDate,
-        toggleSymptom,
         isDateLoggable,
         todayStr,
         todayLog,
         todayLoggable,
-        isWeightPickerOpen,
-        setIsWeightPickerOpen,
-        intVal,
-        setIntVal,
-        decVal,
-        setDecVal,
-        unitVal,
-        setUnitVal,
-        handleUnitChange,
-        handleWeightPickerDone,
+        elapsedDayForSelected,
+        hasVetWarningForSelected,
+        hasNauseaInEarlyWeeksForSelected,
     } = usePregnancyTracker();
 
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -70,7 +62,6 @@ const CatPregnancyTracker: React.FC = () => {
                     />
                 ) : (
                     <DashboardView
-                        matingDate={matingDate}
                         setIsTracking={setIsTracking}
                         currentDay={currentDay}
                         daysRemaining={daysRemaining}
@@ -92,21 +83,13 @@ const CatPregnancyTracker: React.FC = () => {
                         openLogForDate={openLogForDate}
                         closeBottomSheet={closeBottomSheet}
                         saveLogForDate={saveLogForDate}
-                        toggleSymptom={toggleSymptom}
                         isDateLoggable={isDateLoggable}
                         todayStr={todayStr}
                         todayLog={todayLog}
                         todayLoggable={todayLoggable}
-                        isWeightPickerOpen={isWeightPickerOpen}
-                        setIsWeightPickerOpen={setIsWeightPickerOpen}
-                        intVal={intVal}
-                        setIntVal={setIntVal}
-                        decVal={decVal}
-                        setDecVal={setDecVal}
-                        unitVal={unitVal}
-                        setUnitVal={setUnitVal}
-                        handleUnitChange={handleUnitChange}
-                        handleWeightPickerDone={handleWeightPickerDone}
+                        elapsedDayForSelected={elapsedDayForSelected}
+                        hasVetWarningForSelected={hasVetWarningForSelected}
+                        hasNauseaInEarlyWeeksForSelected={hasNauseaInEarlyWeeksForSelected}
                     />
                 )}
             </main>
