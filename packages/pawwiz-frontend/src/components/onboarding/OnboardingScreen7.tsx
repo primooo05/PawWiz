@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import catScreen7 from '../../assets/Cat_Screen7.svg';
 
 interface OnboardingScreen7Props {
@@ -12,6 +13,7 @@ interface OnboardingScreen7Props {
   bubbleText: string;
   handleCreateProfileClick: () => void;
   handleBackClick: () => void;
+  onTurnstileSuccess: (token: string) => void;
 }
 
 /**
@@ -179,6 +181,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
   bubbleText,
   handleCreateProfileClick,
   handleBackClick,
+  onTurnstileSuccess,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -328,6 +331,12 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
       <div className={`w-full absolute bottom-2 left-0 flex flex-col items-center gap-4 z-20 transition-all duration-500 delay-300 ease-out ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
+        <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
+          <Turnstile
+            siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+            onSuccess={onTurnstileSuccess}
+          />
+        </div>
         <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
           <button
             onClick={handleBackClick}

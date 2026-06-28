@@ -35,6 +35,10 @@ export class AppError extends Error {
     return new AppError(message, 409);
   }
 
+  static unprocessableEntity(message: string): AppError {
+    return new AppError(message, 422);
+  }
+
   static internal(message: string): AppError {
     return new AppError(message, 500, false);
   }

@@ -14,6 +14,11 @@ model Profile {
   id             String   @id @default(cuid())
   supabaseUserId String   @unique @map("supabase_user_id")
   displayName    String   @map("display_name")
+  catName        String   @map("cat_name")
+  catBreed       String?  @map("cat_breed")
+  catMarking     String?  @map("cat_marking")
+  catSex         String   @map("cat_sex")
+  catLifeStage   String   @map("cat_life_stage")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -31,9 +36,10 @@ model OnboardingSession {
   catBreed        String?  @map("cat_breed")
   catMarking      String?  @map("cat_marking")
   catSex          String?  @map("cat_sex")
-  catLifeStage    String?  @map("cat_life_stage")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  catLifeStage    String?   @map("cat_life_stage")
+  consumedAt      DateTime? @map("consumed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@map("onboarding_sessions")
 }

@@ -31,6 +31,13 @@ class OnboardingRepository {
   async delete(id: string): Promise<OnboardingSession> {
     return prisma.onboardingSession.delete({ where: { id } });
   }
+
+  async markConsumed(id: string): Promise<void> {
+    await prisma.onboardingSession.update({
+      where: { id },
+      data: { consumedAt: new Date() },
+    });
+  }
 }
 
 /** Singleton instance */

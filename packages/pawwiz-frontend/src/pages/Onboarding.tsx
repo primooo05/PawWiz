@@ -38,6 +38,7 @@ function OnboardingView() {
   const {
     step,
     setStep,
+    sessionId,
     sessionStep,
     ownerName,
     setOwnerName,
@@ -68,6 +69,9 @@ function OnboardingView() {
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
+
+  // Turnstile CAPTCHA token — populated when the widget completes verification
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
 
   // Dirty flags — track if user changed a field after it was already submitted
   const [isStep2Dirty, setIsStep2Dirty] = useState(false);
@@ -327,10 +331,13 @@ function OnboardingView() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authData.session!.access_token}`,
         },
         body: JSON.stringify({
           supabaseUserId: authData.user.id,
           displayName: ownerName,
+          onboardingSessionId: sessionId,
+          'cf-turnstile-response': turnstileToken,
         }),
       });
 
@@ -339,10 +346,10 @@ function OnboardingView() {
         throw new Error(errorData.error || 'Failed to create profile');
       }
 
-      // Success — navigate to login
+      // Success — navigate to pregnancy tracker setup
       startTyping("Meow-velous! Your account is ready! Redirecting...", {
         onComplete: () => {
-          setTimeout(() => navigate('/login?registered=true'), 800);
+          setTimeout(() => navigate('/pregnancy-tracker', { state: { displayName: ownerName, catName } }), 800);
         },
       });
     } catch (err: any) {
@@ -441,6 +448,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
+          onTurnstileSuccess={(token) => setTurnstileToken(token)}
         />
       </div>
     </div>

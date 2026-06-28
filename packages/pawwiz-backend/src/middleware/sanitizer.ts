@@ -4,7 +4,7 @@ export function stripHtmlTags(input: string): string {
   return input.replace(/<\/?[^>]+(>|$)/g, "");
 }
 
-function sanitizeObject(obj: any): any {
+export function sanitizeObject(obj: any): any {
   if (typeof obj === 'string') {
     return stripHtmlTags(obj);
   }

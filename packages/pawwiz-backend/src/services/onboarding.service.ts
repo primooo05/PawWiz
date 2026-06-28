@@ -83,29 +83,22 @@ class OnboardingService {
    * Internal helper to assert that the prerequisites of a given step are met.
    */
   private assertPriorStepsValid(session: OnboardingSession, targetStep: number): void {
-    if (targetStep >= 3) {
-      if (!session.ownerName || session.ownerName.trim().length === 0) {
-        throw AppError.badRequest('Step 2 data (ownerName) is missing');
-      }
+    if (targetStep >= 3 && (!session.ownerName || session.ownerName.trim().length === 0)) {
+      throw AppError.badRequest(`Step 2 data is incomplete; cannot advance to step ${targetStep}`);
     }
     if (targetStep >= 4) {
-      const hasCats = (session.catsCount && session.catsCount.trim().length > 0) ||
-                      (session.customCatsCount && session.customCatsCount.trim().length > 0);
-      if (!hasCats) {
-        throw AppError.badRequest('Step 3 data (catsCount) is missing');
-      }
+      const hasCats = (session.catsCount?.trim().length ?? 0) > 0
+                   || (session.customCatsCount?.trim().length ?? 0) > 0;
+      if (!hasCats) throw AppError.badRequest(`Step 3 data is incomplete; cannot advance to step ${targetStep}`);
     }
     if (targetStep >= 5) {
-      if (!session.catName || session.catName.trim().length === 0) {
-        throw AppError.badRequest('Step 4 data (catName) is missing');
-      }
-      if (!session.catSex) {
-        throw AppError.badRequest('Step 4 data (catSex) is missing');
+      if (!session.catName?.trim().length || !session.catSex) {
+        throw AppError.badRequest(`Step 4 data is incomplete; cannot advance to step ${targetStep}`);
       }
     }
     if (targetStep >= 6) {
       if (!session.catLifeStage) {
-        throw AppError.badRequest('Step 5 data (catLifeStage) is missing');
+        throw AppError.badRequest(`Step 5 data is incomplete; cannot advance to step ${targetStep}`);
       }
     }
   }

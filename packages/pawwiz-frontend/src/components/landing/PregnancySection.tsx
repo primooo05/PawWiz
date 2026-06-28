@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import PregnancyModal from '../modals/PregnancyModal';
 import { useModalToggle } from '../../hooks/useModalToggle';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useProfilePanel, type ProfileData } from '../../hooks/useProfilePanel';
 
 interface GestationWeekDetail {
   week: number;
@@ -82,6 +84,12 @@ export default function PregnancySection() {
   const { isOpen, open, close } = useModalToggle();
   const [activeWeek, setActiveWeek] = useState<number>(5);
   const sectionRef = useScrollReveal<HTMLElement>();
+  const location = useLocation();
+  const locationState = location.state as { displayName?: string; catName?: string } | null;
+  const optimisticData = locationState?.displayName && locationState?.catName
+    ? { displayName: locationState.displayName, catName: locationState.catName }
+    : undefined;
+  const { profile, isLoading, isAuthenticated } = useProfilePanel(optimisticData);
 
   const currentWeekData = WEEKS.find(w => w.week === activeWeek) || WEEKS[4];
 
@@ -128,6 +136,9 @@ export default function PregnancySection() {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Average Litter</span>
             </div>
           </div>
+
+          {/* Profile Panel */}
+          <ProfilePanel profile={profile} isLoading={isLoading} isAuthenticated={isAuthenticated} />
 
           {/* Button Row */}
           <div className="reveal-item stagger-5 flex flex-wrap items-center gap-4">
@@ -243,5 +254,35 @@ export default function PregnancySection() {
 
       <PregnancyModal isOpen={isOpen} onClose={close} />
     </section>
+  );
+}
+
+function ProfilePanel({ profile, isLoading, isAuthenticated }: {
+  profile: ProfileData | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}) {
+  if (isLoading) {
+    return <div className="w-full h-20 rounded-xl bg-slate-100 animate-pulse" />;
+  }
+
+  if (!isAuthenticated || !profile) {
+    return (
+      <div className="rounded-xl border border-[#2ec4b6]/20 bg-[#f0faf9] p-4 text-sm">
+        <p className="font-bold text-slate-700">Track your cat's pregnancy journey</p>
+        <a href="/register" className="mt-2 inline-block text-[#2ec4b6] font-extrabold underline text-xs">
+          Create your free profile →
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[#2ec4b6]/20 bg-[#f0faf9] p-4 space-y-1">
+      <p className="text-xs font-black text-[#2ec4b6] uppercase tracking-wider">Your Cat's Profile</p>
+      <p className="font-extrabold text-slate-900">{profile.catName}</p>
+      {profile.catBreed && <p className="text-sm text-slate-600">{profile.catBreed}</p>}
+      <p className="text-xs text-slate-500">{profile.catLifeStage} · owned by {profile.displayName}</p>
+    </div>
   );
 }

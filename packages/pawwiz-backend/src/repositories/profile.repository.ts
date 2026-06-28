@@ -11,6 +11,11 @@ import type { Profile } from '@prisma/client';
 export interface CreateProfileData {
   supabaseUserId: string;
   displayName: string;
+  catName: string;
+  catBreed: string | null;
+  catMarking: string | null;
+  catSex: string;
+  catLifeStage: string;
 }
 
 export interface UpdateProfileData {
