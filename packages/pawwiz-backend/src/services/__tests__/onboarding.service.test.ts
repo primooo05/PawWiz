@@ -96,6 +96,26 @@ describe('Onboarding Service', () => {
     await expect(onboardingService.updateStep('session-id', 2, { ownerName: '' })).rejects.toThrow();
   });
 
+  it('should reject step 2 update with ownerName shorter than 2 characters', async () => {
+    const mockSession = {
+      id: 'session-id',
+      step: 1,
+      ownerName: null,
+      catsCount: null,
+      customCatsCount: null,
+      catName: null,
+      catBreed: null,
+      catMarking: null,
+      catSex: null,
+      catLifeStage: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(mockSession);
+
+    await expect(onboardingService.updateStep('session-id', 2, { ownerName: 'A' })).rejects.toThrow();
+  });
+
   it('should prevent jumping to step 3 if step 2 ownerName is missing', async () => {
     const mockSession = {
       id: 'session-id',

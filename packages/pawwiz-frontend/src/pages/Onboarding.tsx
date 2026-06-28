@@ -21,6 +21,7 @@ export default function Onboarding() {
 
   const {
     sessionId,
+    sessionStep,
     ownerName,
     setOwnerName,
     catsCount,
@@ -66,6 +67,11 @@ export default function Onboarding() {
         return;
       }
 
+      // Skip redundant network requests during active navigation
+      if (initialChecked && step <= sessionStep) {
+        return;
+      }
+
       if (active) setLoadingGuard(true);
       const data = await fetchSession(sessionId);
       if (!active) return;
@@ -84,7 +90,7 @@ export default function Onboarding() {
     return () => {
       active = false;
     };
-  }, [step, sessionId, fetchSession]);
+  }, [step, sessionId, fetchSession, initialChecked, sessionStep]);
 
 
 
@@ -218,10 +224,18 @@ export default function Onboarding() {
       setShowBubble(true);
       
       const nameToUse = ownerName.trim();
-      const hasName = nameToUse.length > 0;
-      const fullText = hasName 
-        ? `Meow, ${nameToUse}! So glad to meet you! 🐾`
-        : `Hey so, I have a name and you don't?meow*`;
+      let isValid = true;
+      let fullText = '';
+
+      if (nameToUse.length === 0) {
+        fullText = `Hey so, I have a name and you don't?meow*`;
+        isValid = false;
+      } else if (nameToUse.length < 2) {
+        fullText = "Name must be at least 2 characters, meow!";
+        isValid = false;
+      } else {
+        fullText = `Meow, ${nameToUse}! So glad to meet you! 🐾`;
+      }
         
       let currentText = '';
       let index = 0;
@@ -235,7 +249,7 @@ export default function Onboarding() {
           clearInterval(interval);
           setIsTyping(false);
           
-          if (hasName) {
+          if (isValid) {
             const success = await submitStep(2, { ownerName: nameToUse });
             if (success) {
               // Delay circular scale transition to start AFTER typing finishes
@@ -254,7 +268,7 @@ export default function Onboarding() {
               }, 3000);
             }
           } else {
-            // If empty, let them try again. Hide bubble after 3s so they can edit
+            // If empty or invalid, let them try again. Hide bubble after 3s so they can edit
             setTimeout(() => {
               setShowBubble(false);
               setBubbleText('');
@@ -267,9 +281,53 @@ export default function Onboarding() {
       setShowBubble(true);
 
       const hasCats = catsCount.trim().length > 0 || customCatsCount.trim().length > 0;
-      const fullText = hasCats 
-        ? "That's too many Fur Babies, my dream fur parent!"
-        : "Adopt me if you don't have one!";
+      const parseCatsCount = (countStr: string, customStr: string): number | null => {
+        const cats = countStr.trim();
+        const custom = customStr.trim();
+        
+        if (cats) {
+          const val = cats.toLowerCase();
+          if (val === 'one') return 1;
+          if (val === 'two') return 2;
+          if (val === 'three') return 3;
+        }
+        
+        if (custom) {
+          const val = custom.toLowerCase();
+          const parsed = parseInt(val, 10);
+          if (!isNaN(parsed)) return parsed;
+          
+          const wordMap: Record<string, number> = {
+            'one': 1,
+            'two': 2,
+            'three': 3,
+            'four': 4,
+            'five': 5,
+            'six': 6,
+            'seven': 7,
+            'eight': 8,
+            'nine': 9,
+            'ten': 10
+          };
+          
+          return wordMap[val] ?? null;
+        }
+        
+        return null;
+      };
+
+      const parsedCount = parseCatsCount(catsCount, customCatsCount);
+      const selectedNumberOfCats = catsCount || customCatsCount.trim();
+      
+      let fullText = '';
+      if (!hasCats) {
+        fullText = "Adopt me if you don't have one!";
+      } else if (parsedCount !== null && parsedCount >= 1 && parsedCount <= 3) {
+        fullText = `Amazing, ${selectedNumberOfCats} Cats`;
+      } else {
+        fullText = "That's too many Fur Babies, my dream fur parent!";
+      }
+
       let currentText = '';
       let index = 0;
 

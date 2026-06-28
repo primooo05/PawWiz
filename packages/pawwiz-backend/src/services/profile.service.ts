@@ -7,6 +7,7 @@
 
 import { profileRepository, type CreateProfileData } from '../repositories/profile.repository.js';
 import { assertDefined, assertNonEmpty, assertNoDuplicate } from '../utils/guards.js';
+import { AppError } from '../utils/errors.js';
 import type { Profile } from '@prisma/client';
 
 class ProfileService {
@@ -17,6 +18,9 @@ class ProfileService {
   async createProfile(supabaseUserId: string, displayName: string): Promise<Profile> {
     assertNonEmpty(supabaseUserId, 'supabaseUserId');
     assertNonEmpty(displayName, 'displayName');
+    if (displayName.trim().length < 2) {
+      throw AppError.badRequest('displayName must be at least 2 characters');
+    }
 
     const existing = await profileRepository.findBySupabaseUserId(supabaseUserId);
     assertNoDuplicate(existing, 'Profile already exists for this user');

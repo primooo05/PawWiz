@@ -17,7 +17,7 @@ describe('Profile Service', () => {
 
   it('should reject profile creation when supabaseUserId already exists', async () => {
     const userIds = fc.uuid();
-    const displayNames = fc.string({ minLength: 1 }).filter(s => s.trim().length > 0);
+    const displayNames = fc.string({ minLength: 2 }).filter(s => s.trim().length >= 2);
     
     await fc.assert(
       fc.asyncProperty(userIds, displayNames, async (supabaseUserId, displayName) => {
@@ -50,5 +50,9 @@ describe('Profile Service', () => {
         await expect(profileService.createProfile(supabaseUserId, displayName)).rejects.toThrow(/Profile already exists/);
       })
     );
+  });
+
+  it('should reject profile creation when displayName is less than 2 characters', async () => {
+    await expect(profileService.createProfile('some-user-id', 'A')).rejects.toThrow(/displayName must be at least 2 characters/);
   });
 });
