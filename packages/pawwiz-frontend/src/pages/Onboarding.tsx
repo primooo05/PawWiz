@@ -102,6 +102,11 @@ export default function Onboarding() {
   const [bubbleText, setBubbleText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
+  const [isStep2Dirty, setIsStep2Dirty] = useState(false);
+  const [isStep3Dirty, setIsStep3Dirty] = useState(false);
+  const [isStep4Dirty, setIsStep4Dirty] = useState(false);
+  const [isStep5Dirty, setIsStep5Dirty] = useState(false);
+
   useEffect(() => {
     if ((location.state as { animateIn?: boolean })?.animateIn) {
       const timer = setTimeout(() => {
@@ -164,8 +169,8 @@ export default function Onboarding() {
   const handleCreateAccountClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsTransitioning(true);
-    
-    // Scale up to cover screen over 2 seconds (matching the 2000ms duration)
+
+    // Scale up to cover screen over 800ms (matching the 800ms duration)
     const session = await initializeSession();
     setTimeout(() => {
       if (session) {
@@ -174,14 +179,14 @@ export default function Onboarding() {
         setStep(2); // Fallback
       }
       setIsTransitioning(false);
-    }, 2000);
+    }, 800);
   };
 
   const handleReturnToHome = () => {
     setIsTransitioning(true);
     setTimeout(() => {
       navigate('/', { state: { animateOut: true } });
-    }, 2000);
+    }, 800);
   };
 
   const handleAddOtherBabies = () => {
@@ -197,14 +202,14 @@ export default function Onboarding() {
       setIsTransitioning(false);
       setShowBubble(false);
       setBubbleText('');
-    }, 2000);
+    }, 800);
   };
 
   const handleBackClick = () => {
     if (isTyping) return; // Prevent clicking during transitions
-    
+
     setIsTransitioning(true);
-    
+
     // Scale up to cover screen, then update step back and scale back down
     setTimeout(() => {
       setStep((prev) => prev - 1);
@@ -212,17 +217,29 @@ export default function Onboarding() {
       // Reset speech bubble states when moving back
       setShowBubble(false);
       setBubbleText('');
-    }, 2000);
+    }, 800);
   };
 
 
   const handleNextClick = async () => {
     if (isTyping) return; // Prevent double clicks
-    
+
     if (step === 2) {
+      // Fast-path: already completed this step and user hasn't changed the field
+      if (sessionStep > 2 && !isStep2Dirty) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setStep(3);
+          setIsTransitioning(false);
+          setShowBubble(false);
+          setBubbleText('');
+        }, 800);
+        return;
+      }
+
       setIsTyping(true);
       setShowBubble(true);
-      
+
       const nameToUse = ownerName.trim();
       let isValid = true;
       let fullText = '';
@@ -236,7 +253,7 @@ export default function Onboarding() {
       } else {
         fullText = `Meow, ${nameToUse}! So glad to meet you! 🐾`;
       }
-        
+
       let currentText = '';
       let index = 0;
 
@@ -248,18 +265,19 @@ export default function Onboarding() {
         } else {
           clearInterval(interval);
           setIsTyping(false);
-          
+
           if (isValid) {
             const success = await submitStep(2, { ownerName: nameToUse });
             if (success) {
+              setIsStep2Dirty(false);
               // Delay circular scale transition to start AFTER typing finishes
               setTimeout(() => {
                 setIsTransitioning(true);
                 setTimeout(() => {
                   setStep(3);
                   setIsTransitioning(false);
-                }, 2000);
-              }, 1000); // Trigger transition 1 second after typing finishes
+                }, 800);
+              }, 300); // Trigger transition 300ms after typing finishes
             } else {
               setBubbleText("Oh no, I couldn't save your name. Try again, meow!");
               setTimeout(() => {
@@ -277,6 +295,18 @@ export default function Onboarding() {
         }
       }, 45); // Snappy 45ms typing speed
     } else if (step === 3) {
+      // Fast-path: already completed this step and user hasn't changed the field
+      if (sessionStep > 3 && !isStep3Dirty) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setStep(4);
+          setIsTransitioning(false);
+          setShowBubble(false);
+          setBubbleText('');
+        }, 800);
+        return;
+      }
+
       setIsTyping(true);
       setShowBubble(true);
 
@@ -284,19 +314,19 @@ export default function Onboarding() {
       const parseCatsCount = (countStr: string, customStr: string): number | null => {
         const cats = countStr.trim();
         const custom = customStr.trim();
-        
+
         if (cats) {
           const val = cats.toLowerCase();
           if (val === 'one') return 1;
           if (val === 'two') return 2;
           if (val === 'three') return 3;
         }
-        
+
         if (custom) {
           const val = custom.toLowerCase();
           const parsed = parseInt(val, 10);
           if (!isNaN(parsed)) return parsed;
-          
+
           const wordMap: Record<string, number> = {
             'one': 1,
             'two': 2,
@@ -309,16 +339,16 @@ export default function Onboarding() {
             'nine': 9,
             'ten': 10
           };
-          
+
           return wordMap[val] ?? null;
         }
-        
+
         return null;
       };
 
       const parsedCount = parseCatsCount(catsCount, customCatsCount);
       const selectedNumberOfCats = catsCount || customCatsCount.trim();
-      
+
       let fullText = '';
       if (!hasCats) {
         fullText = "Adopt me if you don't have one!";
@@ -343,14 +373,15 @@ export default function Onboarding() {
           if (hasCats) {
             const success = await submitStep(3, { catsCount, customCatsCount });
             if (success) {
+              setIsStep3Dirty(false);
               // Transition to Step 4 after typing finishes
               setTimeout(() => {
                 setIsTransitioning(true);
                 setTimeout(() => {
                   setStep(4);
                   setIsTransitioning(false);
-                }, 2000);
-              }, 1000);
+                }, 800);
+              }, 300);
             } else {
               setBubbleText("Oh no, I couldn't save the cat count. Try again, meow!");
               setTimeout(() => {
@@ -368,6 +399,18 @@ export default function Onboarding() {
         }
       }, 45);
     } else if (step === 4) {
+      // Fast-path: already completed this step and user hasn't changed the fields
+      if (sessionStep > 4 && !isStep4Dirty) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setStep(5);
+          setIsTransitioning(false);
+          setShowBubble(false);
+          setBubbleText('');
+        }, 800);
+        return;
+      }
+
       setIsTyping(true);
       setShowBubble(true);
 
@@ -400,14 +443,15 @@ export default function Onboarding() {
           if (isValid) {
             const success = await submitStep(4, { catName, catBreed, catMarking, catSex });
             if (success) {
+              setIsStep4Dirty(false);
               // Transition to Step 5 after typing finishes
               setTimeout(() => {
                 setIsTransitioning(true);
                 setTimeout(() => {
                   setStep(5);
                   setIsTransitioning(false);
-                }, 2000);
-              }, 1000);
+                }, 800);
+              }, 300);
             } else {
               setBubbleText("Oh no, I couldn't save your cat details. Try again, meow!");
               setTimeout(() => {
@@ -425,6 +469,18 @@ export default function Onboarding() {
         }
       }, 45);
     } else if (step === 5) {
+      // Fast-path: already completed this step and user hasn't changed the fields
+      if (sessionStep > 5 && !isStep5Dirty) {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setStep(6);
+          setIsTransitioning(false);
+          setShowBubble(false);
+          setBubbleText('');
+        }, 800);
+        return;
+      }
+
       setIsTyping(true);
       setShowBubble(true);
 
@@ -453,14 +509,15 @@ export default function Onboarding() {
           if (isValid) {
             const success = await submitStep(5, { catLifeStage });
             if (success) {
+              setIsStep5Dirty(false);
               // Transition to Step 6 after typing finishes
               setTimeout(() => {
                 setIsTransitioning(true);
                 setTimeout(() => {
                   setStep(6);
                   setIsTransitioning(false);
-                }, 2000);
-              }, 1000);
+                }, 800);
+              }, 300);
             } else {
               setBubbleText("Oh no, I couldn't save your cat's life stage. Try again, meow!");
               setTimeout(() => {
@@ -493,7 +550,7 @@ export default function Onboarding() {
           setIsTyping(false);
           setTimeout(() => {
             navigate('/register');
-          }, 2000);
+          }, 800);
         }
       }, 45);
     }
@@ -516,15 +573,12 @@ export default function Onboarding() {
 
 
       {/* Decorative Circles */}
-      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left z-50 ${
-        isTransitioning ? 'scale-[8]' : 'scale-100'
-      }`} />
-      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-right z-50 ${
-        isTransitioning ? 'scale-[12]' : 'scale-100'
-      }`} />
-      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right z-50 ${
-        isTransitioning ? 'scale-[8]' : 'scale-100'
-      }`} />
+      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left z-50 ${isTransitioning ? 'scale-[8]' : 'scale-100'
+        }`} />
+      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right z-50 ${isTransitioning ? 'scale-[12]' : 'scale-100'
+        }`} />
+      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right z-50 ${isTransitioning ? 'scale-[8]' : 'scale-100'
+        }`} />
 
       {/* Center Wrapper for persistent component mounting and smooth overlay transitions */}
       <div className="relative w-full flex-grow flex items-center justify-center z-10">
@@ -539,7 +593,7 @@ export default function Onboarding() {
         <OnboardingScreen2
           active={step === 2 && !isTransitioning}
           ownerName={ownerName}
-          setOwnerName={setOwnerName}
+          setOwnerName={(v) => { setOwnerName(v); setIsStep2Dirty(true); }}
           isTyping={isTyping}
           showBubble={showBubble && step === 2}
           bubbleText={bubbleText}
@@ -549,9 +603,9 @@ export default function Onboarding() {
         <OnboardingScreen3
           active={step === 3 && !isTransitioning}
           catsCount={catsCount}
-          setCatsCount={setCatsCount}
+          setCatsCount={(v) => { setCatsCount(v); setIsStep3Dirty(true); }}
           customCatsCount={customCatsCount}
-          setCustomCatsCount={setCustomCatsCount}
+          setCustomCatsCount={(v) => { setCustomCatsCount(v); setIsStep3Dirty(true); }}
           isTyping={isTyping}
           showBubble={showBubble && step === 3}
           bubbleText={bubbleText}
@@ -561,13 +615,13 @@ export default function Onboarding() {
         <OnboardingScreen4
           active={step === 4 && !isTransitioning}
           catName={catName}
-          setCatName={setCatName}
+          setCatName={(v) => { setCatName(v); setIsStep4Dirty(true); }}
           catBreed={catBreed}
-          setCatBreed={setCatBreed}
+          setCatBreed={(v) => { setCatBreed(v); setIsStep4Dirty(true); }}
           catMarking={catMarking}
-          setCatMarking={setCatMarking}
+          setCatMarking={(v) => { setCatMarking(v); setIsStep4Dirty(true); }}
           catSex={catSex}
-          setCatSex={setCatSex}
+          setCatSex={(v) => { setCatSex(v); setIsStep4Dirty(true); }}
           isTyping={isTyping}
           showBubble={showBubble && step === 4}
           bubbleText={bubbleText}
@@ -577,7 +631,7 @@ export default function Onboarding() {
         <OnboardingScreen5
           active={step === 5 && !isTransitioning}
           catLifeStage={catLifeStage}
-          setCatLifeStage={setCatLifeStage}
+          setCatLifeStage={(v) => { setCatLifeStage(v); setIsStep5Dirty(true); }}
           isTyping={isTyping}
           showBubble={showBubble && step === 5}
           bubbleText={bubbleText}
@@ -597,7 +651,7 @@ export default function Onboarding() {
           handleAddOtherBabies={handleAddOtherBabies}
         />
       </div>
-      
+
     </div>
   );
 }
