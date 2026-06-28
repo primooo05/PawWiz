@@ -122,8 +122,18 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', handleResize);
   }, [activeSection]);
 
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handleGetStartedClick = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      navigate('/onboarding', { state: { animateIn: true } });
+    }, 2000);
+  };
+
   return (
-    // Close on outside click (ref on <nav> so hamburger doesn't fight the handler)
+    <>
+      {/* Close on outside click (ref on <nav> so hamburger doesn't fight the handler) */}
     <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
       <div className="max-w-[1440px] mx-auto px-8 py-4 flex items-center justify-between">
         {/* Logo */}
@@ -151,8 +161,7 @@ export default function Navbar() {
                 key={link.href}
                 href={isHome ? link.href : `/${link.href}`}
                 data-section={sectionId}
-                className={`text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${
-                  isActive ? 'text-[#2ec4b6]' : 'text-slate-500 hover:text-slate-900'
+                  className={`text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${isActive ? 'text-[#2ec4b6]' : 'text-slate-500 hover:text-slate-900'
                 }`}
                 onClick={(e) => {
                   e.preventDefault();
@@ -173,10 +182,10 @@ export default function Navbar() {
               LOGOUT
             </button>
           ) : (
-            <Link to="/onboarding" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
-              shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center">
+            <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
+              shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center border-none">
               GET STARTED
-            </Link>
+            </button>
           )}
         </div>
 
@@ -187,10 +196,10 @@ export default function Navbar() {
               LOGOUT
             </button>
           ) : (
-            <Link to="/onboarding" className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
-              shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center">
+            <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
+              shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center border-none">
               GET STARTED
-            </Link>
+            </button>
           )}
           <button
             onClick={() => setMenuOpen(prev => !prev)}
@@ -257,6 +266,14 @@ export default function Navbar() {
           })}
         </div>
       </div>
-    </nav>
+      </nav>
+
+      {/* Decorative Circles expanding on click */}
+      <div className={`fixed inset-0 pointer-events-none z-[9999] overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+        <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 transition-transform duration-[2000ms] ease-in-out origin-top-right ${isTransitioning ? 'scale-[12]' : 'scale-0'}`} />
+        <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+      </div>
+    </>
   );
 }

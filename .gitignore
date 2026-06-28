@@ -33,6 +33,6 @@ kiro-cli.exe
 .agents
 .codegraph
 
-#Obsidian
+# ObsidianVault
 PawWiz-Context/.obsidian/
-PawWiz-Context/
+PawWiz-Context/.trash/

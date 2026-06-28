@@ -35,8 +35,8 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
   handleBackClick,
 }) => {
   return (
-    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-12 z-10 pt-6 pb-36 md:pb-28 transition-all duration-[2000ms] ease-in-out absolute ${
-      active ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'
+    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-12 z-10 pt-6 pb-36 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
+      active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
       {/* Left Column: Form Fields */}
       <div className="flex-1 w-full max-w-md flex flex-col justify-center items-stretch text-left space-y-4">

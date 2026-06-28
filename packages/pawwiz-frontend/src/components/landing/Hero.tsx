@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePlantScan } from '../../hooks/usePlantScan';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 
@@ -8,9 +10,28 @@ interface HeroProps {
 export default function Hero({ apiBase }: HeroProps) {
   const { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch } = usePlantScan(apiBase);
   const sectionRef = useScrollReveal<HTMLElement>(0.08);
+  const location = useLocation();
+  const [isTransitioning, setIsTransitioning] = useState(
+    !!(location.state as { animateOut?: boolean })?.animateOut
+  );
+
+  useEffect(() => {
+    if ((location.state as { animateOut?: boolean })?.animateOut) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   return (
-    <section ref={sectionRef} id="home" className="scroll-mt-20 w-full pt-24 md:pt-28 pb-16 text-center bg-grid-pattern border-b border-slate-200/40">
+    <section ref={sectionRef} id="home" className="scroll-mt-20 w-full pt-24 md:pt-28 pb-16 text-center bg-grid-pattern border-b border-slate-200/40 relative">
+      {/* Transition circles scaling down on landing entry */}
+      <div className={`fixed inset-0 pointer-events-none z-[9999] overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+        <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 transition-transform duration-[2000ms] ease-in-out origin-top-right ${isTransitioning ? 'scale-[12]' : 'scale-0'}`} />
+        <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+      </div>
       {/* Centered Heading */}
       <div className="max-w-4xl mx-auto px-6 space-y-5">
         <h2 className="reveal-item stagger-1 text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">

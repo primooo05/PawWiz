@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
 import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
@@ -9,6 +9,7 @@ import { OnboardingScreen6 } from '../components/onboarding/OnboardingScreen6';
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState(1);
   const [ownerName, setOwnerName] = useState('');
   
@@ -27,10 +28,21 @@ export default function Onboarding() {
   const [isClicked, setIsClicked] = useState(false);
 
   // Transition and Typing states
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(
+    !!(location.state as { animateIn?: boolean })?.animateIn
+  );
   const [showBubble, setShowBubble] = useState(false);
   const [bubbleText, setBubbleText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    if ((location.state as { animateIn?: boolean })?.animateIn) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   const getOtherCatsText = () => {
     if (customCatsCount.trim()) {
@@ -90,6 +102,13 @@ export default function Onboarding() {
     setTimeout(() => {
       setStep(2);
       setIsTransitioning(false);
+    }, 2000);
+  };
+
+  const handleReturnToHome = () => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      navigate('/', { state: { animateOut: true } });
     }, 2000);
   };
 
@@ -315,13 +334,13 @@ export default function Onboarding() {
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center py-12 px-6">
 
       {/* Decorative Circles */}
-      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left z-0 ${
+      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left z-50 ${
         isTransitioning ? 'scale-[8]' : 'scale-100'
       }`} />
-      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-right z-0 ${
+      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-right z-50 ${
         isTransitioning ? 'scale-[12]' : 'scale-100'
       }`} />
-      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right z-0 ${
+      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right z-50 ${
         isTransitioning ? 'scale-[8]' : 'scale-100'
       }`} />
 
@@ -331,6 +350,7 @@ export default function Onboarding() {
           active={step === 1 && !isTransitioning}
           handleCreateAccountClick={handleCreateAccountClick}
           handleAlreadyHaveAccountClick={handleAlreadyHaveAccountClick}
+          handleReturnToHome={handleReturnToHome}
           isClicked={isClicked}
           rippleStyle={rippleStyle}
         />

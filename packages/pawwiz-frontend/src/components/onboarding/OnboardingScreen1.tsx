@@ -5,6 +5,7 @@ interface OnboardingScreen1Props {
   active: boolean;
   handleCreateAccountClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   handleAlreadyHaveAccountClick: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  handleReturnToHome: () => void;
   isClicked: boolean;
   rippleStyle: React.CSSProperties | null;
 }
@@ -13,12 +14,13 @@ export const OnboardingScreen1: React.FC<OnboardingScreen1Props> = ({
   active,
   handleCreateAccountClick,
   handleAlreadyHaveAccountClick,
+  handleReturnToHome,
   isClicked,
   rippleStyle,
 }) => {
   return (
-    <div className={`flex flex-col justify-center items-center w-full max-w-md z-10 transition-all duration-[2000ms] ease-in-out absolute ${
-      active ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'
+    <div className={`flex flex-col justify-center items-center w-full max-w-md z-10 absolute transition-opacity duration-300 ${
+      active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
       {/* Animated Cat Mascot */}
       <div className="animate-float mb-12 flex justify-center items-center">
@@ -61,6 +63,14 @@ export const OnboardingScreen1: React.FC<OnboardingScreen1Props> = ({
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
         </div>
+
+        {/* Return Button */}
+        <button
+          onClick={handleReturnToHome}
+          className="mt-4 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent cursor-pointer"
+        >
+          Return to Home
+        </button>
       </div>
     </div>
   );
