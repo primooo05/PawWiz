@@ -232,6 +232,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         unitVal={unitVal}
                         handleUnitChange={handleUnitChange}
                         handleWeightPickerDone={handleWeightPickerDone}
+                        activeColor="#14b8a6"
+                        hoverColor="#0d9488"
+                        shadowColorClass="shadow-teal-500/20"
                     />
                 )}
             </AnimatePresence>

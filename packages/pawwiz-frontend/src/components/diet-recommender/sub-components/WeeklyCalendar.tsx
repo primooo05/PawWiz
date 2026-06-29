@@ -58,12 +58,12 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = () => {
 
             {/* Calendar Body */}
             <div className="w-full overflow-hidden rounded-[2.5rem]">
-                <div className="bg-[#2ec4b6] border-b-2 border-slate-900 pt-8 pb-4 px-4 grid grid-cols-7 text-center">
+                <div className="bg-[#40C48E] border-b-2 border-slate-900 pt-8 pb-4 px-4 grid grid-cols-7 text-center">
                     {['S', 'M', 'T', 'W', 'TH', 'F', 'S'].map((dayName, idx) => (
                         <span key={idx} className="font-black text-slate-900 text-xs">{dayName}</span>
                     ))}
                 </div>
-
+ 
                 <div className="grid grid-cols-7 py-5 px-4 text-center bg-white">
                     {currentWeekDays.map((day, idx) => {
                         const active = isToday(day);
@@ -71,7 +71,7 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = () => {
                             <div key={idx} className="flex flex-col items-center justify-center">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
                                     active
-                                        ? 'bg-[#e9c46a] border-2 border-slate-900 text-slate-955 shadow-[1.5px_1.5px_0_0_rgba(15,23,42,1)]'
+                                        ? 'bg-[#ffea30] border-2 border-slate-900 text-slate-955 shadow-[1.5px_1.5px_0_0_rgba(15,23,42,1)]'
                                         : 'text-slate-700'
                                 }`}>
                                     {day.getDate()}

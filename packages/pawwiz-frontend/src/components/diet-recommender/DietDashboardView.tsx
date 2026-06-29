@@ -9,6 +9,9 @@ import WeeklyCalendar from './sub-components/WeeklyCalendar';
 import FeedingGuideline from './sub-components/FeedingGuideline';
 import CalorieTracker from './sub-components/CalorieTracker';
 import MealLogModal from './sub-components/MealLogModal';
+import AnimatedAvatarGroup from '../smoothui/animated-avatar-group';
+import akiCat from '../../assets/aki_cat.png';
+import { motion } from 'motion/react';
 
 interface DietDashboardViewProps {
     catName: string;
@@ -52,7 +55,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     profiles,
     activeProfileId,
     switchProfile,
-    createNewProfile,
     addMeal,
     skipMeal,
     resetMealLog,
@@ -62,7 +64,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     waterIntake,
 }) => {
     const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
-    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
     // Modal state
     const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
@@ -173,6 +174,26 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     const possessivePronoun = gender === 'male' ? 'his' : 'her';
     const subjectPronoun = gender === 'male' ? 'He' : 'She';
 
+    const catImages = [
+        'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop&crop=faces&q=80',
+        'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=100&h=100&fit=crop&crop=faces&q=80',
+        'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=100&h=100&fit=crop&crop=faces&q=80',
+        'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=100&h=100&fit=crop&crop=faces&q=80'
+    ];
+
+    const getCatAvatarSrc = (name: string, index: number) => {
+        if (name.toLowerCase() === 'aki') return akiCat;
+        return catImages[index % catImages.length];
+    };
+
+    const avatarDataList = profiles.map((p, idx) => ({
+        id: p.id,
+        name: p.name,
+        src: getCatAvatarSrc(p.name, idx),
+        alt: p.name,
+        isActive: p.id === activeProfileId
+    }));
+
     return (
         <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto text-slate-800">
             {/* Header Greeting Row */}
@@ -182,109 +203,69 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Track now {catName}'s meal for today</p>
                 </div>
 
-                {/* Profile Switcher Dropdown */}
-                <div className="relative self-stretch sm:self-auto">
-                    <button
-                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                        className="flex items-center select-none cursor-pointer focus:outline-none bg-transparent border-none active:scale-95 transition-transform"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-[#2ec4b6] border border-slate-300 flex items-center justify-center text-lg z-10 -mr-2.5 shadow-sm">
-                            🐱
-                        </div>
-                        <div className="bg-[#fde047] border border-slate-300 px-6 py-1.5 font-black text-xs text-[#2ec4b6] uppercase tracking-wider z-0 shadow-[0_3px_0_0_#cbd5e1] rounded-sm min-w-[70px] text-center">
-                            {catName}
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-[#2ec4b6] border border-slate-300 flex items-center justify-center text-white text-base z-10 -ml-2.5 shadow-sm font-black leading-none pb-1">
-                            •••
-                        </div>
-                    </button>
-
-                    {isProfileDropdownOpen && (
-                        <>
-                            <div className="fixed inset-0 z-40" onClick={() => setIsProfileDropdownOpen(false)} />
-                            <div className="absolute right-0 mt-2 w-56 bg-white border-2 border-slate-900 rounded-2xl shadow-[4px_4px_0_0_rgba(15,23,42,1)] z-50 overflow-hidden py-1 animate-fadeIn">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4 py-2 border-b border-slate-100">
-                                    Switch Profile
-                                </p>
-                                {profiles.map(p => (
-                                    <button
-                                        key={p.id}
-                                        onClick={() => {
-                                            switchProfile(p.id);
-                                            setIsProfileDropdownOpen(false);
-                                        }}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left border-b border-slate-50 last:border-b-0 cursor-pointer ${
-                                            p.id === activeProfileId ? 'bg-teal-50/50' : ''
-                                        }`}
-                                    >
-                                        <span className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">
-                                            🐈
-                                        </span>
-                                        <div className="flex-1">
-                                            <p className="text-xs font-black text-slate-955">{p.name}</p>
-                                            <p className="text-[9px] font-bold text-slate-400 capitalize">
-                                                {p.lifeStage} • {p.gender}
-                                            </p>
-                                        </div>
-                                        {p.id === activeProfileId && (
-                                            <span className="text-[#2ec4b6] text-xs font-bold">✓</span>
-                                        )}
-                                    </button>
-                                ))}
-                                <div className="p-2 border-t border-slate-100 bg-slate-50">
-                                    <button
-                                        onClick={() => {
-                                            const name = prompt("Enter new cat's name:");
-                                            if (name && name.trim()) {
-                                                createNewProfile(name.trim());
-                                                setIsProfileDropdownOpen(false);
-                                            }
-                                        }}
-                                        className="w-full py-1.5 px-3 bg-[#2ec4b6] hover:bg-[#20a396] text-white font-bold text-xs rounded-xl border border-slate-900 transition-colors cursor-pointer text-center"
-                                    >
-                                        + Add New Cat
-                                    </button>
-                                </div>
-                            </div>
-                        </>
-                    )}
+                {/* Profile Switcher via AnimatedAvatarGroup */}
+                <div className="relative self-stretch sm:self-auto flex items-center">
+                    <AnimatedAvatarGroup
+                        avatars={avatarDataList}
+                        onAvatarClick={(id) => switchProfile(id)}
+                    />
                 </div>
             </div>
 
             {/* Layout Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1.1fr] gap-8 items-start">
                 {/* Left Column */}
-                <ProfileCard
-                    catName={catName}
-                    gender={gender}
-                    weight={weight}
-                    isKg={isKg}
-                    foodPreference={foodPreference}
-                    isSpayedNeutered={isSpayedNeutered}
-                    activeLifeStage={activeLifeStage}
-                    lifeStage={lifeStage}
-                    age={age}
-                    onEditProfile={() => setIsConfirmResetOpen(true)}
-                />
+                <motion.div
+                    key={`profile-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                >
+                    <ProfileCard
+                        catName={catName}
+                        gender={gender}
+                        weight={weight}
+                        isKg={isKg}
+                        foodPreference={foodPreference}
+                        isSpayedNeutered={isSpayedNeutered}
+                        activeLifeStage={activeLifeStage}
+                        lifeStage={lifeStage}
+                        age={age}
+                        onEditProfile={() => setIsConfirmResetOpen(true)}
+                    />
+                </motion.div>
 
                 {/* Middle Column */}
-                <MealsTracker
-                    loggedMeals={loggedMeals}
-                    waterIntake={waterIntake}
-                    waterTarget={waterTarget}
-                    addWater={addWater}
-                    resetWater={resetWater}
-                    onAddMeal={handleAddMealClick}
-                    onEditMeal={handleEditMealClick}
-                    onUndoSkip={(mealId) => resetMealLog(mealId)}
-                />
+                <motion.div
+                    key={`tracker-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+                >
+                    <MealsTracker
+                        loggedMeals={loggedMeals}
+                        waterIntake={waterIntake}
+                        waterTarget={waterTarget}
+                        addWater={addWater}
+                        resetWater={resetWater}
+                        onAddMeal={handleAddMealClick}
+                        onEditMeal={handleEditMealClick}
+                        onUndoSkip={(mealId) => resetMealLog(mealId)}
+                    />
+                </motion.div>
 
                 {/* Right Column */}
-                <div className="flex flex-col gap-8 w-full">
+                <motion.div
+                    key={`guidelines-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
+                    className="flex flex-col gap-8 w-full"
+                >
                     <WeeklyCalendar />
                     <FeedingGuideline ageBracketInfo={ageBracketInfo} />
                     <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} />
-                </div>
+                </motion.div>
             </div>
 
             {/* Dialogs */}

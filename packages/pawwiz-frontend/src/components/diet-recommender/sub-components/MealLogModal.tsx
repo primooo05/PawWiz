@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { MealLog } from '../../../hooks/useDietRecommender';
+import TimePickerModal from '../../modals/TimePickerModal';
 
 interface MealLogModalProps {
     isOpen: boolean;
@@ -46,9 +47,8 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
     const [modalFoodType, setModalFoodType] = useState<'dry' | 'wet'>(initialFoodType);
     const [modalUnit, setModalUnit] = useState<'spoon' | 'cup'>(initialUnit);
     const [modalAmount, setModalAmount] = useState<number>(initialAmount);
+    const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
     
-    const timeInputRef = useRef<HTMLInputElement>(null);
-
     // Sync state when modal is opened or values change
     useEffect(() => {
         if (isOpen) {
@@ -124,7 +124,7 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                             <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Time</label>
                             <button
                                 type="button"
-                                onClick={() => timeInputRef.current?.showPicker()}
+                                onClick={() => setIsTimePickerOpen(true)}
                                 className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-left text-sm text-slate-700 font-medium flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors focus:outline-none focus:border-[#2ec4b6]"
                             >
                                 <span>
@@ -132,13 +132,6 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                                 </span>
                                 <span className="text-slate-400">🕒</span>
                             </button>
-                            <input
-                                type="time"
-                                ref={timeInputRef}
-                                value={modalTimestamp}
-                                onChange={(e) => setModalTimestamp(e.target.value)}
-                                className="hidden"
-                            />
                         </div>
 
                         {/* Food Type (Wet or Dry) */}
@@ -259,6 +252,18 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                     </div>
                 </motion.div>
             </div>
+
+            {/* Time Picker Modal */}
+            <AnimatePresence>
+                {isTimePickerOpen && (
+                    <TimePickerModal
+                        isOpen={isTimePickerOpen}
+                        onClose={() => setIsTimePickerOpen(false)}
+                        timeValue={modalTimestamp}
+                        onChange={(newTime) => setModalTimestamp(newTime)}
+                    />
+                )}
+            </AnimatePresence>
         </>
     );
 };

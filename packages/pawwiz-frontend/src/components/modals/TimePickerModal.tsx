@@ -90,7 +90,7 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ values, selectedValue, onCh
                         className={`h-12 flex items-center justify-center text-xl font-bold cursor-pointer transition-opacity duration-150 snap-center select-none ${isSelected ? 'text-slate-900 opacity-100' : 'text-slate-300 opacity-40 hover:opacity-70'
                             }`}
                     >
-                        {val}
+                        {typeof val === 'number' ? String(val).padStart(2, '0') : val}
                     </div>
                 );
             })}
@@ -99,40 +99,65 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ values, selectedValue, onCh
     );
 };
 
-interface WeightPickerModalProps {
+interface TimePickerModalProps {
     isOpen: boolean;
     onClose: () => void;
-    intVal: number;
-    setIntVal: (val: number) => void;
-    decVal: number;
-    setDecVal: (val: number) => void;
-    unitVal: 'kg' | 'lbs';
-    handleUnitChange: (unit: 'kg' | 'lbs') => void;
-    handleWeightPickerDone: () => void;
+    timeValue: string; // "HH:MM" 24h format
+    onChange: (time24: string) => void;
     activeColor?: string;
     hoverColor?: string;
     shadowColorClass?: string;
 }
 
-const intValues = Array.from({ length: 100 }, (_, i) => i);
-const decValues = Array.from({ length: 10 }, (_, i) => i);
-const unitValues = ['kg', 'lbs'];
+const hoursValues = Array.from({ length: 12 }, (_, i) => i + 1);
+const minutesValues = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+const ampmValues = ['AM', 'PM'];
 
-export const WeightPickerModal: React.FC<WeightPickerModalProps> = ({
+export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     isOpen,
     onClose,
-    intVal,
-    setIntVal,
-    decVal,
-    setDecVal,
-    unitVal,
-    handleUnitChange,
-    handleWeightPickerDone,
-    activeColor = '#FF5A79',
-    hoverColor = '#ff4064',
-    shadowColorClass = 'shadow-pink-500/20',
+    timeValue,
+    onChange,
+    activeColor = '#2ec4b6',
+    hoverColor = '#20a396',
+    shadowColorClass = 'shadow-teal-500/20',
 }) => {
+    const parseTime = (val24: string) => {
+        if (!val24) return { hr: 8, min: '00', ampm: 'AM' };
+        const [hStr, mStr] = val24.split(':');
+        const h24 = parseInt(hStr, 10);
+        const min = String(parseInt(mStr, 10)).padStart(2, '0');
+        const ampm = h24 >= 12 ? 'PM' : 'AM';
+        let hr = h24 % 12;
+        if (hr === 0) hr = 12;
+        return { hr, min, ampm };
+    };
+
+    const initial = parseTime(timeValue);
+    const [selectedHr, setSelectedHr] = useState<number>(initial.hr);
+    const [selectedMin, setSelectedMin] = useState<string>(initial.min);
+    const [selectedAmpm, setSelectedAmpm] = useState<string>(initial.ampm);
+
+    useEffect(() => {
+        if (isOpen) {
+            const parsed = parseTime(timeValue);
+            setSelectedHr(parsed.hr);
+            setSelectedMin(parsed.min);
+            setSelectedAmpm(parsed.ampm);
+        }
+    }, [isOpen, timeValue]);
+
     if (!isOpen) return null;
+
+    const handleDone = () => {
+        let hr24 = selectedHr % 12;
+        if (selectedAmpm === 'PM') {
+            hr24 += 12;
+        }
+        const time24Str = `${String(hr24).padStart(2, '0')}:${selectedMin}`;
+        onChange(time24Str);
+        onClose();
+    };
 
     return (
         <>
@@ -146,18 +171,18 @@ export const WeightPickerModal: React.FC<WeightPickerModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] cursor-pointer"
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] cursor-pointer"
                 onClick={onClose}
             />
 
-            {/* Modal content */}
-            <div className="fixed inset-0 flex items-center justify-center p-4 z-[70] pointer-events-none">
+            {/* Modal Content */}
+            <div className="fixed inset-0 flex items-center justify-center p-4 z-[160] pointer-events-none">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ type: "spring", duration: 0.4 }}
-                    className="w-full max-w-sm bg-white rounded-[2.5rem] border-2 border-slate-955 shadow-[4px_4px_0_0_rgba(15,23,42,1)] p-8 pointer-events-auto"
+                    className="w-full max-w-sm bg-white rounded-[2.5rem] border-2 border-slate-900 shadow-[4px_4px_0_0_rgba(15,23,42,1)] p-8 pointer-events-auto"
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between mb-8 relative">
@@ -167,8 +192,8 @@ export const WeightPickerModal: React.FC<WeightPickerModalProps> = ({
                         >
                             ✕
                         </button>
-                        <h3 className="text-xl font-bold text-slate-800 text-center w-full">
-                            Log weight
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight text-center w-full">
+                            Select Time
                         </h3>
                     </div>
 
@@ -178,29 +203,29 @@ export const WeightPickerModal: React.FC<WeightPickerModalProps> = ({
                         <div className="absolute left-0 right-0 h-12 border-t border-b pointer-events-none" style={{ borderColor: activeColor }} />
 
                         <ScrollColumn
-                            values={intValues}
-                            selectedValue={intVal}
-                            onChange={setIntVal}
-                            className="w-20"
+                            values={hoursValues}
+                            selectedValue={selectedHr}
+                            onChange={setSelectedHr}
+                            className="w-16"
                         />
-                        <div className="text-2xl font-bold text-slate-850 self-center">.</div>
+                        <div className="text-2xl font-bold text-slate-855 self-center">:</div>
                         <ScrollColumn
-                            values={decValues}
-                            selectedValue={decVal}
-                            onChange={setDecVal}
+                            values={minutesValues}
+                            selectedValue={selectedMin}
+                            onChange={setSelectedMin}
                             className="w-16"
                         />
                         <ScrollColumn
-                            values={unitValues}
-                            selectedValue={unitVal}
-                            onChange={handleUnitChange}
+                            values={ampmValues}
+                            selectedValue={selectedAmpm}
+                            onChange={setSelectedAmpm}
                             className="w-20"
                         />
                     </div>
 
                     {/* Done button */}
                     <button
-                        onClick={handleWeightPickerDone}
+                        onClick={handleDone}
                         className={`w-full py-4 text-white rounded-full font-bold text-lg transition-colors shadow-md ${shadowColorClass} cursor-pointer`}
                         style={{
                             backgroundColor: activeColor,
@@ -220,4 +245,4 @@ export const WeightPickerModal: React.FC<WeightPickerModalProps> = ({
     );
 };
 
-export default WeightPickerModal;
+export default TimePickerModal;

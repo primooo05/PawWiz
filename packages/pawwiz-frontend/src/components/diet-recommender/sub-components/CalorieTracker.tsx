@@ -15,8 +15,8 @@ export const CalorieTracker: React.FC<CalorieTrackerProps> = ({
     return (
         <div className="p-6 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col gap-4 w-full">
             <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-[#FFEA30] rotate-45" />
-                <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Calorie Tracker</span>
+                <span className="w-1.5 h-1.5 bg-[#2ec4b6] rotate-45" />
+                <span className="text-[10px] font-black tracking-widest text-[#2ec4b6] uppercase">Calorie Tracker</span>
             </div>
 
             <div className="flex items-center gap-6">
