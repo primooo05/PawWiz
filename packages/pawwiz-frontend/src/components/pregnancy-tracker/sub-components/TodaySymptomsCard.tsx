@@ -1,14 +1,14 @@
 import React from 'react';
-import type { DailyLog } from '../../hooks/usePregnancyTracker';
+import type { DailyLog } from '../../../hooks/usePregnancyTracker';
 
-import nestingIcon from '../../assets/nesting.png';
-import appetiteUpIcon from '../../assets/appetite-up.png';
-import pinkingUpIcon from '../../assets/pinking-up.png';
-import sleepIcon from '../../assets/sleep.png';
-import vomitingIcon from '../../assets/vomiting.png';
-import weightGainIcon from '../../assets/weight-gain.png';
-import milkProductionIcon from '../../assets/milk-production.png';
-import contractionsIcon from '../../assets/contractions.png';
+import nestingIcon from '../../../assets/nesting.png';
+import appetiteUpIcon from '../../../assets/appetite-up.png';
+import pinkingUpIcon from '../../../assets/pinking-up.png';
+import sleepIcon from '../../../assets/sleep.png';
+import vomitingIcon from '../../../assets/vomiting.png';
+import weightGainIcon from '../../../assets/weight-gain.png';
+import milkProductionIcon from '../../../assets/milk-production.png';
+import contractionsIcon from '../../../assets/contractions.png';
 
 const getSymptomsForWeek = (week: number) => {
     if (week <= 3) {

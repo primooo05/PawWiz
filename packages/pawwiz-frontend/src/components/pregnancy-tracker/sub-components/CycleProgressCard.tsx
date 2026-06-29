@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DailyLog } from '../../hooks/usePregnancyTracker';
+import type { DailyLog } from '../../../hooks/usePregnancyTracker';
 
 const WEEK_DESCRIPTIONS: Record<number, string> = {
     1: "Fertilization occurs. Eggs travel to the uterus. No visible symptoms yet; keep her stress levels low.",

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import type { DailyLog } from '../../hooks/usePregnancyTracker';
-import CycleProgressCard from './CycleProgressCard';
+import CycleProgressCard from './sub-components/CycleProgressCard';
 import CalendarModule from './CalendarModule';
-import TodaySymptomsCard from './TodaySymptomsCard';
-import SymptomLogForm from './SymptomLogForm';
+import TodaySymptomsCard from './sub-components/TodaySymptomsCard';
+import SymptomLogForm from './sub-components/SymptomLogForm';
 import WeightPickerModal from '../modals/WeightPickerModal';
 import ConfirmationDialog from '../modals/ConfirmationDialog';
 import { useWeightManager } from '../../hooks/useWeightManager';
@@ -35,7 +35,7 @@ interface DashboardViewProps {
     todayStr: string;
     todayLog: DailyLog;
     todayLoggable: boolean;
-    
+
     // Derived values from parent/hook
     elapsedDayForSelected?: number | null;
     hasVetWarningForSelected?: boolean;

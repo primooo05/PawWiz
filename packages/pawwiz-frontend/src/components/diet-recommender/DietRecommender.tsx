@@ -9,6 +9,14 @@ import { useNavigate } from 'react-router-dom';
 export const DietRecommender: React.FC = () => {
     const navigate = useNavigate();
     const {
+        profiles,
+        activeProfileId,
+        switchProfile,
+        createNewProfile,
+        catName,
+        setCatName,
+        gender,
+        setGender,
         lifeStage,
         setLifeStage,
         age,
@@ -26,6 +34,13 @@ export const DietRecommender: React.FC = () => {
         handleStartDietTracking,
         handleResetDietTracking,
         toggleUnit,
+        addMeal,
+        skipMeal,
+        resetMealLog,
+        addWater,
+        resetWater,
+        loggedMeals,
+        waterIntake,
     } = useDietRecommender();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -53,6 +68,10 @@ export const DietRecommender: React.FC = () => {
             <main className="max-w-[1440px] px-8 py-12 mx-auto">
                 {!isTracking ? (
                     <DietSetupView
+                        catName={catName}
+                        setCatName={setCatName}
+                        gender={gender}
+                        setGender={setGender}
                         lifeStage={lifeStage}
                         setLifeStage={setLifeStage}
                         age={age}
@@ -70,6 +89,7 @@ export const DietRecommender: React.FC = () => {
                 ) : (
                     <DietDashboardView
                         weight={weight}
+                        isKg={isKg}
                         foodPreference={foodPreference}
                         isSpayedNeutered={isSpayedNeutered}
                         activeLifeStage={activeLifeStage}
@@ -77,6 +97,19 @@ export const DietRecommender: React.FC = () => {
                         age={age}
                         ageBracketInfo={ageBracketInfo}
                         onReset={handleResetDietTracking}
+                        catName={catName}
+                        gender={gender}
+                        profiles={profiles}
+                        activeProfileId={activeProfileId}
+                        switchProfile={switchProfile}
+                        createNewProfile={createNewProfile}
+                        loggedMeals={loggedMeals}
+                        waterIntake={waterIntake}
+                        addMeal={addMeal}
+                        skipMeal={skipMeal}
+                        resetMealLog={resetMealLog}
+                        addWater={addWater}
+                        resetWater={resetWater}
                     />
                 )}
             </main>

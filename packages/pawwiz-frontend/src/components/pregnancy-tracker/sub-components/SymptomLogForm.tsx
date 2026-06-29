@@ -1,21 +1,21 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { DailyLog } from '../../hooks/usePregnancyTracker';
-import ExposureSlider from '../Temp';
+import type { DailyLog } from '../../../hooks/usePregnancyTracker';
+import ExposureSlider from '../../Temp';
 
-import nestingIcon from '../../assets/nesting.png';
-import appetiteUpIcon from '../../assets/appetite-up.png';
-import pinkingUpIcon from '../../assets/pinking-up.png';
-import sleepIcon from '../../assets/sleep.png';
-import vomitingIcon from '../../assets/vomiting.png';
-import weightGainIcon from '../../assets/weight-gain.png';
-import milkProductionIcon from '../../assets/milk-production.png';
-import contractionsIcon from '../../assets/contractions.png';
+import nestingIcon from '../../../assets/nesting.png';
+import appetiteUpIcon from '../../../assets/appetite-up.png';
+import pinkingUpIcon from '../../../assets/pinking-up.png';
+import sleepIcon from '../../../assets/sleep.png';
+import vomitingIcon from '../../../assets/vomiting.png';
+import weightGainIcon from '../../../assets/weight-gain.png';
+import milkProductionIcon from '../../../assets/milk-production.png';
+import contractionsIcon from '../../../assets/contractions.png';
 
-import affectionateIcon from '../../assets/affectionate.png';
-import quietIcon from '../../assets/quiet.png';
-import calmIcon from '../../assets/calm.png';
-import stressIcon from '../../assets/stress.png';
+import affectionateIcon from '../../../assets/affectionate.png';
+import quietIcon from '../../../assets/quiet.png';
+import calmIcon from '../../../assets/calm.png';
+import stressIcon from '../../../assets/stress.png';
 
 const getSymptomsForWeek = (week: number) => {
     if (week <= 3) {
@@ -70,7 +70,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
     if (!selectedDateStr) return null;
 
     const [tempUnit, setTempUnit] = React.useState<'C' | 'F'>('C');
-    const activeLog = logs[selectedDateStr] || { symptoms: [], symptomSeverities: {}, moods: [] };
+    const activeLog: DailyLog = logs[selectedDateStr] || { symptoms: [], symptomSeverities: {}, moods: [] };
     const selectedDateWeek = elapsedDayForSelected !== null ? Math.ceil(elapsedDayForSelected / 7) : currentWeek;
 
     return (

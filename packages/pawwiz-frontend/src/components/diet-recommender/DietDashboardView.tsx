@@ -1,9 +1,20 @@
-import React from 'react';
-import type { AgeBracketDetails } from '../../hooks/useDietRecommender';
+import React, { useState } from 'react';
+import type { AgeBracketDetails, MealLog, CatProfile } from '../../hooks/useDietRecommender';
 import ConfirmationDialog from '../modals/ConfirmationDialog';
 
+// Import subcomponents
+import ProfileCard from './sub-components/ProfileCard';
+import MealsTracker from './sub-components/MealsTracker';
+import WeeklyCalendar from './sub-components/WeeklyCalendar';
+import FeedingGuideline from './sub-components/FeedingGuideline';
+import CalorieTracker from './sub-components/CalorieTracker';
+import MealLogModal from './sub-components/MealLogModal';
+
 interface DietDashboardViewProps {
+    catName: string;
+    gender: 'male' | 'female';
     weight: number;
+    isKg: boolean;
     foodPreference: 'dry' | 'wet' | 'mixed';
     isSpayedNeutered: boolean;
     activeLifeStage: 'kitten' | 'adult';
@@ -11,10 +22,25 @@ interface DietDashboardViewProps {
     age: number;
     ageBracketInfo: AgeBracketDetails;
     onReset: () => void;
+
+    profiles: CatProfile[];
+    activeProfileId: string;
+    switchProfile: (id: string) => void;
+    createNewProfile: (name: string) => void;
+    addMeal: (mealId: string, foodType: 'dry' | 'wet' | 'mixed', amount: number, unit: 'spoon' | 'cup', timestamp?: string) => void;
+    skipMeal: (mealId: string) => void;
+    resetMealLog: (mealId: string) => void;
+    addWater: (amount: number) => void;
+    resetWater: () => void;
+    loggedMeals: MealLog[];
+    waterIntake: number;
 }
 
 export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
+    catName,
+    gender,
     weight,
+    isKg,
     foodPreference,
     isSpayedNeutered,
     activeLifeStage,
@@ -22,147 +48,246 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     age,
     ageBracketInfo,
     onReset,
-}) => {
-    const [isConfirmResetOpen, setIsConfirmResetOpen] = React.useState(false);
 
-    // Nutrition formulas
-    const rer = Math.round(70 * Math.pow(weight, 0.75));
+    profiles,
+    activeProfileId,
+    switchProfile,
+    createNewProfile,
+    addMeal,
+    skipMeal,
+    resetMealLog,
+    addWater,
+    resetWater,
+    loggedMeals,
+    waterIntake,
+}) => {
+    const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+
+    // Modal state
+    const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
+    const [modalMealName, setModalMealName] = useState<'Breakfast' | 'Lunch' | 'Dinner'>('Breakfast');
+    const [modalTimestamp, setModalTimestamp] = useState<string>('08:00');
+    const [modalFoodType, setModalFoodType] = useState<'dry' | 'wet'>('dry');
+    const [modalUnit, setModalUnit] = useState<'spoon' | 'cup'>('spoon');
+    const [modalAmount, setModalAmount] = useState<number>(3);
+    const [isEditingMeal, setIsEditingMeal] = useState(false);
+    const [editingMealId, setEditingMealId] = useState<string | null>(null);
+
+    // Skip Confirmation Dialog states
+    const [isSkipConfirmOpen, setIsSkipConfirmOpen] = useState(false);
+    const [mealToSkip, setMealToSkip] = useState<MealLog | null>(null);
+    const [isConfirmCompletedMealsOpen, setIsConfirmCompletedMealsOpen] = useState(false);
+
+    // Nutrition formulas (weight normalized to kg)
+    const weightInKg = isKg ? weight : weight * 0.45359237;
+    const rer = Math.round(70 * Math.pow(weightInKg, 0.75));
     const factor = activeLifeStage === 'kitten' ? 2.5 : isSpayedNeutered ? 1.2 : 1.4;
     const dailyCalories = Math.round(rer * factor);
 
-    // Portions estimate
-    // Dry kibble: ~3.8 kcal/g. Wet food: ~0.85 kcal/g.
-    const dryGrams = Math.round(dailyCalories / 3.8);
-    const wetGrams = Math.round(dailyCalories / 0.85);
+    // Water target (approx. 50ml per kg)
+    const waterTarget = Math.round(weightInKg * 50);
 
-    const getOptimalPortionMessage = () => {
-        if (foodPreference === 'dry') {
-            const cups = (dryGrams / 120).toFixed(1);
-            return `${dryGrams}g of dry kibble daily (approx. ${cups} cups).`;
-        } else if (foodPreference === 'wet') {
-            const cans = (wetGrams / 85).toFixed(1);
-            const spoons = (wetGrams / 15).toFixed(1);
-            return `${wetGrams}g of wet food daily (approx. ${cans} cans or ${spoons} tablespoons).`;
-        } else {
-            // Mixed: 50% dry calories, 50% wet calories
-            const halfDry = Math.round((dailyCalories * 0.5) / 3.8);
-            const halfWet = Math.round((dailyCalories * 0.5) / 0.85);
-            const dryCups = (halfDry / 120).toFixed(1);
-            const wetCans = (halfWet / 85).toFixed(1);
-            const wetSpoons = (halfWet / 15).toFixed(1);
-            return `${halfDry}g dry kibble (approx. ${dryCups} cups) + ${halfWet}g wet food (approx. ${wetCans} cans or ${wetSpoons} tablespoons) daily.`;
+    const totalLoggedCalories = loggedMeals.reduce((sum, m) => sum + m.kcal, 0);
+    const remainingCalories = Math.max(0, dailyCalories - totalLoggedCalories);
+
+    const handleOpenSkipConfirmation = (meal: MealLog) => {
+        setMealToSkip(meal);
+        setIsSkipConfirmOpen(true);
+        setIsAddMealModalOpen(false);
+    };
+
+    const handleConfirmSkip = () => {
+        if (mealToSkip) {
+            skipMeal(mealToSkip.id);
+            setIsSkipConfirmOpen(false);
+            setMealToSkip(null);
         }
     };
 
+    const handleMealModalSubmit = (
+        mealName: 'Breakfast' | 'Lunch' | 'Dinner',
+        foodType: 'dry' | 'wet',
+        amount: number,
+        unit: 'spoon' | 'cup',
+        formattedTimestamp: string
+    ) => {
+        const targetMealId = mealName === 'Breakfast' ? '1' : mealName === 'Lunch' ? '2' : '3';
+        if (isEditingMeal && editingMealId && editingMealId !== targetMealId) {
+            resetMealLog(editingMealId);
+        }
+        addMeal(targetMealId, foodType, amount, unit, formattedTimestamp);
+        setIsAddMealModalOpen(false);
+    };
+
+    const openAddMealModal = () => {
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        setModalMealName('Breakfast');
+        setModalTimestamp(timeStr);
+        setModalFoodType('dry');
+        setModalUnit('spoon');
+        setModalAmount(3);
+        setIsEditingMeal(false);
+        setEditingMealId(null);
+        setIsAddMealModalOpen(true);
+    };
+
+    const handleAddMealClick = () => {
+        const hasPending = loggedMeals.some(m => m.status === 'pending');
+        if (!hasPending) {
+            setIsConfirmCompletedMealsOpen(true);
+        } else {
+            openAddMealModal();
+        }
+    };
+
+    const handleEditMealClick = (meal: MealLog) => {
+        setModalMealName(meal.mealName as any);
+        let time24 = '08:00';
+        if (meal.timestamp) {
+            const match = meal.timestamp.match(/(\d+):(\d+)(am|pm)/);
+            if (match) {
+                let h = parseInt(match[1], 10);
+                const m = match[2];
+                const ampm = match[3];
+                if (ampm === 'pm' && h < 12) h += 12;
+                if (ampm === 'am' && h === 12) h = 0;
+                time24 = `${String(h).padStart(2, '0')}:${m}`;
+            }
+        }
+        setModalTimestamp(time24);
+        setModalFoodType(meal.foodType === 'wet' ? 'wet' : 'dry');
+        setModalUnit(meal.unit || 'spoon');
+        setModalAmount(meal.amount || 3);
+        setIsEditingMeal(true);
+        setEditingMealId(meal.id);
+        setIsAddMealModalOpen(true);
+    };
+
+    const handleUndoLog = (mealId: string) => {
+        resetMealLog(mealId);
+        setIsAddMealModalOpen(false);
+    };
+
+    const possessivePronoun = gender === 'male' ? 'his' : 'her';
+    const subjectPronoun = gender === 'male' ? 'He' : 'She';
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-x-12 gap-y-8 items-start">
-            {/* Left Column: Cat Profile Details Card */}
-            <div className="p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col items-center">
-                <div className="w-full flex justify-between items-center mb-6">
-                    <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Cat Profile</h2>
+        <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto text-slate-800">
+            {/* Header Greeting Row */}
+            <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">Good morning, Ayla</h1>
+                    <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Track now {catName}'s meal for today</p>
+                </div>
+
+                {/* Profile Switcher Dropdown */}
+                <div className="relative self-stretch sm:self-auto">
                     <button
-                        type="button"
-                        onClick={() => setIsConfirmResetOpen(true)}
-                        className="text-xs font-black text-teal-500 hover:text-teal-600 cursor-pointer active:scale-95 transition-transform"
+                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                        className="flex items-center select-none cursor-pointer focus:outline-none bg-transparent border-none active:scale-95 transition-transform"
                     >
-                        Edit Profile
+                        <div className="w-10 h-10 rounded-full bg-[#2ec4b6] border border-slate-300 flex items-center justify-center text-lg z-10 -mr-2.5 shadow-sm">
+                            🐱
+                        </div>
+                        <div className="bg-[#fde047] border border-slate-300 px-6 py-1.5 font-black text-xs text-[#2ec4b6] uppercase tracking-wider z-0 shadow-[0_3px_0_0_#cbd5e1] rounded-sm min-w-[70px] text-center">
+                            {catName}
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-[#2ec4b6] border border-slate-300 flex items-center justify-center text-white text-base z-10 -ml-2.5 shadow-sm font-black leading-none pb-1">
+                            •••
+                        </div>
                     </button>
-                </div>
 
-                <div className="w-24 h-24 bg-teal-50 border-2 border-slate-900 rounded-full flex items-center justify-center text-4xl mb-6 shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
-                    🐈
-                </div>
-
-                {/* Profile Stats */}
-                <div className="w-full space-y-4 text-left">
-                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Age</p>
-                        <p className="text-sm font-black text-slate-800 mt-0.5 capitalize">
-                            {age} {lifeStage === 'kitten' ? (age === 1 ? 'month' : 'months') : (age === 1 ? 'year' : 'years')}
-                        </p>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Weight</p>
-                        <p className="text-sm font-black text-slate-800 mt-0.5">{weight.toFixed(1)} kg</p>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Life Stage</p>
-                        <p className="text-sm font-black text-slate-800 capitalize mt-0.5">{activeLifeStage}</p>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Neutered / Spayed</p>
-                        <p className="text-sm font-black text-slate-800 mt-0.5">{isSpayedNeutered ? 'Yes' : 'No'}</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Right Column: Diet Plan Dashboard */}
-            <div className="flex flex-col gap-6 w-full">
-                {/* 1. Main Recommendation Banner */}
-                <div className="p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] relative overflow-hidden">
-                    <div className="absolute right-0 top-0 w-32 h-32 bg-teal-100/30 rounded-full blur-2xl pointer-events-none" />
-                    <div className="flex items-center gap-2 mb-4">
-                        <span className="w-1.5 h-1.5 bg-[#40C48E] rotate-45" />
-                        <span className="text-[10px] font-black tracking-widest text-[#40C48E] uppercase">Feeding Guideline</span>
-                    </div>
-
-                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">{ageBracketInfo.bracket}</h3>
-                    <p className="text-xs text-slate-500 font-bold mb-6">Based on detected age and lifecycle stage.</p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl">
-                            <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider block mb-1">Recommended Food</span>
-                            <span className="text-sm font-black text-slate-900 leading-tight">{ageBracketInfo.recommendedFood}</span>
-                        </div>
-
-                        <div className="p-4 bg-yellow-50/70 border border-yellow-100 rounded-2xl">
-                            <span className="text-[10px] font-black text-yellow-800 uppercase tracking-wider block mb-1">Feeding Frequency</span>
-                            <span className="text-sm font-black text-slate-900 leading-tight">{ageBracketInfo.frequency}</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 2. Daily Energy & Portion Calculator */}
-                <div className="p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)]">
-                    <div className="flex items-center gap-2 mb-6">
-                        <span className="w-1.5 h-1.5 bg-indigo-500 rotate-45" />
-                        <span className="text-[10px] font-black tracking-widest text-indigo-500 uppercase">Portion & Energy targets</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8 text-center sm:text-left">
-                        <div className="p-4 bg-[#F2FBF9] rounded-[1.25rem]">
-                            <p className="text-[10px] font-bold text-teal-800/70 mb-1 uppercase tracking-widest">Base Energy (RER)</p>
-                            <p className="text-xl font-black text-teal-900">{rer} kcal/day</p>
-                        </div>
-                        <div className="p-4 bg-[#FFFDF0] rounded-[1.25rem]">
-                            <p className="text-[10px] font-bold text-yellow-800/70 mb-1 uppercase tracking-widest">Daily Target (DER)</p>
-                            <p className="text-xl font-black text-yellow-900">{dailyCalories} kcal/day</p>
-                        </div>
-                        <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-[1.25rem]">
-                            <p className="text-[10px] font-bold text-indigo-800 mb-1 uppercase tracking-widest">Multiplier Factor</p>
-                            <p className="text-xl font-black text-indigo-950">{factor}x</p>
-                        </div>
-                    </div>
-
-                    <hr className="border-slate-100 my-6" />
-
-                    <div>
-                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Daily Meal Portions ({foodPreference} preference)</h4>
-                        <div className="p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem]">
-                            <p className="text-sm font-black text-slate-800 leading-snug">
-                                {getOptimalPortionMessage()}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-2 leading-relaxed">
-                                *Note: Dry kibble estimates assume an energy density of 3.8 kcal/g. Wet food assumes 0.85 kcal/g. Adjust targets if your specific pet food package guidelines differ.
-                            </p>
-                        </div>
-                    </div>
+                    {isProfileDropdownOpen && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setIsProfileDropdownOpen(false)} />
+                            <div className="absolute right-0 mt-2 w-56 bg-white border-2 border-slate-900 rounded-2xl shadow-[4px_4px_0_0_rgba(15,23,42,1)] z-50 overflow-hidden py-1 animate-fadeIn">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-4 py-2 border-b border-slate-100">
+                                    Switch Profile
+                                </p>
+                                {profiles.map(p => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => {
+                                            switchProfile(p.id);
+                                            setIsProfileDropdownOpen(false);
+                                        }}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left border-b border-slate-50 last:border-b-0 cursor-pointer ${
+                                            p.id === activeProfileId ? 'bg-teal-50/50' : ''
+                                        }`}
+                                    >
+                                        <span className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs">
+                                            🐈
+                                        </span>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-black text-slate-955">{p.name}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 capitalize">
+                                                {p.lifeStage} • {p.gender}
+                                            </p>
+                                        </div>
+                                        {p.id === activeProfileId && (
+                                            <span className="text-[#2ec4b6] text-xs font-bold">✓</span>
+                                        )}
+                                    </button>
+                                ))}
+                                <div className="p-2 border-t border-slate-100 bg-slate-50">
+                                    <button
+                                        onClick={() => {
+                                            const name = prompt("Enter new cat's name:");
+                                            if (name && name.trim()) {
+                                                createNewProfile(name.trim());
+                                                setIsProfileDropdownOpen(false);
+                                            }
+                                        }}
+                                        className="w-full py-1.5 px-3 bg-[#2ec4b6] hover:bg-[#20a396] text-white font-bold text-xs rounded-xl border border-slate-900 transition-colors cursor-pointer text-center"
+                                    >
+                                        + Add New Cat
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
+            {/* Layout Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1.1fr] gap-8 items-start">
+                {/* Left Column */}
+                <ProfileCard
+                    catName={catName}
+                    gender={gender}
+                    weight={weight}
+                    isKg={isKg}
+                    foodPreference={foodPreference}
+                    isSpayedNeutered={isSpayedNeutered}
+                    activeLifeStage={activeLifeStage}
+                    lifeStage={lifeStage}
+                    age={age}
+                    onEditProfile={() => setIsConfirmResetOpen(true)}
+                />
+
+                {/* Middle Column */}
+                <MealsTracker
+                    loggedMeals={loggedMeals}
+                    waterIntake={waterIntake}
+                    waterTarget={waterTarget}
+                    addWater={addWater}
+                    resetWater={resetWater}
+                    onAddMeal={handleAddMealClick}
+                    onEditMeal={handleEditMealClick}
+                    onUndoSkip={(mealId) => resetMealLog(mealId)}
+                />
+
+                {/* Right Column */}
+                <div className="flex flex-col gap-8 w-full">
+                    <WeeklyCalendar />
+                    <FeedingGuideline ageBracketInfo={ageBracketInfo} />
+                    <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} />
+                </div>
+            </div>
+
+            {/* Dialogs */}
             <ConfirmationDialog
                 isOpen={isConfirmResetOpen}
                 title="Edit Diet Profile?"
@@ -174,6 +299,50 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     onReset();
                 }}
                 onCancel={() => setIsConfirmResetOpen(false)}
+            />
+
+            <ConfirmationDialog
+                isOpen={isSkipConfirmOpen}
+                title={`Skip ${mealToSkip?.mealName}?`}
+                message={`Are you sure ${catName} will skip ${possessivePronoun} ${mealToSkip?.mealName.toLowerCase()}? ${subjectPronoun} still needs to take ${remainingCalories} kcal.`}
+                confirmText="Skip Meal"
+                cancelText="Cancel"
+                onConfirm={handleConfirmSkip}
+                onCancel={() => {
+                    setIsSkipConfirmOpen(false);
+                    setMealToSkip(null);
+                }}
+            />
+
+            <ConfirmationDialog
+                isOpen={isConfirmCompletedMealsOpen}
+                title="Meals Completed"
+                message={`${catName} just completed ${possessivePronoun} meals today, are you sure you want to add more meal`}
+                confirmText="Confirm"
+                cancelText="Cancel"
+                onConfirm={() => {
+                    setIsConfirmCompletedMealsOpen(false);
+                    openAddMealModal();
+                }}
+                onCancel={() => setIsConfirmCompletedMealsOpen(false)}
+            />
+
+            {/* Add/Edit Meal Modal */}
+            <MealLogModal
+                isOpen={isAddMealModalOpen}
+                onClose={() => setIsAddMealModalOpen(false)}
+                onSubmit={handleMealModalSubmit}
+                onSkip={handleOpenSkipConfirmation}
+                onReset={handleUndoLog}
+                isEditing={isEditingMeal}
+                editingMealId={editingMealId}
+                initialMealName={modalMealName}
+                initialTimestamp={modalTimestamp}
+                initialFoodType={modalFoodType}
+                initialUnit={modalUnit}
+                initialAmount={modalAmount}
+                catName={catName}
+                loggedMeals={loggedMeals}
             />
         </div>
     );

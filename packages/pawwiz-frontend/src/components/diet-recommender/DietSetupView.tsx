@@ -2,6 +2,10 @@ import React from 'react';
 import { getAgeBracketInfo } from '../../hooks/useDietRecommender';
 
 interface DietSetupViewProps {
+    catName: string;
+    setCatName: (name: string) => void;
+    gender: 'male' | 'female';
+    setGender: (g: 'male' | 'female') => void;
     lifeStage: 'kitten' | 'adult';
     setLifeStage: (stage: 'kitten' | 'adult') => void;
     age: number;
@@ -18,6 +22,10 @@ interface DietSetupViewProps {
 }
 
 export const DietSetupView: React.FC<DietSetupViewProps> = ({
+    catName,
+    setCatName,
+    gender,
+    setGender,
     lifeStage,
     setLifeStage,
     age,
@@ -49,11 +57,49 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
             <div className="text-4xl mb-4">🍽️</div>
             <h2 className="text-2xl font-black mb-2 text-slate-900 uppercase tracking-tight">Diet Setup</h2>
             <p className="text-slate-500 mb-6 text-xs font-bold uppercase tracking-wider">
-                Establish your cat's age and weight to calculate portions.
+                Establish your cat's profile to calculate portion recommendations.
             </p>
 
             <form onSubmit={onSubmit} className="flex flex-col gap-6 text-left">
-                {/* 1. Weight Slider with unit toggler */}
+                {/* 1. Cat Name Input */}
+                <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                        Cat's Name
+                    </label>
+                    <input
+                        type="text"
+                        value={catName}
+                        onChange={(e) => setCatName(e.target.value)}
+                        placeholder="Aki"
+                        required
+                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl font-bold text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white"
+                    />
+                </div>
+
+                {/* 2. Gender Selection */}
+                <div>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                        Gender
+                    </label>
+                    <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
+                        <button
+                            type="button"
+                            onClick={() => setGender('male')}
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${gender === 'male' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                            Male
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setGender('female')}
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${gender === 'female' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                            Female
+                        </button>
+                    </div>
+                </div>
+
+                {/* 3. Weight Slider with unit toggler */}
                 <div className="space-y-3">
                     <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
                         <span>Weight:</span>
@@ -93,7 +139,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     />
                 </div>
 
-                {/* 2. Life Stage Selection */}
+                {/* 4. Life Stage Selection */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
                         Life Stage
@@ -116,7 +162,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     </div>
                 </div>
 
-                {/* 3. Age Slider */}
+                {/* 5. Age Slider */}
                 <div className="space-y-3">
                     <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
                         <span>Age:</span>
@@ -144,7 +190,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     </p>
                 </div>
 
-                {/* 4. Food Preference */}
+                {/* 6. Food Preference */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
                         Food Type Preference
@@ -166,7 +212,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     </div>
                 </div>
 
-                {/* 5. Spayed/Neutered */}
+                {/* 7. Spayed/Neutered */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
                         Spayed or Neutered?
