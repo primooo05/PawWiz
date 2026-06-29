@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+
+const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+
 
 export interface MealLog {
     id: string;
@@ -169,6 +173,56 @@ export const useDietRecommender = () => {
     const [isSpayedNeutered, setIsSpayedNeutered] = useState<boolean>(activeProfile.isSpayedNeutered);
     const [isTracking, setIsTracking] = useState<boolean>(activeProfile.isTracking);
 
+    const getAuthHeaders = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`,
+        };
+    };
+
+    const syncStatesToSetup = (profile: CatProfile) => {
+        setCatName(profile.name);
+        setGender(profile.gender);
+        setLifeStage(profile.lifeStage);
+        setAge(profile.age);
+        setWeight(profile.weight);
+        setIsKg(profile.isKg);
+        setFoodPreference(profile.foodPreference);
+        setIsSpayedNeutered(profile.isSpayedNeutered);
+        setIsTracking(profile.isTracking);
+    };
+
+    // Load from backend on mount
+    useEffect(() => {
+        const loadFromBackend = async () => {
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        setProfiles(data);
+                        localStorage.setItem('diet_profiles', JSON.stringify(data));
+                        
+                        const activeId = localStorage.getItem('diet_active_profile_id') || data[0].id;
+                        const exists = data.some((p: any) => p.id === activeId);
+                        const finalId = exists ? activeId : data[0].id;
+                        
+                        setActiveProfileId(finalId);
+                        localStorage.setItem('diet_active_profile_id', finalId);
+
+                        const active = data.find((p: any) => p.id === finalId) || data[0];
+                        syncStatesToSetup(active);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to sync diet profiles from backend', e);
+            }
+        };
+        loadFromBackend();
+    }, []);
+
     const saveProfilesToStorage = (updatedList: CatProfile[]) => {
         localStorage.setItem('diet_profiles', JSON.stringify(updatedList));
     };
@@ -178,22 +232,13 @@ export const useDietRecommender = () => {
         if (!nextProfile) return;
         setActiveProfileId(id);
         localStorage.setItem('diet_active_profile_id', id);
-
-        // Sync setup form and active states
-        setCatName(nextProfile.name);
-        setGender(nextProfile.gender);
-        setLifeStage(nextProfile.lifeStage);
-        setAge(nextProfile.age);
-        setWeight(nextProfile.weight);
-        setIsKg(nextProfile.isKg);
-        setFoodPreference(nextProfile.foodPreference);
-        setIsSpayedNeutered(nextProfile.isSpayedNeutered);
-        setIsTracking(nextProfile.isTracking);
+        syncStatesToSetup(nextProfile);
     };
 
-    const createNewProfile = (name: string) => {
+    const createNewProfile = async (name: string) => {
+        // Optimistic local state update first
         const newId = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-        const newProf: CatProfile = {
+        const tempProf: CatProfile = {
             id: newId,
             name: name,
             gender: 'male',
@@ -211,63 +256,101 @@ export const useDietRecommender = () => {
             ],
             waterIntake: 0
         };
-        const updatedList = [...profiles, newProf];
-        setProfiles(updatedList);
-        saveProfilesToStorage(updatedList);
+        const tempProfiles = [...profiles, tempProf];
+        setProfiles(tempProfiles);
         setActiveProfileId(newId);
-        localStorage.setItem('diet_active_profile_id', newId);
-        
-        // Sync states to setup
-        setCatName(newProf.name);
-        setGender(newProf.gender);
-        setLifeStage(newProf.lifeStage);
-        setAge(newProf.age);
-        setWeight(newProf.weight);
-        setIsKg(newProf.isKg);
-        setFoodPreference(newProf.foodPreference);
-        setIsSpayedNeutered(newProf.isSpayedNeutered);
-        setIsTracking(false);
-    };
+        syncStatesToSetup(tempProf);
 
-    const handleStartDietTracking = () => {
-        const updatedProfiles = profiles.map(p => {
-            if (p.id === activeProfileId) {
-                return {
-                    ...p,
-                    name: catName,
-                    gender,
-                    lifeStage,
-                    age,
-                    weight,
-                    isKg,
-                    foodPreference,
-                    isSpayedNeutered,
-                    isTracking: true,
-                };
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    name: tempProf.name,
+                    gender: tempProf.gender,
+                    lifeStage: tempProf.lifeStage,
+                    age: tempProf.age,
+                    weight: tempProf.weight,
+                    isKg: tempProf.isKg,
+                    foodPreference: tempProf.foodPreference,
+                    isSpayedNeutered: tempProf.isSpayedNeutered,
+                    isTracking: tempProf.isTracking,
+                }),
+            });
+            if (res.ok) {
+                const serverProf = await res.json();
+                setProfiles(prev => {
+                    const filtered = prev.filter(p => p.id !== newId);
+                    const list = [...filtered, serverProf];
+                    saveProfilesToStorage(list);
+                    return list;
+                });
+                setActiveProfileId(serverProf.id);
+                localStorage.setItem('diet_active_profile_id', serverProf.id);
+                syncStatesToSetup(serverProf);
             }
-            return p;
-        });
-        setProfiles(updatedProfiles);
-        saveProfilesToStorage(updatedProfiles);
-        setIsTracking(true);
+        } catch (e) {
+            console.error('Failed to create profile on backend', e);
+        }
     };
 
-    const handleResetDietTracking = () => {
-        const updatedProfiles = profiles.map(p => {
-            if (p.id === activeProfileId) {
-                return {
-                    ...p,
-                    isTracking: false,
-                };
+    const handleStartDietTracking = async () => {
+        setIsTracking(true); // Optimistic UI update
+
+        try {
+            const updatedData = {
+                name: catName,
+                gender,
+                lifeStage,
+                age,
+                weight,
+                isKg,
+                foodPreference,
+                isSpayedNeutered,
+                isTracking: true,
+            };
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(updatedData),
+            });
+            if (res.ok) {
+                const updatedProf = await res.json();
+                const updatedProfiles = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                setProfiles(updatedProfiles);
+                saveProfilesToStorage(updatedProfiles);
+                syncStatesToSetup(updatedProf);
             }
-            return p;
-        });
-        setProfiles(updatedProfiles);
-        saveProfilesToStorage(updatedProfiles);
-        setIsTracking(false);
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const addMeal = (
+    const handleResetDietTracking = async () => {
+        setIsTracking(false); // Optimistic UI update
+
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ isTracking: false }),
+            });
+            if (res.ok) {
+                const updatedProf = await res.json();
+                const updatedProfiles = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                setProfiles(updatedProfiles);
+                saveProfilesToStorage(updatedProfiles);
+                syncStatesToSetup(updatedProf);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const addMeal = async (
         mealId: string,
         foodType: 'dry' | 'wet' | 'mixed',
         amount: number,
@@ -275,7 +358,9 @@ export const useDietRecommender = () => {
         timestamp?: string
     ) => {
         const kcal = calculateMealCalories(foodType, amount, unit);
-        const updatedProfiles = profiles.map(p => {
+        
+        // Optimistic UI update
+        const updatedProfilesLocal = profiles.map(p => {
             if (p.id === activeProfileId) {
                 const updatedMeals = p.loggedMeals.map(m => {
                     if (m.id === mealId) {
@@ -291,19 +376,40 @@ export const useDietRecommender = () => {
                     }
                     return m;
                 });
-                return {
-                    ...p,
-                    loggedMeals: updatedMeals,
-                };
+                return { ...p, loggedMeals: updatedMeals };
             }
             return p;
         });
-        setProfiles(updatedProfiles);
-        saveProfilesToStorage(updatedProfiles);
+        setProfiles(updatedProfilesLocal);
+
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    foodType,
+                    amount,
+                    unit,
+                    kcal,
+                    status: 'logged',
+                    timestamp,
+                }),
+            });
+            if (res.ok) {
+                const updatedProf = await res.json();
+                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                setProfiles(synced);
+                saveProfilesToStorage(synced);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const skipMeal = (mealId: string) => {
-        const updatedProfiles = profiles.map(p => {
+    const skipMeal = async (mealId: string) => {
+        // Optimistic UI update
+        const updatedProfilesLocal = profiles.map(p => {
             if (p.id === activeProfileId) {
                 const updatedMeals = p.loggedMeals.map(m => {
                     if (m.id === mealId) {
@@ -315,19 +421,36 @@ export const useDietRecommender = () => {
                     }
                     return m;
                 });
-                return {
-                    ...p,
-                    loggedMeals: updatedMeals,
-                };
+                return { ...p, loggedMeals: updatedMeals };
             }
             return p;
         });
-        setProfiles(updatedProfiles);
-        saveProfilesToStorage(updatedProfiles);
+        setProfiles(updatedProfilesLocal);
+
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    status: 'skipped',
+                    kcal: 0,
+                }),
+            });
+            if (res.ok) {
+                const updatedProf = await res.json();
+                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                setProfiles(synced);
+                saveProfilesToStorage(synced);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const resetMealLog = (mealId: string) => {
-        const updatedProfiles = profiles.map(p => {
+    const resetMealLog = async (mealId: string) => {
+        // Optimistic UI update
+        const updatedProfilesLocal = profiles.map(p => {
             if (p.id === activeProfileId) {
                 const updatedMeals = p.loggedMeals.map(m => {
                     if (m.id === mealId) {
@@ -338,23 +461,45 @@ export const useDietRecommender = () => {
                             amount: undefined,
                             unit: undefined,
                             foodType: undefined,
+                            timestamp: undefined,
                         };
                     }
                     return m;
                 });
-                return {
-                    ...p,
-                    loggedMeals: updatedMeals,
-                };
+                return { ...p, loggedMeals: updatedMeals };
             }
             return p;
         });
-        setProfiles(updatedProfiles);
-        saveProfilesToStorage(updatedProfiles);
+        setProfiles(updatedProfilesLocal);
+
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    status: 'pending',
+                    kcal: 0,
+                    foodType: null,
+                    amount: null,
+                    unit: null,
+                    timestamp: null,
+                }),
+            });
+            if (res.ok) {
+                const updatedProf = await res.json();
+                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                setProfiles(synced);
+                saveProfilesToStorage(synced);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const addWater = (amount: number) => {
-        const updatedProfiles = profiles.map(p => {
+    const addWater = async (amount: number) => {
+        // Optimistic UI update
+        const updatedProfilesLocal = profiles.map(p => {
             if (p.id === activeProfileId) {
                 return {
                     ...p,
@@ -363,12 +508,29 @@ export const useDietRecommender = () => {
             }
             return p;
         });
-        setProfiles(updatedProfiles);
-        saveProfilesToStorage(updatedProfiles);
+        setProfiles(updatedProfilesLocal);
+
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/water`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ amount }),
+            });
+            if (res.ok) {
+                const updatedProf = await res.json();
+                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                setProfiles(synced);
+                saveProfilesToStorage(synced);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
 
-    const resetWater = () => {
-        const updatedProfiles = profiles.map(p => {
+    const resetWater = async () => {
+        // Optimistic UI update
+        const updatedProfilesLocal = profiles.map(p => {
             if (p.id === activeProfileId) {
                 return {
                     ...p,
@@ -377,8 +539,24 @@ export const useDietRecommender = () => {
             }
             return p;
         });
-        setProfiles(updatedProfiles);
-        saveProfilesToStorage(updatedProfiles);
+        setProfiles(updatedProfilesLocal);
+
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/water`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ amount: 0 }),
+            });
+            if (res.ok) {
+                const updatedProf = await res.json();
+                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                setProfiles(synced);
+                saveProfilesToStorage(synced);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     const toggleUnit = (toKg: boolean) => {

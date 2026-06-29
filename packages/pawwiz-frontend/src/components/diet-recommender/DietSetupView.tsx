@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getAgeBracketInfo } from '../../hooks/useDietRecommender';
+import { supabase } from '../../lib/supabase';
+
 
 interface DietSetupViewProps {
     catName: string;
@@ -42,6 +44,43 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 }) => {
     const ageBracketDetails = getAgeBracketInfo(lifeStage, age);
 
+    const [onboardedCat, setOnboardedCat] = useState<{ name: string; gender: 'male' | 'female'; lifeStage: 'kitten' | 'adult' } | null>(null);
+    const [selectedCatId, setSelectedCatId] = useState<string>('onboarding');
+
+    // Fetch user profile from backend on mount to auto-fill onboarding details
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) return;
+                const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+                const res = await fetch(`${API_BASE}/api/profile`, {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.catName) {
+                        const gender = data.catSex.toLowerCase() === 'female' ? 'female' : 'male';
+                        const lifeStage = data.catLifeStage.toLowerCase() === 'kitten' ? 'kitten' : 'adult';
+                        setOnboardedCat({
+                            name: data.catName,
+                            gender,
+                            lifeStage,
+                        });
+                        // Prefill the form states
+                        setCatName(data.catName);
+                        setGender(gender);
+                        setLifeStage(lifeStage);
+                        setSelectedCatId('onboarding');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch onboarding profile details', e);
+            }
+        };
+        fetchProfile();
+    }, [setCatName, setGender, setLifeStage]);
+
     // Sync default age value when changing lifeStage
     const handleLifeStageChange = (stage: 'kitten' | 'adult') => {
         setLifeStage(stage);
@@ -61,6 +100,44 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
             </p>
 
             <form onSubmit={onSubmit} className="flex flex-col gap-6 text-left">
+                {/* 0. Cat Selection (Onboarding vs New) */}
+                {onboardedCat && (
+                    <div>
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                            Select Cat to Set Up First
+                        </label>
+                        <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-full justify-between">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedCatId('onboarding');
+                                    setCatName(onboardedCat.name);
+                                    setGender(onboardedCat.gender);
+                                    setLifeStage(onboardedCat.lifeStage);
+                                }}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${
+                                    selectedCatId === 'onboarding' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                            >
+                                {onboardedCat.name} (Onboarding)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedCatId('new');
+                                    setCatName('');
+                                    setGender('male');
+                                    setLifeStage('adult');
+                                }}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${
+                                    selectedCatId === 'new' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                            >
+                                Set up a new cat
+                            </button>
+                        </div>
+                    </div>
+                )}
                 {/* 1. Cat Name Input */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">

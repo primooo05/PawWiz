@@ -22,6 +22,8 @@ model Profile {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
+  dietProfiles   DietProfile[]
+
   @@map("profiles")
 }
 
@@ -43,4 +45,45 @@ model OnboardingSession {
 
   @@map("onboarding_sessions")
 }
+
+model DietProfile {
+  id               String        @id @default(cuid())
+  profileId        String        @map("profile_id")
+  name             String
+  gender           String        // 'male' | 'female'
+  lifeStage        String        // 'kitten' | 'adult'
+  age              Int           // months for kitten, years for adult
+  weight           Float
+  isKg             Boolean       @map("is_kg")
+  foodPreference   String        @map("food_preference") // 'dry' | 'wet' | 'mixed'
+  isSpayedNeutered Boolean       @map("is_spayed_neutered")
+  isTracking       Boolean       @default(false) @map("is_tracking")
+  waterIntake      Int           @default(0) @map("water_intake")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  profile          Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  loggedMeals      DietMealLog[]
+
+  @@map("diet_profiles")
+}
+
+model DietMealLog {
+  id            String      @id @default(cuid())
+  dietProfileId String      @map("diet_profile_id")
+  mealName      String      @map("meal_name") // 'Breakfast' | 'Lunch' | 'Dinner'
+  foodType      String?     @map("food_type") // 'dry' | 'wet' | 'mixed'
+  amount        Float?
+  unit          String?     // 'spoon' | 'cup'
+  kcal          Float
+  status        String      // 'pending' | 'logged' | 'skipped'
+  timestamp     String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  dietProfile   DietProfile @relation(fields: [dietProfileId], references: [id], onDelete: Cascade)
+
+  @@map("diet_meal_logs")
+}
+
 

@@ -44,12 +44,20 @@ export const DietRecommender: React.FC = () => {
     } = useDietRecommender();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [loadingTarget, setLoadingTarget] = useState<'dashboard' | 'setup' | null>(null);
+    const [showSetup, setShowSetup] = useState<boolean>(true);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (weight > 0) {
+            setLoadingTarget('dashboard');
             setIsLoading(true);
         }
+    };
+
+    const handleResetWithLoading = () => {
+        setLoadingTarget('setup');
+        setIsLoading(true);
     };
 
     const handleNavigation = (item: string) => {
@@ -66,7 +74,7 @@ export const DietRecommender: React.FC = () => {
         <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20">
             {/* Main content container */}
             <main className="max-w-[1440px] px-8 py-12 mx-auto">
-                {!isTracking ? (
+                {showSetup || !isTracking ? (
                     <DietSetupView
                         catName={catName}
                         setCatName={setCatName}
@@ -96,7 +104,7 @@ export const DietRecommender: React.FC = () => {
                         lifeStage={lifeStage}
                         age={age}
                         ageBracketInfo={ageBracketInfo}
-                        onReset={handleResetDietTracking}
+                        onReset={handleResetWithLoading}
                         catName={catName}
                         gender={gender}
                         profiles={profiles}
@@ -121,10 +129,19 @@ export const DietRecommender: React.FC = () => {
 
             {isLoading && (
                 <LoadingScreen
-                    durationMs={4000}
+                    durationMs={loadingTarget === 'setup' ? 2500 : 4000}
+                    catName={catName}
+                    message={loadingTarget === 'setup' ? `Resetting ${catName || "cat"}'s tracker...` : undefined}
                     onComplete={() => {
                         setIsLoading(false);
-                        handleStartDietTracking();
+                        if (loadingTarget === 'dashboard') {
+                            handleStartDietTracking();
+                            setShowSetup(false);
+                        } else if (loadingTarget === 'setup') {
+                            handleResetDietTracking();
+                            setShowSetup(true);
+                        }
+                        setLoadingTarget(null);
                     }}
                 />
             )}
