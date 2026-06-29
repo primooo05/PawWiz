@@ -39,12 +39,12 @@ export default function Login() {
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center pt-28 pb-12 px-6 min-w-[365px] min-h-[667px]">
 
       {/* Decorative Circles */}
-      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'z-[9999] scale-[8]' : 'z-0 scale-100'}`} />
-      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right ${isTransitioning ? 'z-[9999] scale-[12]' : 'z-0 scale-100'}`} />
-      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'z-[9999] scale-[8]' : 'z-0 scale-100'}`} />
+      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'z-50 scale-[8]' : 'z-0 scale-100'}`} />
+      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right ${isTransitioning ? 'z-50 scale-[12]' : 'z-0 scale-100'}`} />
+      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'z-50 scale-[8]' : 'z-0 scale-100'}`} />
 
       {/* Main content wrapper */}
-      <div className="relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-between gap-12 relative z-10 my-auto">
+      <div className="relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-between gap-12 relative ${isTransitioning ? 'z-0' : 'z-10'} my-auto">
       
         {/* Left side: branding/illustration */}
         <div className="flex flex-col items-start justify-between max-w-lg lg:w-1/2 min-h-[450px] lg:min-h-[650px] relative">
