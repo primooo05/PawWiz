@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { DailyLog } from '../../../hooks/usePregnancyTracker';
-import ExposureSlider from '../../Temp';
+import ExposureSlider from '../../smoothui/exposure-slider/Temp.tsx';
 
 import nestingIcon from '../../../assets/nesting.png';
 import appetiteUpIcon from '../../../assets/appetite-up.png';
