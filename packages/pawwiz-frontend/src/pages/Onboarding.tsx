@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { CircleWrapper } from '../components/CircleWrapper';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
 import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
@@ -69,8 +70,6 @@ function OnboardingView() {
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
-
-
 
   // Dirty flags — track if user changed a field after it was already submitted
   const [isStep2Dirty, setIsStep2Dirty] = useState(false);
@@ -376,9 +375,7 @@ function OnboardingView() {
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">
       {/* Decorative Circles */}
-      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left ${(isTransitioning || isZIndexHigh) ? 'z-50 ' + (isTransitioning ? 'scale-[8]' : 'scale-100') : '-z-10 scale-100'}`} />
-      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right ${(isTransitioning || isZIndexHigh) ? 'z-50 ' + (isTransitioning ? 'scale-[12]' : 'scale-100') : '-z-10 scale-100'}`} />
-      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${(isTransitioning || isZIndexHigh) ? 'z-50 ' + (isTransitioning ? 'scale-[8]' : 'scale-100') : '-z-10 scale-100'}`} />
+      <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
 
       {/* Center Wrapper */}
       <div className={`relative w-full flex-grow flex items-center justify-center ${(isTransitioning || isZIndexHigh) ? 'z-0' : 'z-10'}`}>
