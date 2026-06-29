@@ -17,10 +17,9 @@ export function useLogin() {
     
     if (!form.validateAll()) return;
     
-    // Honeypot check
+    // Honeypot check — silent fail, no console output to avoid leaking bot detection
     if (form.values.honeypot) {
-      console.warn('Bot detected');
-      return; // Silent fail
+      return;
     }
 
     setIsSubmitting(true);
