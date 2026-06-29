@@ -27,14 +27,14 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
   handleBackClick,
 }) => {
   return (
-    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-12 z-10 pt-6 pb-36 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
       }`}>
       {/* Left Column: Form Info */}
-      <div className="flex-1 w-full max-w-md flex flex-col justify-center items-start text-left space-y-6">
-        <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
+      <div className="flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-start text-center md:text-left space-y-6">
+        <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
           What's your name?
         </h1>
-        <p className="text-base md:text-lg text-slate-600 font-medium">
+        <p className="text-sm md:text-lg text-slate-600 font-medium">
           So we know what to call you, our fur parent
         </p>
         <input
@@ -61,7 +61,7 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
       <div className="flex-1 flex justify-center items-center relative">
         {/* Custom Speech Bubble */}
         {showBubble && (
-          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-20 animate-fade-in">
+          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-0 animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
             {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
@@ -72,14 +72,14 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
           <img
             src={catClean2}
             alt="Cat mascot"
-            className="w-72 h-72 md:w-[450px] md:h-[450px] object-contain select-none"
+            className="w-36 h-36 md:w-[450px] md:h-[450px] object-contain select-none"
             draggable={false}
           />
         </div>
       </div>
 
       {/* Bottom Actions Overlay */}
-      <div className="w-full absolute bottom-2 left-0 flex flex-col items-center gap-4 z-20">
+      <div className="w-full md:absolute md:bottom-2 left-0 flex flex-col items-center gap-4 z-0 mt-6 md:mt-0">
         <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
           <button
             onClick={handleBackClick}

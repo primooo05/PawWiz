@@ -25,15 +25,15 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
   handleAddOtherBabies,
 }) => {
   return (
-    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-12 z-10 pt-6 pb-36 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
+    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
       {/* Left Column: Cat Confirmation */}
-      <div className="flex-1 w-full max-w-md flex flex-col justify-center items-stretch text-left space-y-4">
-        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide block">
+      <div className="flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4">
+        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide block text-center md:text-left">
           Cat Added!
         </label>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 w-full">
           <div className="w-full py-4 px-6 rounded-2xl bg-[#2ec4b6] text-white font-extrabold text-lg md:text-xl text-center shadow-[0_4px_0_0_#209f93] select-none">
             {catName}
           </div>
@@ -52,7 +52,7 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
       <div className="flex-1 flex justify-center items-center relative">
         {/* Custom Speech Bubble */}
         {showBubble && (
-          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-20 animate-fade-in">
+          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-0 animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
             {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
@@ -63,14 +63,14 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
           <img
             src={catScreen6}
             alt="Cat mascot"
-            className="w-72 h-72 md:w-[450px] md:h-[450px] object-contain select-none"
+            className="w-36 h-36 md:w-[450px] md:h-[450px] object-contain select-none"
             draggable={false}
           />
         </div>
       </div>
 
       {/* Bottom Actions Overlay */}
-      <div className="w-full absolute bottom-2 left-0 flex flex-col items-center gap-4 z-20">
+      <div className="w-full md:absolute md:bottom-2 left-0 flex flex-col items-center gap-4 z-0 mt-6 md:mt-0">
         <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
           <button
             onClick={handleBackClick}

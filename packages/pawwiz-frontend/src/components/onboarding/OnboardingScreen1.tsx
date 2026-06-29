@@ -19,8 +19,8 @@ export const OnboardingScreen1: React.FC<OnboardingScreen1Props> = ({
   rippleStyle,
 }) => {
   return (
-    <div className={`flex flex-col justify-center items-center w-full max-w-md z-10 absolute transition-opacity duration-300 ${
-      active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+    <div className={`flex flex-col justify-center items-center w-full max-w-md z-0 transition-all duration-[2000ms] ease-in-out absolute ${
+      active ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-90 pointer-events-none'
     }`}>
       {/* Animated Cat Mascot */}
       <div className="animate-float mb-12 flex justify-center items-center">
@@ -48,7 +48,7 @@ export const OnboardingScreen1: React.FC<OnboardingScreen1Props> = ({
             isClicked ? 'text-white' : 'text-[#2ec4b6]'
           }`}
         >
-          <span className="relative z-10 transition-colors duration-200">Already have an account</span>
+          <span className="relative z-0 transition-colors duration-200">Already have an account</span>
           {rippleStyle && (
             <span
               className="ripple-span"
