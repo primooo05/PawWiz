@@ -27,6 +27,14 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
         return;
       }
 
+      // Steps 5–7 are client-side transitions only; session is already validated
+      // by the time the user reaches step 4. No network round-trip needed and no
+      // spinner should ever appear for these steps.
+      if (step >= 5) {
+        if (active) setInitialChecked(true);
+        return;
+      }
+
       // No session → force back to step 1
       if (!sessionId) {
         if (active) {
@@ -41,13 +49,12 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
         return;
       }
 
-      // Client-side fast rejection: step ahead of known session progress
-      // Step 7 is client-only (password entry), allowed once backend step >= 5
-      if (initialChecked && sessionStep > 0 && step > sessionStep && step !== 7) {
-        if (active) setStep(sessionStep);
-        return;
-      }
-      if (initialChecked && step === 7 && sessionStep < 5) {
+      // Client-side fast rejection: step ahead of known session progress.
+      // Allow up to sessionStep + 2 through — covers both single-step and
+      // two-step progressions (e.g. step 5 → 7 for single-cat users) where
+      // the URL has advanced but sessionStep state has not yet flushed.
+      const isNormalProgression = step <= sessionStep + 2;
+      if (initialChecked && sessionStep > 0 && step > sessionStep && !isNormalProgression) {
         if (active) setStep(sessionStep);
         return;
       }
@@ -70,9 +77,7 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
 
       if (!data) {
         setStep(1);
-      } else if (step > data.step && step !== 7) {
-        setStep(data.step);
-      } else if (step === 7 && data.step < 5) {
+      } else if (step > data.step) {
         setStep(data.step);
       }
       setInitialChecked(true);
@@ -85,10 +90,12 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
     };
   }, [step, sessionId, fetchSession, initialChecked, sessionStep, setStep]);
 
-  // Show spinner while guarding
-  const isStepAhead = initialChecked && sessionStep > 0 && step > sessionStep && step !== 7;
+  // Show spinner only while fetching session data for steps 2–4.
+  // Steps 5–7 short-circuit above and never reach this render gate.
+  const isNormalProgression = step <= sessionStep + 2;
+  const isStepAhead = step < 5 && initialChecked && sessionStep > 0 && step > sessionStep && !isNormalProgression;
 
-  if (loadingGuard || (step > 1 && !initialChecked) || isStepAhead) {
+  if (loadingGuard || (step > 1 && step < 5 && !initialChecked) || isStepAhead) {
     return (
       <div className="min-h-screen w-full bg-white bg-grid-pattern flex flex-col justify-center items-center">
         <div className="w-16 h-16 border-4 border-[#2ec4b6] border-t-transparent rounded-full animate-spin mb-4" />

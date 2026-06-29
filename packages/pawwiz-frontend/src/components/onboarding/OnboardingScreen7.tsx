@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Turnstile } from '@marsidev/react-turnstile';
 import catScreen7 from '../../assets/Cat_Screen7.svg';
 
 interface OnboardingScreen7Props {
@@ -13,7 +12,6 @@ interface OnboardingScreen7Props {
   bubbleText: string;
   handleCreateProfileClick: () => void;
   handleBackClick: () => void;
-  onTurnstileSuccess: (token: string) => void;
 }
 
 /**
@@ -181,7 +179,6 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
   bubbleText,
   handleCreateProfileClick,
   handleBackClick,
-  onTurnstileSuccess,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -202,14 +199,14 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
   }, [active]);
 
   return (
-    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-12 z-10 pt-6 pb-36 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
+    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
       {/* Left Column: Password Fields */}
-      <div className={`flex-1 w-full max-w-md flex flex-col justify-center items-stretch text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
+      <div className={`flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
-        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide">
+        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
           Set a Password
         </label>
 
@@ -264,7 +261,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
       }`}>
         {/* Speech Bubble — same design as other screens */}
         {showBubble && (
-          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-20 animate-fade-in">
+          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-0 animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
             {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
@@ -276,7 +273,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
           <img
             src={catScreen7}
             alt="Cat mascot"
-            className="w-72 h-72 md:w-[450px] md:h-[450px] object-contain select-none"
+            className="w-36 h-36 md:w-[450px] md:h-[450px] object-contain select-none"
             draggable={false}
           />
           {/* Animated eyelid overlay — loops through states when password is visible */}
@@ -328,15 +325,10 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
       </div>
 
       {/* Bottom Actions Overlay */}
-      <div className={`w-full absolute bottom-2 left-0 flex flex-col items-center gap-4 z-20 transition-all duration-500 delay-300 ease-out ${
+      <div className={`w-full md:absolute md:bottom-2 left-0 flex flex-col items-center gap-4 z-0 mt-6 md:mt-0 transition-all duration-500 delay-300 ease-out ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
-        <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
-          <Turnstile
-            siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-            onSuccess={onTurnstileSuccess}
-          />
-        </div>
+
         <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
           <button
             onClick={handleBackClick}

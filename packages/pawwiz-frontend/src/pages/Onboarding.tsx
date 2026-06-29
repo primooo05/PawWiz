@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { CircleWrapper } from '../components/CircleWrapper';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
 import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
@@ -70,9 +71,6 @@ function OnboardingView() {
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
 
-  // Turnstile CAPTCHA token — populated when the widget completes verification
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
-
   // Dirty flags — track if user changed a field after it was already submitted
   const [isStep2Dirty, setIsStep2Dirty] = useState(false);
   const [isStep3Dirty, setIsStep3Dirty] = useState(false);
@@ -80,6 +78,8 @@ function OnboardingView() {
   const [isStep5Dirty, setIsStep5Dirty] = useState(false);
 
   // Transition state for the circular scale animation
+  const zIndexTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isZIndexHigh, setIsZIndexHigh] = useState(!!(location.state as { animateIn?: boolean })?.animateIn);
   const [isTransitioning, setIsTransitioning] = useState(
     !!(location.state as { animateIn?: boolean })?.animateIn
   );
@@ -91,7 +91,10 @@ function OnboardingView() {
   // Clear animateIn state on mount
   useEffect(() => {
     if ((location.state as { animateIn?: boolean })?.animateIn) {
-      const timer = setTimeout(() => setIsTransitioning(false), 100);
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 2000); };
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [location.state]);
@@ -120,7 +123,7 @@ function OnboardingView() {
   // --- Navigation helpers ---
 
   const transitionTo = (nextStep: number) => {
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => {
       setStep(nextStep);
       setIsTransitioning(false);
@@ -141,8 +144,9 @@ function OnboardingView() {
     }
   };
 
-  const handleAlreadyHaveAccountClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleAlreadyHaveAccountClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
+    if (isClicked || isTransitioning) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
     const x = e.clientX - rect.left;
@@ -150,21 +154,27 @@ function OnboardingView() {
 
     setRippleStyle({ width: `${size}px`, height: `${size}px`, left: `${x}px`, top: `${y}px` });
     setIsClicked(true);
-    setTimeout(() => navigate('/login'), 450);
+
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    navigate('/login', { state: { animateIn: true } });
   };
 
   const handleCreateAccountClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     await initializeSession();
     setTimeout(() => {
       setStep(2);
       setIsTransitioning(false);
+      { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 2000); };
     }, 800);
   };
 
   const handleReturnToHome = () => {
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => navigate('/', { state: { animateOut: true } }), 800);
   };
 
@@ -179,7 +189,7 @@ function OnboardingView() {
       return;
     }
 
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => {
       setCatName('');
       setCatBreed('');
@@ -321,9 +331,14 @@ function OnboardingView() {
         email: ownerEmail,
         password: password,
       });
-
-      if (authError) throw new Error(authError.message);
+      if (authError) {
+        if (authError.message.toLowerCase().includes('rate limit') || authError.message.toLowerCase().includes('too many requests')) {
+          throw new Error('Too many tries, try again later');
+        }
+        throw new Error(authError.message);
+      }
       if (!authData.user) throw new Error('Failed to create account');
+      if (!authData.session) throw new Error('Email already registered or requires confirmation. Please login instead.');
 
       // 2. Create profile on backend
       const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
@@ -331,13 +346,12 @@ function OnboardingView() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authData.session!.access_token}`,
+          'Authorization': `Bearer ${authData.session.access_token}`,
         },
         body: JSON.stringify({
           supabaseUserId: authData.user.id,
           displayName: ownerName,
           onboardingSessionId: sessionId,
-          'cf-turnstile-response': turnstileToken,
         }),
       });
 
@@ -359,14 +373,12 @@ function OnboardingView() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center py-12 px-6">
+    <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">
       {/* Decorative Circles */}
-      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left z-50 ${isTransitioning ? 'scale-[8]' : 'scale-100'}`} />
-      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right z-50 ${isTransitioning ? 'scale-[12]' : 'scale-100'}`} />
-      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right z-50 ${isTransitioning ? 'scale-[8]' : 'scale-100'}`} />
+      <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
 
       {/* Center Wrapper */}
-      <div className="relative w-full flex-grow flex items-center justify-center z-10">
+      <div className={`relative w-full flex-grow flex items-center justify-center ${(isTransitioning || isZIndexHigh) ? 'z-0' : 'z-10'}`}>
         <OnboardingScreen1
           active={step === 1 && !isTransitioning}
           handleCreateAccountClick={handleCreateAccountClick}
@@ -448,7 +460,6 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
-          onTurnstileSuccess={(token) => setTurnstileToken(token)}
         />
       </div>
     </div>

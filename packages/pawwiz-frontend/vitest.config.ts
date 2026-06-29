@@ -11,7 +11,6 @@ export default defineConfig({
     env: {
       VITE_SUPABASE_URL: 'https://placeholder.supabase.co',
       VITE_SUPABASE_ANON_KEY: 'placeholder-anon-key',
-      VITE_TURNSTILE_SITE_KEY: 'placeholder-turnstile-key',
     },
   },
 });

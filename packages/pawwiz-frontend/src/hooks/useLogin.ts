@@ -1,6 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '../lib/supabase';
 import { useFormValidation } from './useFormValidation';
 import { loginSchema } from '../schemas/auth';
@@ -9,8 +8,6 @@ export function useLogin() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const form = useFormValidation(loginSchema, { email: '', password: '', honeypot: '' });
 
@@ -20,14 +17,8 @@ export function useLogin() {
     
     if (!form.validateAll()) return;
     
-    // Honeypot check
+    // Honeypot check — silent fail, no console output to avoid leaking bot detection
     if (form.values.honeypot) {
-      console.warn('Bot detected');
-      return; // Silent fail
-    }
-
-    if (!turnstileToken) {
-      setServerError('Please wait for captcha verification');
       return;
     }
 
@@ -48,7 +39,6 @@ export function useLogin() {
       }
     } catch (err: any) {
       setServerError(err.message || 'An error occurred during login');
-      turnstileRef.current?.reset();
     } finally {
       setIsSubmitting(false);
     }
@@ -58,8 +48,6 @@ export function useLogin() {
     form,
     isSubmitting,
     serverError,
-    turnstileRef,
-    setTurnstileToken,
     handleLogin,
   };
 }

@@ -7,7 +7,6 @@
  *   Prisma client singleton).
  * - JWT auth is real (jsonwebtoken) using the test secret already set in
  *   vitest.config.ts: SUPABASE_JWT_SECRET.
- * - Turnstile is bypassed by mocking global fetch to return { success: true }.
  * - Rate-limiter is the real registerLimiter instance (in-memory store) so we
  *   can verify the 429 behaviour by exhausting the 3-request quota.
  *
@@ -76,7 +75,6 @@ function validBody(overrides: Record<string, unknown> = {}): Record<string, unkn
   return {
     displayName: 'Alice',
     onboardingSessionId: SESSION_ID,
-    'cf-turnstile-response': 'test-turnstile-token',
     ...overrides,
   };
 }
@@ -113,11 +111,7 @@ const MOCK_PROFILE = {
   updatedAt: new Date(),
 };
 
-function setupFetchMockSuccess(): void {
-  global.fetch = vi.fn().mockResolvedValue({
-    json: async () => ({ success: true }),
-  } as unknown as Response);
-}
+
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Suite 1 — POST /api/profile happy path
@@ -131,7 +125,6 @@ describe('POST /api/profile — valid payload returns 201 with all cat fields', 
 
   beforeEach(() => {
     vi.clearAllMocks();
-    setupFetchMockSuccess();
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.onboardingSession.findUnique).mockResolvedValue(MOCK_SESSION as any);
     vi.mocked(prisma.profile.create).mockResolvedValue(MOCK_PROFILE as any);
@@ -213,15 +206,17 @@ describe('POST /api/profile — 4th request within rate-limit window returns 429
 
   beforeAll(() => {
     rateLimitApp = buildApp();
-    setupFetchMockSuccess();
   });
 
   it('returns 429 with Retry-After header on the 4th request from the same IP', async () => {
-    // Make 3 requests that hit the limiter (they may fail for other reasons but
-    // they consume quota). We don't need auth to exhaust the rate limit.
+    const token = makeToken();
+    const testIp = '192.168.1.99';
+    // Make 3 requests that hit the limiter
     for (let i = 0; i < 3; i++) {
       await request(rateLimitApp)
         .post('/api/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .set('X-Real-IP', testIp)
         .set('Content-Type', 'application/json')
         .send(validBody());
     }
@@ -229,6 +224,8 @@ describe('POST /api/profile — 4th request within rate-limit window returns 429
     // 4th request should be rate-limited
     const res = await request(rateLimitApp)
       .post('/api/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .set('X-Real-IP', testIp)
       .set('Content-Type', 'application/json')
       .send(validBody());
 
@@ -252,7 +249,6 @@ describe('POST /api/profile — already-consumed onboardingSessionId returns 400
 
   beforeEach(() => {
     vi.clearAllMocks();
-    setupFetchMockSuccess();
   });
 
   it('returns 400 when the onboarding session is already consumed', async () => {
@@ -289,7 +285,6 @@ describe('GET /api/profile — authenticated returns 200 with all cat fields', (
 
   beforeEach(() => {
     vi.clearAllMocks();
-    setupFetchMockSuccess();
     // findUnique is used by both profile lookup paths; return the profile for GET
     vi.mocked(prisma.profile.findUnique).mockResolvedValue(MOCK_PROFILE as any);
   });
