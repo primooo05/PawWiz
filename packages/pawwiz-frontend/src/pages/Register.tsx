@@ -1,17 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { FormField } from '../components/forms/FormField';
 import { useRegister } from '../hooks/useRegister';
-
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
 
 export default function Register() {
   const {
     form,
     isSubmitting,
     serverError,
-    turnstileRef,
-    setTurnstileToken,
     handleRegister,
   } = useRegister();
 
@@ -83,14 +78,6 @@ export default function Register() {
             placeholder="••••••••"
           />
 
-          <div className="flex justify-center mb-6">
-            <Turnstile
-              siteKey={TURNSTILE_SITE_KEY}
-              onSuccess={(token) => setTurnstileToken(token)}
-              ref={turnstileRef}
-              options={{ theme: 'light' }}
-            />
-          </div>
 
           <button
             type="submit"

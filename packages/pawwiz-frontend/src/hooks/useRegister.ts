@@ -1,6 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { TurnstileInstance } from '@marsidev/react-turnstile';
 import { supabase } from '../lib/supabase';
 import { useFormValidation } from './useFormValidation';
 import { registrationSchema } from '../schemas/auth';
@@ -11,8 +10,6 @@ export function useRegister() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const form = useFormValidation(registrationSchema, {
     email: '',
@@ -32,11 +29,6 @@ export function useRegister() {
     if (form.values.honeypot) {
       console.warn('Bot detected');
       return; // Silent fail for bots
-    }
-
-    if (!turnstileToken) {
-      setServerError('Please wait for captcha verification');
-      return;
     }
 
     setIsSubmitting(true);
@@ -60,7 +52,6 @@ export function useRegister() {
         body: JSON.stringify({
           supabaseUserId: authData.user.id,
           displayName: form.values.displayName,
-          turnstileToken: turnstileToken,
         }),
       });
 
@@ -73,7 +64,6 @@ export function useRegister() {
       navigate('/login?registered=true');
     } catch (err: any) {
       setServerError(err.message || 'An error occurred during registration');
-      turnstileRef.current?.reset();
     } finally {
       setIsSubmitting(false);
     }
@@ -83,8 +73,6 @@ export function useRegister() {
     form,
     isSubmitting,
     serverError,
-    turnstileRef,
-    setTurnstileToken,
     handleRegister,
   };
 }

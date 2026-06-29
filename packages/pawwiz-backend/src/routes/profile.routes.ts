@@ -9,14 +9,13 @@ import { createProfile, getProfile, updateProfile, deleteProfile } from '../cont
 import { authMiddleware } from '../middleware/auth.js';
 
 import { honeypotMiddleware } from '../middleware/honeypot.js';
-import { turnstileMiddleware } from '../middleware/turnstile.js';
 import { registerLimiter } from '../middleware/rateLimiter.js';
 
 const profileRouter = Router();
 
 profileRouter.use(authMiddleware);
 
-profileRouter.post('/', registerLimiter, honeypotMiddleware, turnstileMiddleware, createProfile);
+profileRouter.post('/', registerLimiter, honeypotMiddleware, createProfile);
 profileRouter.get('/', getProfile);
 profileRouter.patch('/', updateProfile);
 profileRouter.delete('/', deleteProfile);

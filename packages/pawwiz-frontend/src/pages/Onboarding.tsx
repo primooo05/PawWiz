@@ -70,8 +70,7 @@ function OnboardingView() {
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
 
-  // Turnstile CAPTCHA token — populated when the widget completes verification
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
+
 
   // Dirty flags — track if user changed a field after it was already submitted
   const [isStep2Dirty, setIsStep2Dirty] = useState(false);
@@ -141,8 +140,9 @@ function OnboardingView() {
     }
   };
 
-  const handleAlreadyHaveAccountClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleAlreadyHaveAccountClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
+    if (isClicked || isTransitioning) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
     const x = e.clientX - rect.left;
@@ -150,7 +150,12 @@ function OnboardingView() {
 
     setRippleStyle({ width: `${size}px`, height: `${size}px`, left: `${x}px`, top: `${y}px` });
     setIsClicked(true);
-    setTimeout(() => navigate('/login'), 450);
+    
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    setIsTransitioning(true);
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    
+    navigate('/login', { state: { animateIn: true } });
   };
 
   const handleCreateAccountClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -337,7 +342,6 @@ function OnboardingView() {
           supabaseUserId: authData.user.id,
           displayName: ownerName,
           onboardingSessionId: sessionId,
-          'cf-turnstile-response': turnstileToken,
         }),
       });
 
@@ -448,7 +452,6 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
-          onTurnstileSuccess={(token) => setTurnstileToken(token)}
         />
       </div>
     </div>

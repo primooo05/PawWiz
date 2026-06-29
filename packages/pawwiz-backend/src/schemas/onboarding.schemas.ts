@@ -31,5 +31,4 @@ export const onboardingStep5Schema = z.object({
 export const profileCreateSchema = z.object({
   displayName: z.string().min(2).max(100),
   onboardingSessionId: z.string().uuid('Invalid onboardingSessionId'),
-  'cf-turnstile-response': z.string().min(1, 'Turnstile token required'),
 });
