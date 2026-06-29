@@ -125,9 +125,9 @@ function OnboardingView() {
   const transitionTo = (nextStep: number) => {
     { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => {
+      resetBubble();
       setStep(nextStep);
       setIsTransitioning(false);
-      resetBubble();
     }, 800);
   };
 
@@ -191,6 +191,7 @@ function OnboardingView() {
 
     { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => {
+      resetBubble();
       setCatName('');
       setCatBreed('');
       setCatMarking('');
@@ -198,7 +199,6 @@ function OnboardingView() {
       setCatLifeStage('');
       setStep(4);
       setIsTransitioning(false);
-      resetBubble();
     }, 800);
   };
 
@@ -371,7 +371,7 @@ function OnboardingView() {
       setTimeout(() => hideBubble(), 4000);
     }
   };
-
+ 
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">
       {/* Decorative Circles */}
