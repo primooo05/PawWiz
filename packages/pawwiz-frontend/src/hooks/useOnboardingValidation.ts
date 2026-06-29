@@ -158,5 +158,5 @@ export function validateStep3Otp(code: string): ValidationResult {
   if (!/^\d{6}$/.test(code)) {
     return { isValid: false, message: 'That doesn\'t look right — enter the 6-digit code exactly, meow!' };
   }
-  return { isValid: true, message: 'Code accepted! Setting up your profile...' };
+  return { isValid: true, message: 'Verifying code...' };
 }
