@@ -16,6 +16,7 @@ import { validate } from './middleware/validate.js';
 import { scanSchema, dietSchema, behaviorSchema } from './schemas/index.js';
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 // Security Middleware Pipeline

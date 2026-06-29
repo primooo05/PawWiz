@@ -332,9 +332,14 @@ function OnboardingView() {
         email: ownerEmail,
         password: password,
       });
-
-      if (authError) throw new Error(authError.message);
+      if (authError) {
+        if (authError.message.toLowerCase().includes('rate limit') || authError.message.toLowerCase().includes('too many requests')) {
+          throw new Error('Too many tries, try again later');
+        }
+        throw new Error(authError.message);
+      }
       if (!authData.user) throw new Error('Failed to create account');
+      if (!authData.session) throw new Error('Email already registered or requires confirmation. Please login instead.');
 
       // 2. Create profile on backend
       const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
@@ -342,7 +347,7 @@ function OnboardingView() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authData.session!.access_token}`,
+          'Authorization': `Bearer ${authData.session.access_token}`,
         },
         body: JSON.stringify({
           supabaseUserId: authData.user.id,

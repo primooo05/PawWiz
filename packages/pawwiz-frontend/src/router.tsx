@@ -2,7 +2,6 @@ import { Routes, Route } from 'react-router-dom';
 import App from './App';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import Onboarding from './pages/Onboarding';
 import CatPregnancyTracker from './components/pregnancy-tracker/PregnancyTracker';
@@ -14,7 +13,6 @@ export function Router() {
       <Route element={<App />}>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/pregnancy-tracker" element={<CatPregnancyTracker />} />
         <Route path="/heat-tracker" element={<CatHeatTracker />} />
         <Route path="*" element={<NotFound />} />
