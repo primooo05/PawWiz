@@ -365,12 +365,12 @@ function OnboardingView() {
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center py-12 px-6">
       {/* Decorative Circles */}
-      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'z-[9999] scale-[8]' : '-z-10 scale-100'}`} />
-      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right ${isTransitioning ? 'z-[9999] scale-[12]' : '-z-10 scale-100'}`} />
-      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'z-[9999] scale-[8]' : '-z-10 scale-100'}`} />
+      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'z-[9999] scale-[8]' : 'z-0 scale-100'}`} />
+      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right ${isTransitioning ? 'z-[9999] scale-[12]' : 'z-0 scale-100'}`} />
+      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'z-[9999] scale-[8]' : 'z-0 scale-100'}`} />
 
       {/* Center Wrapper */}
-      <div className="relative w-full flex-grow flex items-center justify-center z-0">
+      <div className="relative w-full flex-grow flex items-center justify-center relative z-10">
         <OnboardingScreen1
           active={step === 1 && !isTransitioning}
           handleCreateAccountClick={handleCreateAccountClick}
