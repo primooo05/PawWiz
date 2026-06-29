@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import catScreen4 from '../../assets/Cat_Screen4.svg';
+import { SearchableDropdown } from './SearchableDropdown';
+
 
 interface OnboardingScreen4Props {
   active: boolean;
@@ -34,6 +36,76 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
   handleNextClick,
   handleBackClick,
 }) => {
+  const [breedOptions, setBreedOptions] = useState<string[]>([]);
+  const [breedLoading, setBreedLoading] = useState(false);
+
+  const markingOptions = [
+    'Solid Color',
+    'Tabby (Striped)',
+    'Classic Tabby (Marbled)',
+    'Spotted Tabby',
+    'Mackerel Tabby',
+    'Calico',
+    'Tortoiseshell',
+    'Tuxedo',
+    'Bicolor (Piebald)',
+    'Colorpoint (Dark points)',
+    'Tricolor',
+    'Harlequin'
+  ];
+
+  useEffect(() => {
+    let isMounted = true;
+    setBreedLoading(true);
+    
+    const fallbackBreeds = [
+      'Domestic Short Hair',
+      'Domestic Long Hair',
+      'Siamese',
+      'Persian',
+      'Maine Coon',
+      'Ragdoll',
+      'Bengal',
+      'Abyssinian',
+      'Sphynx',
+      'British Shorthair'
+    ];
+
+    try {
+      const resPromise = fetch('https://api.thecatapi.com/v1/breeds');
+      if (resPromise && typeof resPromise.then === 'function') {
+        resPromise
+          .then((res) => {
+            if (!res.ok) throw new Error('API error');
+            return res.json();
+          })
+          .then((data) => {
+            if (isMounted && Array.isArray(data)) {
+              setBreedOptions(data.map((b: any) => b.name));
+            }
+          })
+          .catch(() => {
+            if (isMounted) {
+              setBreedOptions(fallbackBreeds);
+            }
+          })
+          .finally(() => {
+            if (isMounted) setBreedLoading(false);
+          });
+      } else {
+        setBreedOptions(fallbackBreeds);
+        setBreedLoading(false);
+      }
+    } catch {
+      setBreedOptions(fallbackBreeds);
+      setBreedLoading(false);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-12 z-10 pt-6 pb-36 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -60,13 +132,14 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
           <label className="text-xs md:text-sm text-slate-400 font-semibold italic pl-1">
             Breed (Optional)
           </label>
-          <input
-            type="text"
+          <SearchableDropdown
             value={catBreed}
-            onChange={(e) => setCatBreed(e.target.value)}
+            onChange={setCatBreed}
             placeholder="e.g., Domestic Short Hair"
-            className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
-            disabled={isTyping || !active}
+            options={breedOptions}
+            disabled={isTyping}
+            active={active}
+            loading={breedLoading}
           />
         </div>
 
@@ -75,13 +148,13 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
           <label className="text-xs md:text-sm text-slate-400 font-semibold italic pl-1">
             Marking (Optional)
           </label>
-          <input
-            type="text"
+          <SearchableDropdown
             value={catMarking}
-            onChange={(e) => setCatMarking(e.target.value)}
+            onChange={setCatMarking}
             placeholder="e.g., Orange Tabby"
-            className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
-            disabled={isTyping || !active}
+            options={markingOptions}
+            disabled={isTyping}
+            active={active}
           />
         </div>
 
