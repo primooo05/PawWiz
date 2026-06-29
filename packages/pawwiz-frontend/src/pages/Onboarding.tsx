@@ -79,7 +79,7 @@ function OnboardingView() {
   const [isStep5Dirty, setIsStep5Dirty] = useState(false);
 
   // Transition state for the circular scale animation
-  const zIndexTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const zIndexTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isZIndexHigh, setIsZIndexHigh] = useState(!!(location.state as { animateIn?: boolean })?.animateIn);
   const [isTransitioning, setIsTransitioning] = useState(
     !!(location.state as { animateIn?: boolean })?.animateIn

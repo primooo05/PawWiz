@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLogin } from '../hooks/useLogin';
-import Navbar from '../components/Navbar';
 import catsLogin from '../assets/Cats_Login.svg';
 
 export default function Login() {
