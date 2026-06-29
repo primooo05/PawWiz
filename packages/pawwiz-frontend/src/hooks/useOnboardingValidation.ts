@@ -147,3 +147,16 @@ export function getOtherCatsText(catsCount: string, customCatsCount: string): st
   if (catsCount === 'Three') return '2 cats';
   return 'cats';
 }
+
+/**
+ * Validates a 6-digit numeric OTP code (format only — crypto check is backend-side).
+ */
+export function validateStep3Otp(code: string): ValidationResult {
+  if (!code || code.trim().length === 0) {
+    return { isValid: false, message: 'Enter the 6-digit code from your email, meow!' };
+  }
+  if (!/^\d{6}$/.test(code)) {
+    return { isValid: false, message: 'That doesn\'t look right — enter the 6-digit code exactly, meow!' };
+  }
+  return { isValid: true, message: 'Code accepted! Setting up your profile...' };
+}

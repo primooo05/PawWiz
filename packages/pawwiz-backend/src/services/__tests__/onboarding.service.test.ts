@@ -17,6 +17,10 @@ const makeSession = (overrides: Record<string, unknown> = {}) => ({
   step: 1,
   ownerName: null,
   ownerEmail: null,
+  otpHash: null,
+  otpExpiresAt: null,
+  otpVerified: false,
+  otpLastSentAt: null,
   catsCount: null,
   customCatsCount: null,
   catName: null,
@@ -84,23 +88,37 @@ describe('Onboarding Service', () => {
   });
 
   it('should prevent jumping to step 3 if step 2 ownerName is missing', async () => {
-    vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(makeSession());
+    vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(makeSession({ ownerName: null }));
 
+    // When ownerName is missing, the prior-steps guard fires first
     await expect(
       onboardingService.updateStep('session-id', 3, { catsCount: 'One' })
     ).rejects.toThrow('Step 2 data is incomplete; cannot advance to step 3');
   });
 
-  it('should prevent jumping to step 4 if step 3 catsCount/customCatsCount is missing', async () => {
+  it('should reject step 3 via updateStep even with valid session (OTP uses dedicated endpoints)', async () => {
     vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(makeSession({
-      step: 2,
       ownerName: 'Ayla',
       ownerEmail: 'ayla@example.com',
     }));
 
+    // Step 3 is now OTP — it uses dedicated endpoints, not updateStep
     await expect(
-      onboardingService.updateStep('session-id', 4, { catName: 'Galaxy', catSex: 'Male' })
-    ).rejects.toThrow('Step 3 data is incomplete; cannot advance to step 4');
+      onboardingService.updateStep('session-id', 3, { catsCount: 'One' })
+    ).rejects.toThrow('Step 3 (OTP) uses dedicated send/verify endpoints');
+  });
+
+  it('should prevent jumping to step 4 if email is not verified (OTP gate)', async () => {
+    vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(makeSession({
+      step: 3,
+      ownerName: 'Ayla',
+      ownerEmail: 'ayla@example.com',
+      otpVerified: false,
+    }));
+
+    await expect(
+      onboardingService.updateStep('session-id', 4, { catsCount: 'One' })
+    ).rejects.toThrow('Email must be verified before proceeding');
   });
 });
 
@@ -128,36 +146,62 @@ describe('Property 7: Step progression enforcement rejects out-of-order updates'
   const presentFieldArb = fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0);
 
   /**
-   * Step 3 requires: ownerName non-null/non-empty on the session.
-   * When ownerName is missing/empty, advancing to step 3 must throw the formatted error.
-   * We supply valid step-3 data (catsCount) to ensure only the prior-step guard fires.
+   * Step 3 is now OTP — uses dedicated endpoints, not updateStep.
+   * When ownerName IS present, calling updateStep with step=3 must throw the OTP error.
+   * When ownerName is missing, the prior-step guard fires first (tested separately above).
    */
-  it('should reject step 3 when ownerName (step 2 requirement) is missing or empty', async () => {
+  it('should reject step 3 via updateStep (OTP uses dedicated endpoints)', async () => {
     await fc.assert(
       fc.asyncProperty(
-        missingFieldArb,
+        presentFieldArb,
         async (ownerName) => {
           vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(
-            makeSession({ ownerName }),
+            makeSession({ ownerName, ownerEmail: 'test@example.com' }),
           );
 
           await expect(
             onboardingService.updateStep('session-id', 3, { catsCount: 'one' }),
           ).rejects.toMatchObject({
-            message: expect.stringMatching(/Step \d data is incomplete; cannot advance to step \d/),
+            message: 'Step 3 (OTP) uses dedicated send/verify endpoints',
           });
         },
       ),
-      { numRuns: 100 },
+      { numRuns: 50 },
     );
   });
 
   /**
-   * Step 4 requires: at least one of catsCount or customCatsCount non-null/non-empty.
-   * When both are missing/empty and ownerName is present (step 2 satisfied),
-   * advancing to step 4 must throw the formatted error.
+   * Step 4 requires: otpVerified === true.
+   * When otpVerified is false, advancing to step 4 must throw.
    */
-  it('should reject step 4 when catsCount and customCatsCount (step 3 requirements) are both missing or empty', async () => {
+  it('should reject step 4 when otpVerified is false (OTP gate)', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        presentFieldArb,  // ownerName — satisfies step 2
+        async (ownerName) => {
+          vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(
+            makeSession({ ownerName, ownerEmail: 'test@example.com', otpVerified: false }),
+          );
+
+          await expect(
+            onboardingService.updateStep('session-id', 4, {
+              catsCount: 'One',
+            }),
+          ).rejects.toMatchObject({
+            message: 'Email must be verified before proceeding',
+          });
+        },
+      ),
+      { numRuns: 50 },
+    );
+  });
+
+  /**
+   * Step 5 requires: at least one of catsCount or customCatsCount non-null/non-empty.
+   * When both are missing/empty (with steps 2 and OTP satisfied),
+   * advancing to step 5 must throw the formatted error.
+   */
+  it('should reject step 5 when catsCount and customCatsCount (step 4 requirements) are both missing or empty', async () => {
     await fc.assert(
       fc.asyncProperty(
         presentFieldArb,  // ownerName — satisfies step 2
@@ -165,11 +209,11 @@ describe('Property 7: Step progression enforcement rejects out-of-order updates'
         missingFieldArb,  // customCatsCount — missing
         async (ownerName, catsCount, customCatsCount) => {
           vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(
-            makeSession({ ownerName, catsCount, customCatsCount }),
+            makeSession({ ownerName, ownerEmail: 'test@example.com', otpVerified: true, catsCount, customCatsCount }),
           );
 
           await expect(
-            onboardingService.updateStep('session-id', 4, {
+            onboardingService.updateStep('session-id', 5, {
               catName: 'Luna',
               catSex: 'Female',
             }),
@@ -183,24 +227,23 @@ describe('Property 7: Step progression enforcement rejects out-of-order updates'
   });
 
   /**
-   * Step 5 requires: catName and catSex non-null/non-empty.
-   * When either catName or catSex is missing/empty (with steps 2–3 satisfied),
-   * advancing to step 5 must throw the formatted error.
-   * We test the catName-missing case and catSex-missing case separately.
+   * Step 6 requires: catName and catSex non-null/non-empty.
+   * When catName is missing/empty (with steps 2–4 satisfied + OTP verified),
+   * advancing to step 6 must throw.
    */
-  it('should reject step 5 when catName (step 4 requirement) is missing or empty', async () => {
+  it('should reject step 6 when catName (step 5 requirement) is missing or empty', async () => {
     await fc.assert(
       fc.asyncProperty(
         presentFieldArb,  // ownerName — satisfies step 2
-        presentFieldArb,  // catsCount — satisfies step 3
-        missingFieldArb,  // catName — missing (step 4 incomplete)
+        presentFieldArb,  // catsCount — satisfies step 4
+        missingFieldArb,  // catName — missing (step 5 incomplete)
         async (ownerName, catsCount, catName) => {
           vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(
-            makeSession({ ownerName, catsCount, catName, catSex: 'Female' }),
+            makeSession({ ownerName, ownerEmail: 'test@example.com', otpVerified: true, catsCount, catName, catSex: 'Female' }),
           );
 
           await expect(
-            onboardingService.updateStep('session-id', 5, { catLifeStage: 'Adult' }),
+            onboardingService.updateStep('session-id', 6, { catLifeStage: 'Adult' }),
           ).rejects.toMatchObject({
             message: expect.stringMatching(/Step \d data is incomplete; cannot advance to step \d/),
           });
@@ -210,19 +253,19 @@ describe('Property 7: Step progression enforcement rejects out-of-order updates'
     );
   });
 
-  it('should reject step 5 when catSex (step 4 requirement) is missing', async () => {
+  it('should reject step 6 when catSex (step 5 requirement) is missing', async () => {
     await fc.assert(
       fc.asyncProperty(
         presentFieldArb,  // ownerName — satisfies step 2
-        presentFieldArb,  // catsCount — satisfies step 3
+        presentFieldArb,  // catsCount — satisfies step 4
         presentFieldArb,  // catName — present
         async (ownerName, catsCount, catName) => {
           vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(
-            makeSession({ ownerName, catsCount, catName, catSex: null }),
+            makeSession({ ownerName, ownerEmail: 'test@example.com', otpVerified: true, catsCount, catName, catSex: null }),
           );
 
           await expect(
-            onboardingService.updateStep('session-id', 5, { catLifeStage: 'Adult' }),
+            onboardingService.updateStep('session-id', 6, { catLifeStage: 'Adult' }),
           ).rejects.toMatchObject({
             message: expect.stringMatching(/Step \d data is incomplete; cannot advance to step \d/),
           });
@@ -233,44 +276,28 @@ describe('Property 7: Step progression enforcement rejects out-of-order updates'
   });
 
   /**
-   * Step 6 is validated inside the step 5 update path (catLifeStage guard fires for targetStep >= 6).
-   * The updateStep method only accepts steps 2–5; step 5 update sets step to 6.
-   * We verify that the catLifeStage guard on assertPriorStepsValid fires for step 5
-   * when catLifeStage is missing — this is the >= 6 branch exercised indirectly by
-   * attempting to call updateStep with targetStep=5 against a session where
-   * steps 2–4 are complete but catLifeStage is absent (step 5 not yet done).
-   *
-   * NOTE: assertPriorStepsValid checks targetStep >= 6 for catLifeStage. Since updateStep
-   * only handles steps 2–5, we exercise the >= 6 guard by passing step = 5 where the
-   * session already has catLifeStage null — this does NOT fire the >= 6 branch.
-   * The >= 6 branch is tested via: a fully-satisfied session reaching step 5 successfully,
-   * proving that when catLifeStage IS present, the step 5 update proceeds without error.
-   * The step-6 catLifeStage guard is therefore tested at the profileService layer (step >= 6).
-   *
-   * For completeness, we test that a session with ALL prior steps satisfied but an
-   * invalid step number (6) triggers the 'Invalid step for update' error, not a
-   * step-progression error — confirming the guard boundaries are correct.
+   * Step 6 update succeeds when all prior requirements are met (boundary validation).
    */
-  it('should confirm step 5 update succeeds when all prior requirements are met (boundary validation)', async () => {
+  it('should confirm step 6 update succeeds when all prior requirements are met (boundary validation)', async () => {
     await fc.assert(
       fc.asyncProperty(
         presentFieldArb,  // ownerName — satisfies step 2
-        presentFieldArb,  // catsCount — satisfies step 3
-        presentFieldArb.filter((s) => s.trim().length <= 60),  // catName — satisfies step 4
-        fc.constantFrom('Female', 'Male') as fc.Arbitrary<string>,   // catSex — satisfies step 4
+        presentFieldArb,  // catsCount — satisfies step 4
+        presentFieldArb.filter((s) => s.trim().length <= 60),  // catName — satisfies step 5
+        fc.constantFrom('Female', 'Male') as fc.Arbitrary<string>,   // catSex — satisfies step 5
         async (ownerName, catsCount, catName, catSex) => {
           vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(
-            makeSession({ ownerName, catsCount, catName, catSex }),
+            makeSession({ ownerName, ownerEmail: 'test@example.com', otpVerified: true, catsCount, catName, catSex }),
           );
           vi.mocked(onboardingRepository.update).mockResolvedValueOnce(
-            makeSession({ ownerName, catsCount, catName, catSex, catLifeStage: 'Adult', step: 6 }),
+            makeSession({ ownerName, ownerEmail: 'test@example.com', otpVerified: true, catsCount, catName, catSex, catLifeStage: 'Adult', step: 7 }),
           );
 
           // Should NOT throw — all prior step requirements are satisfied
-          const result = await onboardingService.updateStep('session-id', 5, {
+          const result = await onboardingService.updateStep('session-id', 6, {
             catLifeStage: 'Adult',
           });
-          expect(result.step).toBe(6);
+          expect(result.step).toBe(7);
         },
       ),
       { numRuns: 100 },

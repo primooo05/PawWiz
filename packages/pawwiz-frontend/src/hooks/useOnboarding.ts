@@ -123,6 +123,45 @@ export function useOnboarding() {
     setCatLifeStage('');
   }, []);
 
+  const sendOtp = useCallback(async (id: string): Promise<{ cooldownSeconds: number } | null> => {
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/onboarding/session/${id}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to send OTP');
+      }
+      return await res.json();
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  }, []);
+
+  const verifyOtp = useCallback(async (id: string, code: string): Promise<boolean> => {
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/onboarding/session/${id}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to verify OTP');
+      }
+      const data = await res.json();
+      setSessionStep(data.step);
+      return true;
+    } catch (err: any) {
+      setError(err.message);
+      return false;
+    }
+  }, []);
+
   return {
     sessionId,
     sessionStep,
@@ -149,6 +188,8 @@ export function useOnboarding() {
     initializeSession,
     fetchSession,
     submitStep,
+    sendOtp,
+    verifyOtp,
     resetSession,
   };
 }

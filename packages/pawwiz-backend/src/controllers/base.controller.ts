@@ -7,6 +7,7 @@
 
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/errors.js';
+import { logger } from '../utils/winston.js';
 
 export type AsyncHandler = (req: Request, res: Response, next: NextFunction) => Promise<void>;
 
@@ -26,7 +27,10 @@ export function withErrorHandling(handler: AsyncHandler): AsyncHandler {
       }
 
       // Unexpected error — log and return generic message
-      console.error('[Controller] Unhandled error:', error);
+      logger.error('[Controller] Unhandled error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       res.status(500).json({ error: 'Internal server error' });
     }
   };

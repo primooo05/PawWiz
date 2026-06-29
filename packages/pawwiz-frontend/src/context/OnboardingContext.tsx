@@ -45,6 +45,8 @@ interface OnboardingContextValue {
   initializeSession: () => Promise<any>;
   fetchSession: (id: string) => Promise<any>;
   submitStep: (step: number, data: any) => Promise<boolean>;
+  sendOtp: (id: string) => Promise<{ cooldownSeconds: number } | null>;
+  verifyOtp: (id: string, code: string) => Promise<boolean>;
 
   // Navigation
   step: number;
@@ -63,9 +65,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   // Track how many cats the user has actually added profiles for
   const [catsAdded, setCatsAdded] = useState(0);
 
-  // Clamp step to valid range [1..7]
+  // Clamp step to valid range [1..8]
   const rawStep = parseInt(searchParams.get('step') || '1', 10);
-  const step = Number.isNaN(rawStep) || rawStep < 1 || rawStep > 7 ? 1 : rawStep;
+  const step = Number.isNaN(rawStep) || rawStep < 1 || rawStep > 8 ? 1 : rawStep;
 
   const setStep = useCallback(
     (newStep: number | ((prev: number) => number)) => {
@@ -109,6 +111,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         initializeSession: onboarding.initializeSession,
         fetchSession: onboarding.fetchSession,
         submitStep: onboarding.submitStep,
+        sendOtp: onboarding.sendOtp,
+        verifyOtp: onboarding.verifyOtp,
         step,
         setStep,
       }}
