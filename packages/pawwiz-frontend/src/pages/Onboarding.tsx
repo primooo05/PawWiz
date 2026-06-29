@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
@@ -79,6 +79,7 @@ function OnboardingView() {
   const [isStep5Dirty, setIsStep5Dirty] = useState(false);
 
   // Transition state for the circular scale animation
+  const zIndexTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isZIndexHigh, setIsZIndexHigh] = useState(!!(location.state as { animateIn?: boolean })?.animateIn);
   const [isTransitioning, setIsTransitioning] = useState(
     !!(location.state as { animateIn?: boolean })?.animateIn
@@ -93,7 +94,7 @@ function OnboardingView() {
     if ((location.state as { animateIn?: boolean })?.animateIn) {
       const timer = setTimeout(() => {
         setIsTransitioning(false);
-        setTimeout(() => setIsZIndexHigh(false), 2000);
+        { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 2000); };
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -169,7 +170,7 @@ function OnboardingView() {
     setTimeout(() => {
       setStep(2);
       setIsTransitioning(false);
-      setTimeout(() => setIsZIndexHigh(false), 2000);
+      { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 2000); };
     }, 800);
   };
 
