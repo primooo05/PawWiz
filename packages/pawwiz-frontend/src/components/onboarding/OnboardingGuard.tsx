@@ -27,10 +27,10 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
         return;
       }
 
-      // Steps 5–7 are client-side transitions only; session is already validated
-      // by the time the user reaches step 4. No network round-trip needed and no
+      // Steps 6–8 are client-side transitions only; session is already validated
+      // by the time the user reaches step 5. No network round-trip needed and no
       // spinner should ever appear for these steps.
-      if (step >= 5) {
+      if (step >= 6) {
         if (active) setInitialChecked(true);
         return;
       }
@@ -90,12 +90,12 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
     };
   }, [step, sessionId, fetchSession, initialChecked, sessionStep, setStep]);
 
-  // Show spinner only while fetching session data for steps 2–4.
-  // Steps 5–7 short-circuit above and never reach this render gate.
+  // Show spinner only while fetching session data for steps 2–5.
+  // Steps 6–8 short-circuit above and never reach this render gate.
   const isNormalProgression = step <= sessionStep + 2;
-  const isStepAhead = step < 5 && initialChecked && sessionStep > 0 && step > sessionStep && !isNormalProgression;
+  const isStepAhead = step < 6 && initialChecked && sessionStep > 0 && step > sessionStep && !isNormalProgression;
 
-  if (loadingGuard || (step > 1 && step < 5 && !initialChecked) || isStepAhead) {
+  if (loadingGuard || (step > 1 && step < 6 && !initialChecked) || isStepAhead) {
     return (
       <div className="min-h-screen w-full bg-white bg-grid-pattern flex flex-col justify-center items-center">
         <div className="w-16 h-16 border-4 border-[#2ec4b6] border-t-transparent rounded-full animate-spin mb-4" />

@@ -3,20 +3,22 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { CircleWrapper } from '../components/CircleWrapper';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
-import { OnboardingScreen3 } from '../components/onboarding/OnboardingScreen3';
-import { OnboardingScreen4 } from '../components/onboarding/OnboardingScreen4';
-import { OnboardingScreen5 } from '../components/onboarding/OnboardingScreen5';
-import { OnboardingScreen6 } from '../components/onboarding/OnboardingScreen6';
-import { OnboardingScreen7 } from '../components/onboarding/OnboardingScreen7';
+import { OnboardingScreenOtp } from '../components/onboarding/OnboardingScreenOtp';
+import { OnboardingScreen3 as OnboardingScreenCats } from '../components/onboarding/OnboardingScreen3';
+import { OnboardingScreen4 as OnboardingScreenCatDetails } from '../components/onboarding/OnboardingScreen4';
+import { OnboardingScreen5 as OnboardingScreenLifeStage } from '../components/onboarding/OnboardingScreen5';
+import { OnboardingScreen6 as OnboardingScreenCatAdded } from '../components/onboarding/OnboardingScreen6';
+import { OnboardingScreen7 as OnboardingScreenPassword } from '../components/onboarding/OnboardingScreen7';
 import { OnboardingGuard } from '../components/onboarding/OnboardingGuard';
 import { OnboardingProvider, useOnboardingContext } from '../context/OnboardingContext';
 import { useTypewriter } from '../hooks/useTypewriter';
 import {
   validateStep2,
-  validateStep3,
-  validateStep4,
-  validateStep5,
-  validateStep7,
+  validateStep3Otp,
+  validateStep3 as validateStepCats,
+  validateStep4 as validateStepCatDetails,
+  validateStep5 as validateStepLifeStage,
+  validateStep7 as validateStepPassword,
   getOtherCatsText,
   getResolvedCatsCount,
 } from '../hooks/useOnboardingValidation';
@@ -67,15 +69,22 @@ function OnboardingView() {
     setCatsAdded,
     initializeSession,
     submitStep,
+    sendOtp,
+    verifyOtp,
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
 
+  // OTP state
+  const [otpCode, setOtpCode] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
+
   // Dirty flags — track if user changed a field after it was already submitted
   const [isStep2Dirty, setIsStep2Dirty] = useState(false);
-  const [isStep3Dirty, setIsStep3Dirty] = useState(false);
-  const [isStep4Dirty, setIsStep4Dirty] = useState(false);
-  const [isStep5Dirty, setIsStep5Dirty] = useState(false);
+  const [isStep3Dirty, setIsStep3Dirty] = useState(false); // OTP step
+  const [isStep4Dirty, setIsStep4Dirty] = useState(false); // Cats count
+  const [isStep5Dirty, setIsStep5Dirty] = useState(false); // Cat details
+  const [isStep6Dirty, setIsStep6Dirty] = useState(false); // Life stage
 
   // Transition state for the circular scale animation
   const zIndexTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,6 +97,33 @@ function OnboardingView() {
   const [rippleStyle, setRippleStyle] = useState<React.CSSProperties | null>(null);
   const [isClicked, setIsClicked] = useState(false);
 
+  // OTP cooldown countdown
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setOtpCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpCooldown]);
+
+  // Auto-send OTP when landing on step 3 (e.g., page reload or direct navigation)
+  const otpSentRef = useRef(false);
+  useEffect(() => {
+    if (step === 3 && sessionId && otpCooldown === 0 && !otpSentRef.current) {
+      otpSentRef.current = true;
+      handleSendOtp();
+    }
+    if (step !== 3) {
+      otpSentRef.current = false;
+    }
+  }, [step, sessionId]);
+
   // Clear animateIn state on mount
   useEffect(() => {
     if ((location.state as { animateIn?: boolean })?.animateIn) {
@@ -99,20 +135,21 @@ function OnboardingView() {
     }
   }, [location.state]);
 
-  // Show static bubble when entering steps 3-7
+  // Show static bubble when entering steps 3-8
   useEffect(() => {
     if (isTransitioning) return;
 
     const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
 
     const messages: Record<number, string> = {
-      3: 'How many cats do you have?',
-      4: 'Wiz would like to know them!',
-      5: 'How old is your Cat? Meow',
-      6: catsAdded >= totalCats
+      3: 'Check your email for a 6-digit verification code!',
+      4: 'How many cats do you have?',
+      5: 'Wiz would like to know them!',
+      6: 'How old is your Cat? Meow',
+      7: catsAdded >= totalCats
         ? `You only have ${totalCats} remember? You can add more later!`
         : `Would you like to create a separate profile for other ${getOtherCatsText(catsCount, customCatsCount)}?`,
-      7: "Enter your strongest password you can think of! Just make sure you don't forget! meow",
+      8: "Enter your strongest password you can think of! Just make sure you don't forget! meow",
     };
 
     if (messages[step]) {
@@ -135,10 +172,10 @@ function OnboardingView() {
     if (isTyping) return;
 
     // Custom back navigation based on current step
-    if (step === 7) {
-      // Going back from step 7: go to step 6 if multi-cat, else step 5
+    if (step === 8) {
+      // Going back from step 8: go to step 7 if multi-cat, else step 6
       const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
-      transitionTo(totalCats > 1 ? 6 : 5);
+      transitionTo(totalCats > 1 ? 7 : 6);
     } else {
       transitionTo(step - 1);
     }
@@ -197,9 +234,39 @@ function OnboardingView() {
       setCatMarking('');
       setCatSex('');
       setCatLifeStage('');
-      setStep(4);
+      setStep(5);
       setIsTransitioning(false);
     }, 800);
+  };
+
+  // --- OTP helpers ---
+
+  const handleSendOtp = async () => {
+    if (!sessionId) return;
+    try {
+      const result = await sendOtp(sessionId);
+      if (result) {
+        setOtpCooldown(result.cooldownSeconds);
+      }
+    } catch (err: any) {
+      showStaticBubble(err.message || 'Could not send code. Try again, meow!');
+      setTimeout(() => hideBubble(), 3000);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (otpCooldown > 0 || isTyping) return;
+    try {
+      const result = await sendOtp(sessionId!);
+      if (result) {
+        setOtpCooldown(result.cooldownSeconds);
+        showStaticBubble('New code sent! Check your inbox, meow!');
+        setTimeout(() => hideBubble(), 3000);
+      }
+    } catch (err: any) {
+      showStaticBubble(err.message || 'Could not resend. Try again, meow!');
+      setTimeout(() => hideBubble(), 3000);
+    }
   };
 
   // --- Step submission with typewriter ---
@@ -221,7 +288,12 @@ function OnboardingView() {
             const success = await submitStep(2, { ownerName: ownerName.trim(), ownerEmail: ownerEmail.trim() });
             if (success) {
               setIsStep2Dirty(false);
-              setTimeout(() => transitionTo(3), 300);
+              // Send OTP immediately on advancing to step 3
+              setTimeout(async () => {
+                transitionTo(3);
+                // Small delay to let step render first
+                setTimeout(() => handleSendOtp(), 200);
+              }, 300);
             } else {
               showStaticBubble("Oh no, I couldn't save your name. Try again, meow!");
               setTimeout(() => hideBubble(), 3000);
@@ -232,19 +304,44 @@ function OnboardingView() {
         },
       });
     } else if (step === 3) {
+      // OTP verification step
       if (sessionStep > 3 && !isStep3Dirty) {
         transitionTo(4);
         return;
       }
 
-      const result = validateStep3(catsCount, customCatsCount);
+      const result = validateStep3Otp(otpCode);
       startTyping(result.message, {
         onComplete: async () => {
           if (result.isValid) {
-            const success = await submitStep(3, { catsCount, customCatsCount });
-            if (success) {
+            const ok = await verifyOtp(sessionId!, otpCode);
+            if (ok) {
               setIsStep3Dirty(false);
               setTimeout(() => transitionTo(4), 300);
+            } else {
+              showStaticBubble('Wrong code or expired. Try again, meow!');
+              setTimeout(() => hideBubble(), 3000);
+            }
+          } else {
+            setTimeout(() => hideBubble(), 3000);
+          }
+        },
+      });
+    } else if (step === 4) {
+      // Cats count (was step 3)
+      if (sessionStep > 4 && !isStep4Dirty) {
+        transitionTo(5);
+        return;
+      }
+
+      const result = validateStepCats(catsCount, customCatsCount);
+      startTyping(result.message, {
+        onComplete: async () => {
+          if (result.isValid) {
+            const success = await submitStep(4, { catsCount, customCatsCount });
+            if (success) {
+              setIsStep4Dirty(false);
+              setTimeout(() => transitionTo(5), 300);
             } else {
               showStaticBubble("Oh no, I couldn't save the cat count. Try again, meow!");
               setTimeout(() => hideBubble(), 3000);
@@ -254,20 +351,21 @@ function OnboardingView() {
           }
         },
       });
-    } else if (step === 4) {
-      if (sessionStep > 4 && !isStep4Dirty) {
-        transitionTo(5);
+    } else if (step === 5) {
+      // Cat details (was step 4)
+      if (sessionStep > 5 && !isStep5Dirty) {
+        transitionTo(6);
         return;
       }
 
-      const result = validateStep4(catName, catSex);
+      const result = validateStepCatDetails(catName, catSex);
       startTyping(result.message, {
         onComplete: async () => {
           if (result.isValid) {
-            const success = await submitStep(4, { catName, catBreed, catMarking, catSex });
+            const success = await submitStep(5, { catName, catBreed, catMarking, catSex });
             if (success) {
-              setIsStep4Dirty(false);
-              setTimeout(() => transitionTo(5), 300);
+              setIsStep5Dirty(false);
+              setTimeout(() => transitionTo(6), 300);
             } else {
               showStaticBubble("Oh no, I couldn't save your cat details. Try again, meow!");
               setTimeout(() => hideBubble(), 3000);
@@ -277,26 +375,27 @@ function OnboardingView() {
           }
         },
       });
-    } else if (step === 5) {
-      if (sessionStep > 5 && !isStep5Dirty) {
+    } else if (step === 6) {
+      // Life stage (was step 5)
+      if (sessionStep > 6 && !isStep6Dirty) {
         // Determine next step based on cat count
         const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
-        transitionTo(totalCats > 1 ? 6 : 7);
+        transitionTo(totalCats > 1 ? 7 : 8);
         return;
       }
 
-      const result = validateStep5(catLifeStage);
+      const result = validateStepLifeStage(catLifeStage);
       startTyping(result.message, {
         onComplete: async () => {
           if (result.isValid) {
-            const success = await submitStep(5, { catLifeStage });
+            const success = await submitStep(6, { catLifeStage });
             if (success) {
-              setIsStep5Dirty(false);
+              setIsStep6Dirty(false);
               // Increment cats added counter
               setCatsAdded((prev: number) => prev + 1);
-              // If only 1 cat, skip step 6 and go directly to step 7
+              // If only 1 cat, skip step 7 and go directly to step 8
               const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
-              const nextStep = totalCats > 1 ? 6 : 7;
+              const nextStep = totalCats > 1 ? 7 : 8;
               setTimeout(() => transitionTo(nextStep), 300);
             } else {
               showStaticBubble("Oh no, I couldn't save your cat's life stage. Try again, meow!");
@@ -307,11 +406,12 @@ function OnboardingView() {
           }
         },
       });
-    } else if (step === 6) {
-      // "Create Profile" on step 6 now transitions to step 7 (password)
-      transitionTo(7);
     } else if (step === 7) {
-      const result = validateStep7(password, confirmPassword);
+      // "Create Profile" on step 7 now transitions to step 8 (password)
+      transitionTo(8);
+    } else if (step === 8) {
+      // Password (was step 7)
+      const result = validateStepPassword(password, confirmPassword);
       startTyping(result.message, {
         onComplete: async () => {
           if (result.isValid) {
@@ -338,7 +438,28 @@ function OnboardingView() {
         throw new Error(authError.message);
       }
       if (!authData.user) throw new Error('Failed to create account');
-      if (!authData.session) throw new Error('Email already registered or requires confirmation. Please login instead.');
+
+      // Supabase may return no session when the project has email confirmation
+      // enabled — even though the user's email was already verified via OTP in
+      // this flow. Recover by signing in immediately with the credentials they
+      // just provided to obtain a live session.
+      let session = authData.session;
+      if (!session) {
+        // Guard: duplicate email surfaces here as identities: []
+        if ((authData.user.identities ?? []).length === 0) {
+          throw new Error('Something went wrong. Please try again.');
+        }
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: ownerEmail,
+          password: password,
+        });
+        if (signInError || !signInData.session) {
+          // Account is created and email is verified — just send them through.
+          navigate('/pregnancy-tracker', { state: { displayName: ownerName, catName } });
+          return;
+        }
+        session = signInData.session;
+      }
 
       // 2. Create profile on backend
       const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
@@ -346,7 +467,7 @@ function OnboardingView() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authData.session.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           supabaseUserId: authData.user.id,
@@ -399,64 +520,76 @@ function OnboardingView() {
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
         />
-        <OnboardingScreen3
+        <OnboardingScreenOtp
           active={step === 3 && !isTransitioning}
-          catsCount={catsCount}
-          setCatsCount={(v) => { setCatsCount(v); setIsStep3Dirty(true); }}
-          customCatsCount={customCatsCount}
-          setCustomCatsCount={(v) => { setCustomCatsCount(v); setIsStep3Dirty(true); }}
+          otpCode={otpCode}
+          setOtpCode={(v) => { setOtpCode(v); setIsStep3Dirty(true); }}
+          cooldownRemaining={otpCooldown}
+          onResendClick={handleResendOtp}
           isTyping={isTyping}
           showBubble={showBubble && step === 3}
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
         />
-        <OnboardingScreen4
+        <OnboardingScreenCats
           active={step === 4 && !isTransitioning}
-          catName={catName}
-          setCatName={(v) => { setCatName(v); setIsStep4Dirty(true); }}
-          catBreed={catBreed}
-          setCatBreed={(v) => { setCatBreed(v); setIsStep4Dirty(true); }}
-          catMarking={catMarking}
-          setCatMarking={(v) => { setCatMarking(v); setIsStep4Dirty(true); }}
-          catSex={catSex}
-          setCatSex={(v) => { setCatSex(v); setIsStep4Dirty(true); }}
+          catsCount={catsCount}
+          setCatsCount={(v) => { setCatsCount(v); setIsStep4Dirty(true); }}
+          customCatsCount={customCatsCount}
+          setCustomCatsCount={(v) => { setCustomCatsCount(v); setIsStep4Dirty(true); }}
           isTyping={isTyping}
           showBubble={showBubble && step === 4}
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
         />
-        <OnboardingScreen5
+        <OnboardingScreenCatDetails
           active={step === 5 && !isTransitioning}
-          catLifeStage={catLifeStage}
-          setCatLifeStage={(v) => { setCatLifeStage(v); setIsStep5Dirty(true); }}
+          catName={catName}
+          setCatName={(v) => { setCatName(v); setIsStep5Dirty(true); }}
+          catBreed={catBreed}
+          setCatBreed={(v) => { setCatBreed(v); setIsStep5Dirty(true); }}
+          catMarking={catMarking}
+          setCatMarking={(v) => { setCatMarking(v); setIsStep5Dirty(true); }}
+          catSex={catSex}
+          setCatSex={(v) => { setCatSex(v); setIsStep5Dirty(true); }}
           isTyping={isTyping}
           showBubble={showBubble && step === 5}
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
         />
-        <OnboardingScreen6
+        <OnboardingScreenLifeStage
           active={step === 6 && !isTransitioning}
+          catLifeStage={catLifeStage}
+          setCatLifeStage={(v) => { setCatLifeStage(v); setIsStep6Dirty(true); }}
+          isTyping={isTyping}
+          showBubble={showBubble && step === 6}
+          bubbleText={bubbleText}
+          handleNextClick={handleNextClick}
+          handleBackClick={handleBackClick}
+        />
+        <OnboardingScreenCatAdded
+          active={step === 7 && !isTransitioning}
           catName={catName}
           catsCount={catsCount}
           customCatsCount={customCatsCount}
           isTyping={isTyping}
-          showBubble={showBubble && step === 6}
+          showBubble={showBubble && step === 7}
           bubbleText={bubbleText}
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
           handleAddOtherBabies={handleAddOtherBabies}
         />
-        <OnboardingScreen7
-          active={step === 7 && !isTransitioning}
+        <OnboardingScreenPassword
+          active={step === 8 && !isTransitioning}
           password={password}
           setPassword={setPassword}
           confirmPassword={confirmPassword}
           setConfirmPassword={setConfirmPassword}
           isTyping={isTyping}
-          showBubble={showBubble && step === 7}
+          showBubble={showBubble && step === 8}
           bubbleText={bubbleText}
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}

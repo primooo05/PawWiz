@@ -45,6 +45,10 @@ function makeSession(overrides: Record<string, unknown> = {}) {
     step: 3,
     ownerName: null,
     ownerEmail: null,
+    otpHash: null,
+    otpExpiresAt: null,
+    otpVerified: false,
+    otpLastSentAt: null,
     catsCount: null,
     customCatsCount: null,
     catName: null,
@@ -69,13 +73,14 @@ describe('POST /api/onboarding/session/:id/update — step-progression enforceme
 
   it(
     // Requirements 9.1, 9.2
-    'returns 400 with step-progression error when attempting step 4 but catsCount and customCatsCount are both null',
+    'returns 400 with step-progression error when attempting step 4 but email is not verified',
     async () => {
-      // Session has step-2 data (ownerName + ownerEmail) but NOT step-3 data (catsCount / customCatsCount)
+      // Session has step-2 data (ownerName + ownerEmail) but OTP is not verified
       vi.mocked(onboardingRepository.findById).mockResolvedValueOnce(
         makeSession({
           ownerName: 'Ayla',
           ownerEmail: 'ayla@example.com',
+          otpVerified: false,
           catsCount: null,
           customCatsCount: null,
         }),
@@ -87,12 +92,12 @@ describe('POST /api/onboarding/session/:id/update — step-progression enforceme
         .post('/api/onboarding/session/test-session-id/update')
         .send({
           step: 4,
-          data: { catName: 'Galaxy', catSex: 'Male' },
+          data: { catsCount: 'One' },
         });
 
       expect(response.status).toBe(400);
       expect(response.body).toEqual({
-        error: 'Step 3 data is incomplete; cannot advance to step 4',
+        error: 'Email must be verified before proceeding',
       });
     },
   );

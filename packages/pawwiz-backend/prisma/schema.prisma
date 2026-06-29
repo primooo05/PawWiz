@@ -22,6 +22,8 @@ model Profile {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
+  dietProfiles   DietProfile[]
+
   @@map("profiles")
 }
 
@@ -30,6 +32,10 @@ model OnboardingSession {
   step            Int      @default(1)
   ownerName       String?  @map("owner_name")
   ownerEmail      String?  @map("owner_email")
+  otpHash         String?  @map("otp_hash")
+  otpExpiresAt    DateTime? @map("otp_expires_at")
+  otpVerified     Boolean  @default(false) @map("otp_verified")
+  otpLastSentAt   DateTime? @map("otp_last_sent_at")
   catsCount       String?  @map("cats_count")
   customCatsCount String?  @map("custom_cats_count")
   catName         String?  @map("cat_name")
@@ -44,3 +50,42 @@ model OnboardingSession {
   @@map("onboarding_sessions")
 }
 
+model DietProfile {
+  id              String   @id @default(cuid())
+  profileId       String   @map("profile_id")
+  name            String
+  gender          String
+  lifeStage       String   @map("life_stage")
+  age             Int
+  weight          Float
+  isKg            Boolean  @map("is_kg")
+  foodPreference  String   @map("food_preference")
+  isSpayedNeutered Boolean @map("is_spayed_neutered")
+  isTracking      Boolean  @default(false) @map("is_tracking")
+  waterIntake     Int      @default(0) @map("water_intake")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  profile    Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  mealLogs   DietMealLog[]
+
+  @@map("diet_profiles")
+}
+
+model DietMealLog {
+  id            String   @id @default(cuid())
+  dietProfileId String   @map("diet_profile_id")
+  mealName      String   @map("meal_name")
+  foodType      String?  @map("food_type")
+  amount        Float?
+  unit          String?
+  kcal          Float?
+  status        String
+  timestamp     String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  dietProfile   DietProfile @relation(fields: [dietProfileId], references: [id], onDelete: Cascade)
+
+  @@map("diet_meal_logs")
+}

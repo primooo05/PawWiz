@@ -18,7 +18,7 @@ describe('Onboarding Page Guard', () => {
     vi.restoreAllMocks();
   });
 
-  it('redirects to step=2 if user attempts to skip to step=6 but has only completed up to step=2', async () => {
+  it('redirects to step=2 if user attempts to skip to step=5 but has only completed up to step=2', async () => {
     const mockSession = {
       id: 'mock-session-id',
       step: 2,
@@ -47,7 +47,7 @@ describe('Onboarding Page Guard', () => {
     };
 
     render(
-      <MemoryRouter initialEntries={['/onboarding?step=6']}>
+      <MemoryRouter initialEntries={['/onboarding?step=5']}>
         <InnerRoute />
       </MemoryRouter>
     );
@@ -117,11 +117,12 @@ describe('Onboarding Page Guard', () => {
     expect(screen.getByText(/Name must be at least 2 characters, meow!/i)).not.toBeNull();
   });
 
-  it('shows custom message for step 3 cat count', async () => {
+  it('shows custom message for step 4 cat count', async () => {
     const mockSession = {
       id: 'mock-session-id',
-      step: 3,
+      step: 4,
       ownerName: 'Ayla',
+      ownerEmail: 'ayla@example.com',
       catsCount: '',
       customCatsCount: '',
       catName: null,
@@ -140,7 +141,7 @@ describe('Onboarding Page Guard', () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ ...mockSession, step: 4, customCatsCount: 'three' }),
+        json: async () => ({ ...mockSession, step: 5, customCatsCount: 'three' }),
       } as Response);
 
     const InnerRoute = () => {
@@ -152,21 +153,26 @@ describe('Onboarding Page Guard', () => {
     };
 
     render(
-      <MemoryRouter initialEntries={['/onboarding?step=3']}>
+      <MemoryRouter initialEntries={['/onboarding?step=4']}>
         <InnerRoute />
       </MemoryRouter>
     );
 
-    // Wait for step 3 to mount
+    // Wait for step 4 (cats count) to mount
     await screen.findByPlaceholderText(/Specify e.g., 4/i);
 
     // Input "three" in custom field
     const input = screen.getByPlaceholderText(/Specify e.g., 4/i);
     fireEvent.change(input, { target: { value: 'three' } });
 
-    // Click Next
+    // Click Next — find the visible one by getting all and picking by DOM visibility
     vi.useFakeTimers();
-    const nextBtn = screen.getAllByRole('button', { name: /Next/i })[1];
+    const nextBtns = screen.getAllByRole('button', { name: /Next/i });
+    // The active screen's button is the one not in a pointer-events-none container
+    const nextBtn = nextBtns.find(btn => {
+      const parent = btn.closest('.pointer-events-auto');
+      return parent !== null;
+    }) || nextBtns[2]; // fallback: index 2 for step 4 (screen1=0, screen2=1, OTP=2, cats=3... but only active ones)
     fireEvent.click(nextBtn);
 
     // Fast-forward typing
