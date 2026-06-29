@@ -62,7 +62,7 @@ const AnimatedAvatarGroup = ({
   const hasHiddenAvatars = hiddenCount > 0;
 
   const overlapPx = size * overlap;
-  const expanded = expandOnHover && isHoverDevice && isHovered;
+  const expanded = expandOnHover && (isHoverDevice ? isHovered : true);
 
   const springTransition = shouldReduceMotion
     ? { duration: 0 }
@@ -125,6 +125,11 @@ const AnimatedAvatarGroup = ({
                   ? { marginLeft, opacity: 1 }
                   : { marginLeft, opacity: 1 }
               }
+              whileTap={shouldReduceMotion ? {} : { scale: 0.92 }}
+              onTouchStart={() => {
+                setHoveredIndex(index);
+                setTimeout(() => setHoveredIndex(null), 1500);
+              }}
               className="relative cursor-pointer"
               key={avatar.id}
               onClick={() => onAvatarClick?.(avatar.id)}
@@ -209,6 +214,11 @@ const AnimatedAvatarGroup = ({
         <motion.div
           animate={{
             marginLeft: expanded ? 12 : 8,
+          }}
+          whileTap={shouldReduceMotion ? {} : { scale: 0.92 }}
+          onTouchStart={() => {
+            setHoveredAdd(true);
+            setTimeout(() => setHoveredAdd(false), 1500);
           }}
           className="relative cursor-pointer"
           onClick={onAddClick}
