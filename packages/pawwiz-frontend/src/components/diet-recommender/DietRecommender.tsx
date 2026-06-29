@@ -71,9 +71,9 @@ export const DietRecommender: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20">
+        <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
             {/* Main content container */}
-            <main className="max-w-[1440px] px-8 py-12 mx-auto">
+            <main className={showSetup || !isTracking ? "max-w-[1440px] w-full px-8 py-12 mx-auto" : "w-full px-4 sm:px-6 md:px-8 py-6 flex-grow flex flex-col justify-stretch"}>
                 {showSetup || !isTracking ? (
                     <DietSetupView
                         catName={catName}

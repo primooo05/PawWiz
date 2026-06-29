@@ -25,7 +25,7 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
     const hasLoggedMeals = loggedMeals.some(m => m.status === 'logged' || m.status === 'skipped');
 
     return (
-        <div className="flex flex-col gap-6 w-full">
+        <div className="flex flex-col gap-6 w-full h-full">
             <div className="flex items-center justify-between">
                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">Meals</h2>
                 <button

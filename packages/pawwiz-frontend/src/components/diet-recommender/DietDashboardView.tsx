@@ -194,8 +194,10 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
         isActive: p.id === activeProfileId
     }));
 
+    const activeAvatarSrc = avatarDataList.find(a => a.isActive)?.src;
+
     return (
-        <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto text-slate-800">
+        <div className="flex flex-col gap-8 w-full flex-grow text-slate-800">
             {/* Header Greeting Row */}
             <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -213,13 +215,14 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
             </div>
 
             {/* Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1.1fr] gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1.1fr] gap-8 items-stretch flex-grow">
                 {/* Left Column */}
                 <motion.div
                     key={`profile-${activeProfileId}`}
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="h-full"
                 >
                     <ProfileCard
                         catName={catName}
@@ -232,6 +235,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                         lifeStage={lifeStage}
                         age={age}
                         onEditProfile={() => setIsConfirmResetOpen(true)}
+                        avatarSrc={activeAvatarSrc}
                     />
                 </motion.div>
 
@@ -241,6 +245,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+                    className="h-full"
                 >
                     <MealsTracker
                         loggedMeals={loggedMeals}
@@ -260,7 +265,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
-                    className="flex flex-col gap-8 w-full"
+                    className="flex flex-col gap-8 w-full h-full"
                 >
                     <WeeklyCalendar />
                     <FeedingGuideline ageBracketInfo={ageBracketInfo} />

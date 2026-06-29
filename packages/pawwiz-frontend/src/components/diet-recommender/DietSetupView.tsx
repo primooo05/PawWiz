@@ -92,18 +92,18 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
     };
 
     return (
-        <div className="max-w-md mx-auto mt-12 p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[6px_6px_0_0_rgba(15,23,42,1)] text-center">
-            <div className="text-4xl mb-4">🍽️</div>
+        <div className="max-w-2xl mx-auto mt-8 p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[6px_6px_0_0_rgba(15,23,42,1)] text-center">
+            <div className="text-4xl mb-4"></div>
             <h2 className="text-2xl font-black mb-2 text-slate-900 uppercase tracking-tight">Diet Setup</h2>
             <p className="text-slate-500 mb-6 text-xs font-bold uppercase tracking-wider">
                 Establish your cat's profile to calculate portion recommendations.
             </p>
 
-            <form onSubmit={onSubmit} className="flex flex-col gap-6 text-left">
+            <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 text-left">
                 {/* 0. Cat Selection (Onboarding vs New) */}
                 {onboardedCat && (
-                    <div>
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                    <div className="col-span-1 md:col-span-2">
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                             Select Cat to Set Up First
                         </label>
                         <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-full justify-between">
@@ -115,9 +115,8 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                                     setGender(onboardedCat.gender);
                                     setLifeStage(onboardedCat.lifeStage);
                                 }}
-                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${
-                                    selectedCatId === 'onboarding' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                }`}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${selectedCatId === 'onboarding' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                    }`}
                             >
                                 {onboardedCat.name} (Onboarding)
                             </button>
@@ -129,9 +128,8 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                                     setGender('male');
                                     setLifeStage('adult');
                                 }}
-                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${
-                                    selectedCatId === 'new' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                }`}
+                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${selectedCatId === 'new' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                    }`}
                             >
                                 Set up a new cat
                             </button>
@@ -140,7 +138,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                 )}
                 {/* 1. Cat Name Input */}
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Cat's Name
                     </label>
                     <input
@@ -155,7 +153,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
                 {/* 2. Gender Selection */}
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Gender
                     </label>
                     <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
@@ -177,13 +175,13 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                 </div>
 
                 {/* 3. Weight Slider with unit toggler */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
                         <span>Weight:</span>
                         <div className="flex items-center gap-2">
                             <span className="font-extrabold text-[#2ec4b6]">
-                                {isKg 
-                                    ? (weight >= 13 ? "13.0+ kg" : `${weight.toFixed(1)} kg`) 
+                                {isKg
+                                    ? (weight >= 13 ? "13.0+ kg" : `${weight.toFixed(1)} kg`)
                                     : (weight >= 28.6 ? "28.6+ lbs" : `${weight.toFixed(1)} lbs`)
                                 }
                             </span>
@@ -218,7 +216,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
                 {/* 4. Life Stage Selection */}
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Life Stage
                     </label>
                     <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
@@ -240,7 +238,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                 </div>
 
                 {/* 5. Age Slider */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
                         <span>Age:</span>
                         <span className="font-extrabold text-[#2ec4b6] uppercase">
@@ -259,7 +257,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                 </div>
 
                 {/* Age Bracket Preview */}
-                <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl animate-fadeIn">
+                <div className="col-span-1 md:col-span-2 p-4 bg-teal-50/70 border border-teal-100 rounded-2xl animate-fadeIn">
                     <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider">Feeding Guide Preview</span>
                     <p className="text-sm font-black text-teal-900 mt-1">{ageBracketDetails.bracket}</p>
                     <p className="text-[10px] text-teal-700 font-medium mt-1 leading-relaxed">
@@ -269,7 +267,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
                 {/* 6. Food Preference */}
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Food Type Preference
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -291,7 +289,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
                 {/* 7. Spayed/Neutered */}
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Spayed or Neutered?
                     </label>
                     <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
@@ -314,7 +312,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
                 <button
                     type="submit"
-                    className="mt-4 w-full py-4 bg-teal-500 text-white border-2 border-slate-900 rounded-2xl font-bold shadow-[3px_3px_0_0_rgba(15,23,42,1)] hover:bg-teal-600 transition-all cursor-pointer"
+                    className="col-span-1 md:col-span-2 mt-4 w-full py-4 bg-teal-500 text-white border-2 border-slate-900 rounded-2xl font-bold shadow-[3px_3px_0_0_rgba(15,23,42,1)] hover:bg-teal-600 transition-all cursor-pointer"
                 >
                     Get Recommendations
                 </button>

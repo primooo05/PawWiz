@@ -41,7 +41,7 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
     onEditClick,
 }) => {
     return (
-        <div className="p-8 bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center border border-slate-50">
+        <div className="p-8 bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center border border-slate-50 h-full w-full">
             <div className="w-full flex justify-between items-center mb-8">
                 <h2 className="text-[1.35rem] font-bold text-[#1e293b]">Molly's Cycle</h2>
                 <button

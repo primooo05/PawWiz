@@ -11,6 +11,7 @@ interface ProfileCardProps {
     lifeStage: 'kitten' | 'adult';
     age: number;
     onEditProfile: () => void;
+    avatarSrc?: string;
 }
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({
@@ -24,6 +25,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     lifeStage,
     age,
     onEditProfile,
+    avatarSrc,
 }) => {
     return (
         <div className="p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col items-center w-full">
@@ -38,8 +40,12 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 </button>
             </div>
 
-            <div className="w-24 h-24 bg-teal-50 border-4 border-[#2ec4b6] rounded-full flex items-center justify-center text-4xl mb-4 shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
-                🐈
+            <div className="w-24 h-24 bg-teal-50 border-4 border-[#2ec4b6] rounded-full flex items-center justify-center overflow-hidden mb-4 shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
+                {avatarSrc ? (
+                    <img src={avatarSrc} alt={catName} className="w-full h-full object-cover" />
+                ) : (
+                    <span className="text-4xl">🐈</span>
+                )}
             </div>
 
             <div className="flex gap-2 mb-6">

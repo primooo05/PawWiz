@@ -124,7 +124,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-x-12 gap-y-8 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-x-12 gap-y-8 items-stretch flex-grow w-full">
                 {/* LEFT COLUMN: Molly's Cycle (Soft UI) */}
                 <CycleProgressCard
                     progressPercentage={progressPercentage}
@@ -141,7 +141,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 />
 
                 {/* RIGHT COLUMN: Calendar & Symptoms */}
-                <div className="flex flex-col gap-10 mt-6">
+                <div className="flex flex-col gap-10 mt-6 h-full">
                     {/* Labor Warning Card for Week 8-9 */}
                     {currentWeek >= 8 && (
                         <div className="bg-red-50 border-2 border-red-500 rounded-[2rem] p-6 shadow-[4px_4px_0_0_rgba(15,23,42,1)]">
