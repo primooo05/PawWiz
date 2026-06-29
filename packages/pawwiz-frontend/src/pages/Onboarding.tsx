@@ -79,6 +79,7 @@ function OnboardingView() {
   const [isStep5Dirty, setIsStep5Dirty] = useState(false);
 
   // Transition state for the circular scale animation
+  const [isZIndexHigh, setIsZIndexHigh] = useState(!!(location.state as { animateIn?: boolean })?.animateIn);
   const [isTransitioning, setIsTransitioning] = useState(
     !!(location.state as { animateIn?: boolean })?.animateIn
   );
@@ -90,7 +91,10 @@ function OnboardingView() {
   // Clear animateIn state on mount
   useEffect(() => {
     if ((location.state as { animateIn?: boolean })?.animateIn) {
-      const timer = setTimeout(() => setIsTransitioning(false), 100);
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        setTimeout(() => setIsZIndexHigh(false), 2000);
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [location.state]);
@@ -119,7 +123,7 @@ function OnboardingView() {
   // --- Navigation helpers ---
 
   const transitionTo = (nextStep: number) => {
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => {
       setStep(nextStep);
       setIsTransitioning(false);
@@ -152,7 +156,7 @@ function OnboardingView() {
     setIsClicked(true);
 
     await new Promise((resolve) => setTimeout(resolve, 450));
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     navigate('/login', { state: { animateIn: true } });
@@ -160,16 +164,17 @@ function OnboardingView() {
 
   const handleCreateAccountClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     await initializeSession();
     setTimeout(() => {
       setStep(2);
       setIsTransitioning(false);
+      setTimeout(() => setIsZIndexHigh(false), 2000);
     }, 800);
   };
 
   const handleReturnToHome = () => {
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => navigate('/', { state: { animateOut: true } }), 800);
   };
 
@@ -184,7 +189,7 @@ function OnboardingView() {
       return;
     }
 
-    setIsTransitioning(true);
+    { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => {
       setCatName('');
       setCatBreed('');
@@ -363,14 +368,14 @@ function OnboardingView() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center py-12 px-6">
+    <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">
       {/* Decorative Circles */}
-      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'z-50 scale-[8]' : 'z-0 scale-100'}`} />
-      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right ${isTransitioning ? 'z-50 scale-[12]' : 'z-0 scale-100'}`} />
-      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'z-50 scale-[8]' : 'z-0 scale-100'}`} />
+      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left ${(isTransitioning || isZIndexHigh) ? 'z-50 ' + (isTransitioning ? 'scale-[8]' : 'scale-100') : '-z-10 scale-100'}`} />
+      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right ${(isTransitioning || isZIndexHigh) ? 'z-50 ' + (isTransitioning ? 'scale-[12]' : 'scale-100') : '-z-10 scale-100'}`} />
+      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${(isTransitioning || isZIndexHigh) ? 'z-50 ' + (isTransitioning ? 'scale-[8]' : 'scale-100') : '-z-10 scale-100'}`} />
 
       {/* Center Wrapper */}
-      <div className={`relative w-full flex-grow flex items-center justify-center ${isTransitioning ? 'z-0' : 'z-10'}`}>
+      <div className={`relative w-full flex-grow flex items-center justify-center ${(isTransitioning || isZIndexHigh) ? 'z-0' : 'z-10'}`}>
         <OnboardingScreen1
           active={step === 1 && !isTransitioning}
           handleCreateAccountClick={handleCreateAccountClick}
