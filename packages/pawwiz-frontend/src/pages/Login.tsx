@@ -37,18 +37,15 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center pt-28 pb-12 px-6 min-w-[365px] min-h-[667px]">
-      <Navbar />
 
       {/* Decorative Circles */}
-      <div className={`pointer-events-none overflow-hidden transition-all duration-300 ${isTransitioning ? 'fixed inset-0 z-[9999]' : 'absolute inset-0 z-0'}`}>
-        <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'scale-[8]' : 'scale-100'}`} />
-        <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 transition-transform duration-[1000ms] ease-in-out origin-top-right ${isTransitioning ? 'scale-[12]' : 'scale-100'}`} />
-        <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'scale-[8]' : 'scale-100'}`} />
-      </div>
+      <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-top-left z-[9999] ${isTransitioning ? 'scale-[8]' : 'scale-100'}`} />
+      <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 pointer-events-none transition-transform duration-[1000ms] ease-in-out origin-top-right z-[9999] ${isTransitioning ? 'scale-[12]' : 'scale-100'}`} />
+      <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 pointer-events-none transition-transform duration-[2000ms] ease-in-out origin-bottom-right z-[9999] ${isTransitioning ? 'scale-[8]' : 'scale-100'}`} />
 
       {/* Main content wrapper */}
-      <div className="relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-between gap-12 z-10 my-auto">
-
+      <div className="relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-between gap-12 z-0 my-auto">
+      
         {/* Left side: branding/illustration */}
         <div className="flex flex-col items-start justify-between max-w-lg lg:w-1/2 min-h-[450px] lg:min-h-[650px] relative">
           <div>
@@ -68,7 +65,7 @@ export default function Login() {
         </div>
 
         {/* Right side: Login form */}
-        <div className="w-full lg:w-1/2 max-w-md flex flex-col justify-center relative z-10 -translate-y-4 lg:-translate-y-36">
+        <div className="w-full lg:w-1/2 max-w-md flex flex-col justify-center relative z-0 -translate-y-4 lg:-translate-y-36">
           {successMessage && (
             <div className="mb-6 p-4 bg-teal-50 text-teal-700 rounded-xl text-sm text-center">
               {successMessage}
