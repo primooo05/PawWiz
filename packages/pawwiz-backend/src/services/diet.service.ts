@@ -10,7 +10,7 @@ function mapProfileToFrontend(profile: any) {
     'Dinner': '3'
   };
 
-  const loggedMeals = (profile.loggedMeals || []).map((m: any) => ({
+  const loggedMeals = (profile.mealLogs || []).map((m: any) => ({
     id: mealMap[m.mealName] || m.id,
     mealName: m.mealName,
     foodType: m.foodType || undefined,
@@ -52,28 +52,7 @@ class DietService {
     assertDefined(userProfile, 'User profile not found. Please complete onboarding first.');
     const profileId = userProfile.id;
 
-    let profiles = await dietRepository.findManyByProfileId(profileId);
-
-    // If no diet profiles exist, initialize one using onboarding data from the user profile
-    if (profiles.length === 0) {
-      const gender = userProfile.catSex.toLowerCase() === 'female' ? 'female' : 'male';
-      const lifeStage = userProfile.catLifeStage.toLowerCase() === 'kitten' ? 'kitten' : 'adult';
-      
-      const defaultProfile = await dietRepository.create(profileId, {
-        name: userProfile.catName,
-        gender,
-        lifeStage,
-        age: 3, // Default age fallback
-        weight: 4.5, // Default weight fallback (kg)
-        isKg: true,
-        foodPreference: 'mixed',
-        isSpayedNeutered: true,
-        isTracking: false,
-        waterIntake: 0,
-      });
-      profiles = [defaultProfile];
-    }
-
+    const profiles = await dietRepository.findManyByProfileId(profileId);
     return profiles.map(mapProfileToFrontend);
   }
 

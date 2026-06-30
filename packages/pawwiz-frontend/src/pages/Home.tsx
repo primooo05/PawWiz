@@ -4,8 +4,7 @@ import PregnancySection from '../components/landing/PregnancySection';
 import DietSection from '../components/landing/DietSection';
 import BehaviorSection from '../components/landing/BehaviorSection';
 import ContactSection from '../components/landing/ContactSection';
-
-const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+import { API_BASE } from '../lib/config.js';
 
 export default function Home() {
   useHashScroll();

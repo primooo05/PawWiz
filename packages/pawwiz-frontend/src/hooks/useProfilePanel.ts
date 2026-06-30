@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { API_BASE } from '../lib/config.js';
 
 export interface ProfileData {
   displayName: string;
@@ -26,17 +27,9 @@ export function useProfilePanel(optimisticData?: { displayName: string; catName:
   useEffect(() => {
     let cancelled = false;
 
-    const fetchProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        if (!cancelled) { setIsAuthenticated(false); setIsLoading(false); }
-        return;
-      }
-      if (!cancelled) setIsAuthenticated(true);
-
-      const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+    const fetchProfile = async (accessToken: string) => {
       const res = await fetch(`${API_BASE}/api/profile`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        headers: { 'Authorization': `Bearer ${accessToken}` },
       });
 
       if (!cancelled) {
@@ -49,7 +42,23 @@ export function useProfilePanel(optimisticData?: { displayName: string; catName:
       }
     };
 
-    fetchProfile();
+    // getSession() can return a stale/expired token on first mount.
+    // refreshSession() ensures we have a valid, up-to-date token before fetching.
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.refreshSession();
+
+      if (!session) {
+        if (!cancelled) { setIsAuthenticated(false); setIsLoading(false); }
+        return;
+      }
+
+      if (!cancelled) {
+        setIsAuthenticated(true);
+        await fetchProfile(session.access_token);
+      }
+    };
+
+    init();
     return () => { cancelled = true; };
   }, []);
 

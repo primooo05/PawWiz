@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { AgeBracketDetails, MealLog, CatProfile } from '../../hooks/useDietRecommender';
 import ConfirmationDialog from '../modals/ConfirmationDialog';
+import { useNavigate } from 'react-router-dom';
 
 // Import subcomponents
 import ProfileCard from './sub-components/ProfileCard';
@@ -10,7 +11,6 @@ import FeedingGuideline from './sub-components/FeedingGuideline';
 import CalorieTracker from './sub-components/CalorieTracker';
 import MealLogModal from './sub-components/MealLogModal';
 import AnimatedAvatarGroup from '../smoothui/animated-avatar-group';
-import akiCat from '../../assets/aki_cat.png';
 import { motion } from 'motion/react';
 
 interface DietDashboardViewProps {
@@ -63,6 +63,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     loggedMeals,
     waterIntake,
 }) => {
+    const navigate = useNavigate();
     const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
 
     // Modal state
@@ -174,27 +175,15 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     const possessivePronoun = gender === 'male' ? 'his' : 'her';
     const subjectPronoun = gender === 'male' ? 'He' : 'She';
 
-    const catImages = [
-        'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100&h=100&fit=crop&crop=faces&q=80',
-        'https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=100&h=100&fit=crop&crop=faces&q=80',
-        'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=100&h=100&fit=crop&crop=faces&q=80',
-        'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=100&h=100&fit=crop&crop=faces&q=80'
-    ];
-
-    const getCatAvatarSrc = (name: string, index: number) => {
-        if (name.toLowerCase() === 'aki') return akiCat;
-        return catImages[index % catImages.length];
-    };
-
-    const avatarDataList = profiles.map((p, idx) => ({
+    const avatarDataList = profiles.map((p) => ({
         id: p.id,
         name: p.name,
-        src: getCatAvatarSrc(p.name, idx),
+        src: p.photoUrl || undefined,
         alt: p.name,
         isActive: p.id === activeProfileId
     }));
 
-    const activeAvatarSrc = avatarDataList.find(a => a.isActive)?.src;
+    const activePhotoUrl = profiles.find(p => p.id === activeProfileId)?.photoUrl;
 
     return (
         <div className="flex flex-col gap-8 w-full flex-grow text-slate-800">
@@ -210,6 +199,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     <AnimatedAvatarGroup
                         avatars={avatarDataList}
                         onAvatarClick={(id) => switchProfile(id)}
+                        onAddClick={() => navigate('/settings')}
                     />
                 </div>
             </div>
@@ -235,7 +225,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                         lifeStage={lifeStage}
                         age={age}
                         onEditProfile={() => setIsConfirmResetOpen(true)}
-                        avatarSrc={activeAvatarSrc}
+                        photoUrl={activePhotoUrl}
                     />
                 </motion.div>
 

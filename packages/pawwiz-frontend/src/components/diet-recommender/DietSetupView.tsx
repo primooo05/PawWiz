@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getAgeBracketInfo } from '../../hooks/useDietRecommender';
+import type { CatProfile } from '../../hooks/useDietRecommender';
 import { supabase } from '../../lib/supabase';
-
+import { API_BASE } from '../../lib/config.js';
+import AnimatedAvatarGroup from '../smoothui/animated-avatar-group';
+import { useNavigate } from 'react-router-dom';
 
 interface DietSetupViewProps {
     catName: string;
@@ -21,6 +24,10 @@ interface DietSetupViewProps {
     isSpayedNeutered: boolean;
     setIsSpayedNeutered: (val: boolean) => void;
     onSubmit: (e: React.FormEvent) => void;
+
+    profiles: CatProfile[];
+    activeProfileId: string;
+    switchProfile: (id: string) => void;
 }
 
 export const DietSetupView: React.FC<DietSetupViewProps> = ({
@@ -41,7 +48,12 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
     isSpayedNeutered,
     setIsSpayedNeutered,
     onSubmit,
+
+    profiles,
+    activeProfileId,
+    switchProfile,
 }) => {
+    const navigate = useNavigate();
     const ageBracketDetails = getAgeBracketInfo(lifeStage, age);
 
     const [onboardedCat, setOnboardedCat] = useState<{ name: string; gender: 'male' | 'female'; lifeStage: 'kitten' | 'adult' } | null>(null);
@@ -49,15 +61,15 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
     // Fetch user profile from backend on mount to auto-fill onboarding details
     useEffect(() => {
-        const fetchProfile = async () => {
+        let active = true;
+
+        const fetchProfile = async (session: any) => {
+            if (!session) return;
             try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) return;
-                const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
                 const res = await fetch(`${API_BASE}/api/profile`, {
                     headers: { 'Authorization': `Bearer ${session.access_token}` },
                 });
-                if (res.ok) {
+                if (res.ok && active) {
                     const data = await res.json();
                     if (data && data.catName) {
                         const gender = data.catSex.toLowerCase() === 'female' ? 'female' : 'male';
@@ -78,7 +90,25 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                 console.error('Failed to fetch onboarding profile details', e);
             }
         };
-        fetchProfile();
+
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (active && session) {
+                fetchProfile(session);
+            }
+        });
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (active && session) {
+                fetchProfile(session);
+            }
+        });
+
+        return () => {
+            active = false;
+            subscription.unsubscribe();
+        };
     }, [setCatName, setGender, setLifeStage]);
 
     // Sync default age value when changing lifeStage
@@ -98,6 +128,22 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
             <p className="text-slate-500 mb-6 text-xs font-bold uppercase tracking-wider">
                 Establish your cat's profile to calculate portion recommendations.
             </p>
+
+            {profiles.length > 0 && (
+                <div className="flex justify-center mb-8">
+                    <AnimatedAvatarGroup
+                        avatars={profiles.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            src: p.photoUrl,
+                            alt: p.name,
+                            isActive: p.id === activeProfileId
+                        }))}
+                        onAvatarClick={(id) => switchProfile(id)}
+                        onAddClick={() => navigate('/settings')}
+                    />
+                </div>
+            )}
 
             <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 text-left">
                 {/* 0. Cat Selection (Onboarding vs New) */}

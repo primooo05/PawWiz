@@ -8,6 +8,7 @@ vi.mock('../lib/supabase.js', () => ({
   supabase: {
     auth: {
       getSession: vi.fn(),
+      refreshSession: vi.fn(),
     },
   },
 }));
@@ -20,6 +21,10 @@ describe('useProfilePanel', () => {
   describe('Property 8: ProfilePanel always reconciles to server-confirmed values', () => {
     beforeEach(() => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
+        data: { session: { access_token: 'mock-token' } },
+        error: null,
+      } as any);
+      vi.mocked(supabase.auth.refreshSession).mockResolvedValue({
         data: { session: { access_token: 'mock-token' } },
         error: null,
       } as any);
@@ -53,7 +58,7 @@ describe('useProfilePanel', () => {
 
             try {
               const { result } = renderHook(() => useProfilePanel(optimisticData));
-              await act(async () => {});
+              await act(async () => { });
               expect(result.current.profile).toEqual(serverData);
             } finally {
               cleanup();
@@ -84,7 +89,7 @@ describe('useProfilePanel', () => {
 
             try {
               const { result } = renderHook(() => useProfilePanel());
-              await act(async () => {});
+              await act(async () => { });
               expect(result.current.profile).toEqual(serverData);
             } finally {
               cleanup();

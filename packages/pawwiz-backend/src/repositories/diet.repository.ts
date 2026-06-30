@@ -40,7 +40,7 @@ class DietRepository {
   async findManyByProfileId(profileId: string) {
     return prisma.dietProfile.findMany({
       where: { profileId },
-      include: { loggedMeals: true },
+      include: { mealLogs: true },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -48,14 +48,14 @@ class DietRepository {
   async findById(id: string) {
     return prisma.dietProfile.findUnique({
       where: { id },
-      include: { loggedMeals: true },
+      include: { mealLogs: true },
     });
   }
 
   async findByIdAndProfileId(id: string, profileId: string) {
     return prisma.dietProfile.findFirst({
       where: { id, profileId },
-      include: { loggedMeals: true },
+      include: { mealLogs: true },
     });
   }
 
@@ -73,7 +73,7 @@ class DietRepository {
         isSpayedNeutered: data.isSpayedNeutered,
         isTracking: data.isTracking ?? false,
         waterIntake: data.waterIntake ?? 0,
-        loggedMeals: {
+        mealLogs: {
           create: [
             { mealName: 'Breakfast', status: 'pending', kcal: 0 },
             { mealName: 'Lunch', status: 'pending', kcal: 0 },
@@ -81,7 +81,7 @@ class DietRepository {
           ],
         },
       },
-      include: { loggedMeals: true },
+      include: { mealLogs: true },
     });
   }
 
@@ -89,7 +89,7 @@ class DietRepository {
     return prisma.dietProfile.update({
       where: { id },
       data,
-      include: { loggedMeals: true },
+      include: { mealLogs: true },
     });
   }
 

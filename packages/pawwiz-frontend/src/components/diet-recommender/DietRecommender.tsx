@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoadingScreen from '../LoadingScreen';
 import DietSetupView from './DietSetupView';
 import DietDashboardView from './DietDashboardView';
@@ -47,6 +47,10 @@ export const DietRecommender: React.FC = () => {
     const [loadingTarget, setLoadingTarget] = useState<'dashboard' | 'setup' | null>(null);
     const [showSetup, setShowSetup] = useState<boolean>(true);
 
+    useEffect(() => {
+        setShowSetup(!isTracking);
+    }, [isTracking]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (weight > 0) {
@@ -67,6 +71,10 @@ export const DietRecommender: React.FC = () => {
             navigate('/');
         } else if (item === 'diet-reco') {
             navigate('/diet-recommender');
+        } else if (item === 'settings') {
+            navigate('/settings');
+        } else if (item === 'plant') {
+            navigate('/');
         }
     };
 
@@ -93,6 +101,9 @@ export const DietRecommender: React.FC = () => {
                         isSpayedNeutered={isSpayedNeutered}
                         setIsSpayedNeutered={setIsSpayedNeutered}
                         onSubmit={handleSubmit}
+                        profiles={profiles}
+                        activeProfileId={activeProfileId}
+                        switchProfile={switchProfile}
                     />
                 ) : (
                     <DietDashboardView

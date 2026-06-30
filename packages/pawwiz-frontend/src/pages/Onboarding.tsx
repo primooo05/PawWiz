@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_BASE } from '../lib/config.js';
 import { CircleWrapper } from '../components/CircleWrapper';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
@@ -288,11 +289,8 @@ function OnboardingView() {
             const success = await submitStep(2, { ownerName: ownerName.trim(), ownerEmail: ownerEmail.trim() });
             if (success) {
               setIsStep2Dirty(false);
-              // Send OTP immediately on advancing to step 3
               setTimeout(async () => {
                 transitionTo(3);
-                // Small delay to let step render first
-                setTimeout(() => handleSendOtp(), 200);
               }, 300);
             } else {
               showStaticBubble("Oh no, I couldn't save your name. Try again, meow!");
@@ -462,7 +460,6 @@ function OnboardingView() {
       }
 
       // 2. Create profile on backend
-      const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
       const response = await fetch(`${API_BASE}/api/profile`, {
         method: 'POST',
         headers: {

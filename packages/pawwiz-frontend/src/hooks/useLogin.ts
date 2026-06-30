@@ -31,7 +31,7 @@ export function useLogin() {
       });
 
       if (error) {
-        throw new Error('Invalid email or password');
+        throw error;
       }
 
       if (data.user) {

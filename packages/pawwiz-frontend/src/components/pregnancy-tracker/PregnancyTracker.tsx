@@ -59,6 +59,10 @@ const CatPregnancyTracker: React.FC = () => {
             navigate('/');
         } else if (item === 'diet-reco') {
             navigate('/diet-recommender');
+        } else if (item === 'settings') {
+            navigate('/settings');
+        } else if (item === 'plant') {
+            navigate('/');
         }
     };
 

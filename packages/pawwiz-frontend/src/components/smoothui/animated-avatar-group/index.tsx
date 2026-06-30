@@ -2,11 +2,12 @@
 
 import { motion, useReducedMotion, AnimatePresence } from "motion/react";
 import { useEffect, useState } from "react";
+import { Cat } from "lucide-react";
 
 export type AvatarData = {
   id: string;
   name: string;
-  src: string;
+  src?: string | null;
   alt: string;
   isActive?: boolean;
 };
@@ -84,7 +85,7 @@ const AnimatedAvatarGroup = ({
         {visibleAvatars.map((avatar, index) => {
           const marginLeft = index === 0 ? 0 : expanded ? 8 : -overlapPx;
 
-          const content = (
+          const content = avatar.src ? (
             <motion.img
               alt={avatar.alt}
               animate={
@@ -116,6 +117,36 @@ const AnimatedAvatarGroup = ({
               }}
               width={size}
             />
+          ) : (
+            <motion.div
+              animate={
+                shouldReduceMotion
+                  ? { opacity: 1 }
+                  : {
+                      opacity: 1,
+                      scale: hoveredIndex === index ? 1.15 : expanded ? 1.05 : 1,
+                    }
+              }
+              className={cn(
+                "rounded-full border-2 transition-all duration-200 bg-teal-50 flex items-center justify-center text-[#2ec4b6]",
+                avatar.isActive
+                  ? "border-[#2ec4b6] ring-4 ring-[#2ec4b6]/25 shadow-md scale-105"
+                  : "border-slate-900"
+              )}
+              style={{
+                width: size,
+                height: size,
+              }}
+              initial={
+                shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }
+              }
+              transition={{
+                ...springTransition,
+                delay: shouldReduceMotion ? 0 : index * 0.03,
+              }}
+            >
+              <Cat size={size * 0.55} className="stroke-[1.5]" />
+            </motion.div>
           );
 
           return (

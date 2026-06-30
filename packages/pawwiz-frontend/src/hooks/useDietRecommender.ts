@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-
-const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+import { API_BASE } from '../lib/config.js';
 
 
 export interface MealLog {
@@ -28,6 +27,7 @@ export interface CatProfile {
     isTracking: boolean;
     loggedMeals: MealLog[];
     waterIntake: number; // in ml
+    photoUrl?: string | null;
 }
 
 export interface AgeBracketDetails {
@@ -104,45 +104,6 @@ export const calculateMealCalories = (
     }
 };
 
-const DEFAULT_PROFILES: CatProfile[] = [
-    {
-        id: 'aki',
-        name: 'Aki',
-        gender: 'male',
-        lifeStage: 'adult',
-        age: 3,
-        weight: 4.5,
-        isKg: true,
-        foodPreference: 'mixed',
-        isSpayedNeutered: true,
-        isTracking: true,
-        loggedMeals: [
-            { id: '1', mealName: 'Breakfast', status: 'pending', kcal: 0 },
-            { id: '2', mealName: 'Lunch', status: 'pending', kcal: 0 },
-            { id: '3', mealName: 'Dinner', status: 'pending', kcal: 0 }
-        ],
-        waterIntake: 0
-    },
-    {
-        id: 'luna',
-        name: 'Luna',
-        gender: 'female',
-        lifeStage: 'kitten',
-        age: 5,
-        weight: 2.2,
-        isKg: true,
-        foodPreference: 'wet',
-        isSpayedNeutered: false,
-        isTracking: true,
-        loggedMeals: [
-            { id: '1', mealName: 'Breakfast', status: 'pending', kcal: 0 },
-            { id: '2', mealName: 'Lunch', status: 'pending', kcal: 0 },
-            { id: '3', mealName: 'Dinner', status: 'pending', kcal: 0 }
-        ],
-        waterIntake: 0
-    }
-];
-
 export const useDietRecommender = () => {
     const [profiles, setProfiles] = useState<CatProfile[]>(() => {
         const stored = localStorage.getItem('diet_profiles');
@@ -153,25 +114,25 @@ export const useDietRecommender = () => {
                 console.error('Failed to parse diet profiles', e);
             }
         }
-        return DEFAULT_PROFILES;
+        return [];
     });
 
     const [activeProfileId, setActiveProfileId] = useState<string>(() => {
-        return localStorage.getItem('diet_active_profile_id') || 'aki';
+        return localStorage.getItem('diet_active_profile_id') || '';
     });
 
-    const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || DEFAULT_PROFILES[0];
+    const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
 
     // Profile form states (synced to the current active profile)
-    const [catName, setCatName] = useState<string>(activeProfile.name);
-    const [gender, setGender] = useState<'male' | 'female'>(activeProfile.gender);
-    const [lifeStage, setLifeStage] = useState<'kitten' | 'adult'>(activeProfile.lifeStage);
-    const [age, setAge] = useState<number>(activeProfile.age);
-    const [weight, setWeight] = useState<number>(activeProfile.weight);
-    const [isKg, setIsKg] = useState<boolean>(activeProfile.isKg);
-    const [foodPreference, setFoodPreference] = useState<'dry' | 'wet' | 'mixed'>(activeProfile.foodPreference);
-    const [isSpayedNeutered, setIsSpayedNeutered] = useState<boolean>(activeProfile.isSpayedNeutered);
-    const [isTracking, setIsTracking] = useState<boolean>(activeProfile.isTracking);
+    const [catName, setCatName] = useState<string>(activeProfile?.name || '');
+    const [gender, setGender] = useState<'male' | 'female'>(activeProfile?.gender || 'male');
+    const [lifeStage, setLifeStage] = useState<'kitten' | 'adult'>(activeProfile?.lifeStage || 'adult');
+    const [age, setAge] = useState<number>(activeProfile?.age || 0);
+    const [weight, setWeight] = useState<number>(activeProfile?.weight || 0);
+    const [isKg, setIsKg] = useState<boolean>(activeProfile ? activeProfile.isKg : true);
+    const [foodPreference, setFoodPreference] = useState<'dry' | 'wet' | 'mixed'>(activeProfile?.foodPreference || 'mixed');
+    const [isSpayedNeutered, setIsSpayedNeutered] = useState<boolean>(activeProfile ? activeProfile.isSpayedNeutered : true);
+    const [isTracking, setIsTracking] = useState<boolean>(activeProfile ? activeProfile.isTracking : false);
 
     const getAuthHeaders = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -193,13 +154,20 @@ export const useDietRecommender = () => {
         setIsTracking(profile.isTracking);
     };
 
-    // Load from backend on mount
+    // Load from backend on mount / auth state change
     useEffect(() => {
-        const loadFromBackend = async () => {
+        let active = true;
+
+        const loadFromBackend = async (session: any) => {
+            if (!session) return;
             try {
-                const headers = await getAuthHeaders();
-                const res = await fetch(`${API_BASE}/api/diet/profiles`, { headers });
-                if (res.ok) {
+                const res = await fetch(`${API_BASE}/api/diet/profiles`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                    }
+                });
+                if (res.ok && active) {
                     const data = await res.json();
                     if (data && data.length > 0) {
                         setProfiles(data);
@@ -212,15 +180,33 @@ export const useDietRecommender = () => {
                         setActiveProfileId(finalId);
                         localStorage.setItem('diet_active_profile_id', finalId);
 
-                        const active = data.find((p: any) => p.id === finalId) || data[0];
-                        syncStatesToSetup(active);
+                        const activeProfileData = data.find((p: any) => p.id === finalId) || data[0];
+                        syncStatesToSetup(activeProfileData);
                     }
                 }
             } catch (e) {
                 console.error('Failed to sync diet profiles from backend', e);
             }
         };
-        loadFromBackend();
+
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (active && session) {
+                loadFromBackend(session);
+            }
+        });
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (active && session) {
+                loadFromBackend(session);
+            }
+        });
+
+        return () => {
+            active = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
     const saveProfilesToStorage = (updatedList: CatProfile[]) => {
@@ -235,20 +221,20 @@ export const useDietRecommender = () => {
         syncStatesToSetup(nextProfile);
     };
 
-    const createNewProfile = async (name: string) => {
+    const createNewProfile = async (name: string, customDetails?: Partial<Omit<CatProfile, 'id' | 'loggedMeals'>>) => {
         // Optimistic local state update first
         const newId = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
         const tempProf: CatProfile = {
             id: newId,
             name: name,
-            gender: 'male',
-            lifeStage: 'adult',
-            age: 3,
-            weight: 4.5,
-            isKg: true,
-            foodPreference: 'mixed',
-            isSpayedNeutered: true,
-            isTracking: false,
+            gender: customDetails?.gender || 'male',
+            lifeStage: customDetails?.lifeStage || 'adult',
+            age: customDetails?.age ?? 3,
+            weight: customDetails?.weight ?? 4.5,
+            isKg: customDetails?.isKg ?? true,
+            foodPreference: customDetails?.foodPreference || 'mixed',
+            isSpayedNeutered: customDetails?.isSpayedNeutered ?? true,
+            isTracking: customDetails?.isTracking ?? true,
             loggedMeals: [
                 { id: '1', mealName: 'Breakfast', status: 'pending', kcal: 0 },
                 { id: '2', mealName: 'Lunch', status: 'pending', kcal: 0 },
@@ -289,6 +275,7 @@ export const useDietRecommender = () => {
                 setActiveProfileId(serverProf.id);
                 localStorage.setItem('diet_active_profile_id', serverProf.id);
                 syncStatesToSetup(serverProf);
+                return serverProf;
             }
         } catch (e) {
             console.error('Failed to create profile on backend', e);
@@ -299,7 +286,7 @@ export const useDietRecommender = () => {
         setIsTracking(true); // Optimistic UI update
 
         try {
-            const updatedData = {
+            const profileData = {
                 name: catName,
                 gender,
                 lifeStage,
@@ -311,17 +298,36 @@ export const useDietRecommender = () => {
                 isTracking: true,
             };
             const headers = await getAuthHeaders();
-            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify(updatedData),
-            });
-            if (res.ok) {
-                const updatedProf = await res.json();
-                const updatedProfiles = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                setProfiles(updatedProfiles);
-                saveProfilesToStorage(updatedProfiles);
-                syncStatesToSetup(updatedProf);
+            
+            if (!activeProfileId) {
+                // No profile exists yet, create one via POST
+                const res = await fetch(`${API_BASE}/api/diet/profiles`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(profileData),
+                });
+                if (res.ok) {
+                    const newProf = await res.json();
+                    setProfiles([newProf]);
+                    setActiveProfileId(newProf.id);
+                    localStorage.setItem('diet_active_profile_id', newProf.id);
+                    saveProfilesToStorage([newProf]);
+                    syncStatesToSetup(newProf);
+                }
+            } else {
+                // Profile exists, update it via PUT
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify(profileData),
+                });
+                if (res.ok) {
+                    const updatedProf = await res.json();
+                    const updatedProfiles = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                    setProfiles(updatedProfiles);
+                    saveProfilesToStorage(updatedProfiles);
+                    syncStatesToSetup(updatedProf);
+                }
             }
         } catch (e) {
             console.error(e);
@@ -601,7 +607,7 @@ export const useDietRecommender = () => {
         resetMealLog,
         addWater,
         resetWater,
-        loggedMeals: activeProfile.loggedMeals,
-        waterIntake: activeProfile.waterIntake,
+        loggedMeals: activeProfile?.loggedMeals || [],
+        waterIntake: activeProfile?.waterIntake || 0,
     };
 };

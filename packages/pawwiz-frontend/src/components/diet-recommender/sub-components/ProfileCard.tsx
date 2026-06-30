@@ -1,4 +1,5 @@
 import React from 'react';
+import { Cat } from 'lucide-react';
 
 interface ProfileCardProps {
     catName: string;
@@ -11,7 +12,7 @@ interface ProfileCardProps {
     lifeStage: 'kitten' | 'adult';
     age: number;
     onEditProfile: () => void;
-    avatarSrc?: string;
+    photoUrl?: string | null;
 }
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({
@@ -25,7 +26,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     lifeStage,
     age,
     onEditProfile,
-    avatarSrc,
+    photoUrl,
 }) => {
     return (
         <div className="p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col items-center w-full">
@@ -40,11 +41,11 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 </button>
             </div>
 
-            <div className="w-24 h-24 bg-teal-50 border-4 border-[#2ec4b6] rounded-full flex items-center justify-center overflow-hidden mb-4 shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
-                {avatarSrc ? (
-                    <img src={avatarSrc} alt={catName} className="w-full h-full object-cover" />
+            <div className="w-24 h-24 bg-teal-50 border-4 border-[#2ec4b6] rounded-full flex items-center justify-center overflow-hidden mb-4 shadow-[2px_2px_0_0_rgba(15,23,42,1)] text-[#2ec4b6]">
+                {photoUrl ? (
+                    <img src={photoUrl} alt={catName} className="w-full h-full object-cover" />
                 ) : (
-                    <span className="text-4xl">🐈</span>
+                    <Cat size={44} className="stroke-[1.5]" />
                 )}
             </div>
 
