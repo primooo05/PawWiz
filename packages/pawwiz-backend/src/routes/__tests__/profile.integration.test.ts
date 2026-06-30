@@ -50,11 +50,12 @@ import { profileRouter } from '../profile.routes.js';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 const JWT_SECRET = 'super-secret-jwt-key-for-testing-only-do-not-use-in-prod';
+const JWT_SECRET_B64 = Buffer.from(JWT_SECRET).toString('base64');
 const TEST_USER_ID = 'test-user-uuid-1234';
 const SESSION_ID = '550e8400-e29b-41d4-a716-446655440000';
 
 function makeToken(sub: string = TEST_USER_ID): string {
-  return jwt.sign({ sub, email: 'test@example.com' }, JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign({ sub, email: 'test@example.com' }, Buffer.from(JWT_SECRET), { algorithm: 'HS256', expiresIn: '1h' });
 }
 
 // ─── Minimal test app factory ───────────────────────────────────────────────

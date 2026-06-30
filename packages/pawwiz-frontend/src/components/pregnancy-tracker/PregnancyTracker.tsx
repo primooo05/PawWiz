@@ -5,8 +5,10 @@ import SetupView from './SetupView';
 import DashboardView from './DashboardView';
 
 import { usePregnancyTracker } from '../../hooks/usePregnancyTracker';
+import { useNavigate } from 'react-router-dom';
 
 const CatPregnancyTracker: React.FC = () => {
+    const navigate = useNavigate();
     const {
         matingDate,
         setMatingDate,
@@ -32,21 +34,13 @@ const CatPregnancyTracker: React.FC = () => {
         openLogForDate,
         closeBottomSheet,
         saveLogForDate,
-        toggleSymptom,
         isDateLoggable,
         todayStr,
         todayLog,
         todayLoggable,
-        isWeightPickerOpen,
-        setIsWeightPickerOpen,
-        intVal,
-        setIntVal,
-        decVal,
-        setDecVal,
-        unitVal,
-        setUnitVal,
-        handleUnitChange,
-        handleWeightPickerDone,
+        elapsedDayForSelected,
+        hasVetWarningForSelected,
+        hasNauseaInEarlyWeeksForSelected,
     } = usePregnancyTracker();
 
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -58,10 +52,24 @@ const CatPregnancyTracker: React.FC = () => {
         }
     };
 
+    const handleNavigation = (item: string) => {
+        if (item === 'calendar') {
+            navigate('/pregnancy-tracker');
+        } else if (item === 'dashboard') {
+            navigate('/');
+        } else if (item === 'diet-reco') {
+            navigate('/diet-recommender');
+        } else if (item === 'settings') {
+            navigate('/settings');
+        } else if (item === 'plant') {
+            navigate('/');
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20">
+        <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
             {/* Main Content Area */}
-            <main className="max-w-[1440px] px-8 py-12 mx-auto">
+            <main className={!isTracking ? "max-w-[1440px] w-full px-8 py-12 mx-auto" : "w-full px-4 sm:px-6 md:px-8 py-6 flex-grow flex flex-col justify-stretch"}>
                 {!isTracking ? (
                     <SetupView
                         matingDate={matingDate}
@@ -70,7 +78,6 @@ const CatPregnancyTracker: React.FC = () => {
                     />
                 ) : (
                     <DashboardView
-                        matingDate={matingDate}
                         setIsTracking={setIsTracking}
                         currentDay={currentDay}
                         daysRemaining={daysRemaining}
@@ -92,27 +99,19 @@ const CatPregnancyTracker: React.FC = () => {
                         openLogForDate={openLogForDate}
                         closeBottomSheet={closeBottomSheet}
                         saveLogForDate={saveLogForDate}
-                        toggleSymptom={toggleSymptom}
                         isDateLoggable={isDateLoggable}
                         todayStr={todayStr}
                         todayLog={todayLog}
                         todayLoggable={todayLoggable}
-                        isWeightPickerOpen={isWeightPickerOpen}
-                        setIsWeightPickerOpen={setIsWeightPickerOpen}
-                        intVal={intVal}
-                        setIntVal={setIntVal}
-                        decVal={decVal}
-                        setDecVal={setDecVal}
-                        unitVal={unitVal}
-                        setUnitVal={setUnitVal}
-                        handleUnitChange={handleUnitChange}
-                        handleWeightPickerDone={handleWeightPickerDone}
+                        elapsedDayForSelected={elapsedDayForSelected}
+                        hasVetWarningForSelected={hasVetWarningForSelected}
+                        hasNauseaInEarlyWeeksForSelected={hasNauseaInEarlyWeeksForSelected}
                     />
                 )}
             </main>
 
             <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-                <BottomNav activeItem="calendar" className="w-full max-w-sm md:w-auto md:scale-110" />
+                <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-sm md:w-auto md:scale-110" />
             </div>
 
             {isLoading && (

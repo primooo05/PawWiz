@@ -6,7 +6,9 @@
  */
 
 import { prisma } from '../lib/prisma.js';
-import type { OnboardingSession, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { OnboardingSession } from '@prisma/client';
+import { AppError } from '../utils/errors.js';
 
 class OnboardingRepository {
   async findById(id: string): Promise<OnboardingSession | null> {
@@ -22,23 +24,45 @@ class OnboardingRepository {
   }
 
   async update(id: string, data: Prisma.OnboardingSessionUpdateInput): Promise<OnboardingSession> {
-    return prisma.onboardingSession.update({
-      where: { id },
-      data,
-    });
+    try {
+      return await prisma.onboardingSession.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw AppError.notFound('Onboarding session not found');
+      }
+      throw error;
+    }
   }
 
   async delete(id: string): Promise<OnboardingSession> {
-    return prisma.onboardingSession.delete({ where: { id } });
+    try {
+      return await prisma.onboardingSession.delete({ where: { id } });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw AppError.notFound('Onboarding session not found');
+      }
+      throw error;
+    }
   }
 
   async markConsumed(id: string): Promise<void> {
-    await prisma.onboardingSession.update({
-      where: { id },
-      data: { consumedAt: new Date() },
-    });
+    try {
+      await prisma.onboardingSession.update({
+        where: { id },
+        data: { consumedAt: new Date() },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw AppError.notFound('Onboarding session not found');
+      }
+      throw error;
+    }
   }
 }
 
 /** Singleton instance */
 export const onboardingRepository = new OnboardingRepository();
+

@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
 import pawWizText from '../assets/PawWiz_Text_logo.png';
 
 const NAV_LINKS = [
@@ -15,26 +13,11 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLElement>(null);
-  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
-  };
 
   // Close on outside click
   useEffect(() => {
@@ -134,138 +117,125 @@ export default function Navbar() {
   return (
     <>
       {/* Close on outside click (ref on <nav> so hamburger doesn't fight the handler) */}
-    <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
-      <div className="max-w-[1440px] mx-auto px-8 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2 group cursor-pointer">
-          <img src={pawWizText} alt="PawWiz" className="h-6 w-auto object-contain ml-1" />
-        </Link>
+      <nav ref={dropdownRef} className="border-b border-slate-200/40 bg-white/90 backdrop-blur-md fixed top-0 left-0 right-0 w-full z-50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
+        <div className="max-w-[1440px] mx-auto px-8 py-4 flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2 group cursor-pointer">
+            <img src={pawWizText} alt="PawWiz" className="h-6 w-auto object-contain ml-1" />
+          </Link>
 
-        {/* Desktop nav */}
-        <div ref={navContainerRef} className="hidden md:flex items-center space-x-8 relative py-1">
-          {/* Sliding indicator line */}
-          <div
-            className="absolute bottom-[-10px] h-[3px] bg-[#2ec4b6] rounded-full transition-all duration-300 ease-out"
-            style={{
-              left: indicatorStyle.left,
-              width: indicatorStyle.width,
-              opacity: activeSection ? 1 : 0,
-            }}
-          />
-          {NAV_LINKS.map(link => {
-            const isHome = location.pathname === '/';
-            const sectionId = link.href.replace('#', '');
-            const isActive = activeSection === sectionId;
-            return (
-              <a
-                key={link.href}
-                href={isHome ? link.href : `/${link.href}`}
-                data-section={sectionId}
+          {/* Desktop nav */}
+          <div ref={navContainerRef} className="hidden md:flex items-center space-x-8 relative py-1">
+            {/* Sliding indicator line */}
+            <div
+              className="absolute bottom-[-10px] h-[3px] bg-[#2ec4b6] rounded-full transition-all duration-300 ease-out"
+              style={{
+                left: indicatorStyle.left,
+                width: indicatorStyle.width,
+                opacity: activeSection ? 1 : 0,
+              }}
+            />
+            {NAV_LINKS.map(link => {
+              const isHome = location.pathname === '/';
+              const sectionId = link.href.replace('#', '');
+              const isActive = activeSection === sectionId;
+              return (
+                <a
+                  key={link.href}
+                  href={isHome ? link.href : `/${link.href}`}
+                  data-section={sectionId}
                   className={`text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${isActive ? 'text-[#2ec4b6]' : 'text-slate-500 hover:text-slate-900'
-                }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (isHome) {
-                    document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
-                    window.history.replaceState(null, '', link.href);
-                  } else {
-                    navigate(`/${link.href}`);
-                  }
-                }}
-              >
-                {link.label}
-              </a>
-            );
-          })}
-          {user ? (
-            <button onClick={handleLogout} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100 cursor-pointer">
-              LOGOUT
-            </button>
-          ) : (
+                    }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (isHome) {
+                      document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                      window.history.replaceState(null, '', link.href);
+                    } else {
+                      navigate(`/${link.href}`);
+                    }
+                  }}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
             <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
               shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center border-none">
-              GET STARTED
+                GET STARTED
             </button>
-          )}
-        </div>
+          </div>
 
-        {/* Mobile: Sign In + Hamburger */}
-        <div className="flex items-center gap-3 md:hidden">
-          {user ? (
-            <button onClick={handleLogout} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100 cursor-pointer">
-              LOGOUT
-            </button>
-          ) : (
+          {/* Mobile: Sign In + Hamburger */}
+          <div className="flex items-center gap-3 md:hidden">
             <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
               shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center border-none">
-              GET STARTED
+                GET STARTED
             </button>
-          )}
-          <button
-            onClick={() => setMenuOpen(prev => !prev)}
-            aria-label="Toggle menu"
-            aria-expanded={menuOpen}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            {/* Animated hamburger → X */}
-            <div className="w-5 h-5 relative flex flex-col justify-center items-center gap-[5px]">
-              <span className={`block h-[2.5px] w-5 bg-slate-700 rounded-full transition-all duration-300 origin-center ${menuOpen ? 'rotate-45 translate-y-[7.5px]' : ''}`} />
-              <span className={`block h-[2.5px] w-5 bg-slate-700 rounded-full transition-all duration-300 ${menuOpen ? 'opacity-0 scale-x-0' : ''}`} />
-              <span className={`block h-[2.5px] w-5 bg-slate-700 rounded-full transition-all duration-300 origin-center ${menuOpen ? '-rotate-45 -translate-y-[7.5px]' : ''}`} />
-            </div>
-          </button>
+            <button
+              onClick={() => setMenuOpen(prev => !prev)}
+              aria-label="Toggle menu"
+              aria-expanded={menuOpen}
+              className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              {/* Animated hamburger → X */}
+              <div className="w-5 h-5 relative flex flex-col justify-center items-center gap-[5px]">
+                <span className={`block h-[2.5px] w-5 bg-slate-700 rounded-full transition-all duration-300 origin-center ${menuOpen ? 'rotate-45 translate-y-[7.5px]' : ''}`} />
+                <span className={`block h-[2.5px] w-5 bg-slate-700 rounded-full transition-all duration-300 ${menuOpen ? 'opacity-0 scale-x-0' : ''}`} />
+                <span className={`block h-[2.5px] w-5 bg-slate-700 rounded-full transition-all duration-300 origin-center ${menuOpen ? '-rotate-45 -translate-y-[7.5px]' : ''}`} />
+              </div>
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Mobile dropdown — ABSOLUTE so it overlays Hero content without causing layout shift */}
-      {/* 
+        {/* Mobile dropdown — ABSOLUTE so it overlays Hero content without causing layout shift */}
+        {/* 
       - [x] Define standard modal animations in index.css
       - [ ] Create PrivacyModal.tsx component with custom SVG icons (no emojis) and complete copy
       */}
-      <div
-        className={`md:hidden absolute left-0 right-0 top-full
+        <div
+          className={`md:hidden absolute left-0 right-0 top-full
           bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-lg
           overflow-hidden transition-all duration-300 ease-out
           ${menuOpen ? 'max-h-80 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2 pointer-events-none'}`}
-        style={{ willChange: 'max-height, opacity, transform' }}
-      >
-        <div className="px-5 py-3 flex flex-col gap-1">
-          {NAV_LINKS.map((link, i) => {
-            const isHome = location.pathname === '/';
-            return (
-              <a
-                key={link.href}
-                href={isHome ? link.href : `/${link.href}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMenuOpen(false);
-                  if (isHome) {
-                    document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
-                    window.history.replaceState(null, '', link.href);
-                  } else {
-                    navigate(`/${link.href}`);
-                  }
-                }}
-                className={`text-xs font-bold uppercase tracking-wider px-3 py-3 rounded-lg transition-all ${
-                  activeSection === link.href.replace('#', '')
-                    ? 'text-[#2ec4b6] bg-slate-50'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-                style={{
-                  transform: menuOpen ? 'translateX(0)' : 'translateX(-8px)',
-                  opacity: menuOpen ? 1 : 0,
-                  transitionProperty: 'transform, opacity',
-                  transitionDuration: '250ms, 250ms',
-                  transitionTimingFunction: 'ease, ease',
-                  transitionDelay: menuOpen ? `${i * 40}ms, ${i * 40}ms` : '0ms, 0ms',
-                }}
-              >
-                {link.label}
-              </a>
-            );
-          })}
+          style={{ willChange: 'max-height, opacity, transform' }}
+        >
+          <div className="px-5 py-3 flex flex-col gap-1">
+            {NAV_LINKS.map((link, i) => {
+              const isHome = location.pathname === '/';
+              return (
+                <a
+                  key={link.href}
+                  href={isHome ? link.href : `/${link.href}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    if (isHome) {
+                      document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                      window.history.replaceState(null, '', link.href);
+                    } else {
+                      navigate(`/${link.href}`);
+                    }
+                  }}
+                  className={`text-xs font-bold uppercase tracking-wider px-3 py-3 rounded-lg transition-all ${activeSection === link.href.replace('#', '')
+                      ? 'text-[#2ec4b6] bg-slate-50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  style={{
+                    transform: menuOpen ? 'translateX(0)' : 'translateX(-8px)',
+                    opacity: menuOpen ? 1 : 0,
+                    transitionProperty: 'transform, opacity',
+                    transitionDuration: '250ms, 250ms',
+                    transitionTimingFunction: 'ease, ease',
+                    transitionDelay: menuOpen ? `${i * 40}ms, ${i * 40}ms` : '0ms, 0ms',
+                  }}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
+          </div>
         </div>
-      </div>
       </nav>
 
       {/* Decorative Circles expanding on click */}

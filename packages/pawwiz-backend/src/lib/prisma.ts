@@ -8,6 +8,13 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
+if (process.env.NODE_ENV !== 'test' && !process.env.DATABASE_URL) {
+  console.error('[DB] CRITICAL ERROR: DATABASE_URL environment variable is missing.');
+  console.error('[DB] Did you start the server without Infisical?');
+  console.error('[DB] Please run the backend using: infisical run -- npm run dev -w packages/pawwiz-backend');
+  process.exit(1);
+}
+
 // Strip ?pgbouncer=true — it's a Prisma-only hint, not a valid pg parameter.
 // Passing it through to the pg driver causes auth failures.
 const poolUrl = process.env.DATABASE_URL?.replace(/[?&]pgbouncer=true/i, '').replace(/\?$/, '');

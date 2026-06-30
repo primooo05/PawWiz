@@ -5,7 +5,8 @@ import { authMiddleware } from '../auth.js';
 import type { Request, Response, NextFunction } from 'express';
 
 describe('Auth Middleware', () => {
-  const TEST_SECRET = 'test-secret';
+  const TEST_SECRET_RAW = 'test-secret';
+  const TEST_SECRET = Buffer.from(TEST_SECRET_RAW).toString('base64');
 
   beforeEach(() => {
     vi.stubEnv('SUPABASE_JWT_SECRET', TEST_SECRET);
@@ -20,7 +21,7 @@ describe('Auth Middleware', () => {
     
     await fc.assert(
       fc.asyncProperty(validSubs, async (sub) => {
-        const token = jwt.sign({ sub, email: 'test@example.com' }, TEST_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ sub, email: 'test@example.com' }, Buffer.from(TEST_SECRET_RAW), { algorithm: 'HS256', expiresIn: '1h' });
         const mockReq = { headers: { authorization: `Bearer ${token}` } } as Partial<Request>;
         const mockRes = {
           status: vi.fn().mockReturnThis(),

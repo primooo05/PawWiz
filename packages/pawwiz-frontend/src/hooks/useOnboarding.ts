@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
-
-const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+import { API_BASE } from '../lib/config.js';
 
 export function useOnboarding() {
-  const [sessionId, setSessionId] = useState<string | null>(() => localStorage.getItem('pawwiz_onboarding_session_id'));
+  const [sessionId, setSessionId] = useState<string | null>(() => {
+    const val = localStorage.getItem('pawwiz_onboarding_session_id');
+    return (val === 'null' || val === 'undefined') ? null : val;
+  });
   const [sessionStep, setSessionStep] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,7 @@ export function useOnboarding() {
       });
       if (!res.ok) throw new Error('Failed to initialize onboarding session');
       const data = await res.json();
+      if (!data?.id) throw new Error('Invalid onboarding session response');
       localStorage.setItem('pawwiz_onboarding_session_id', data.id);
       setSessionId(data.id);
       setSessionStep(data.step);
@@ -93,6 +96,10 @@ export function useOnboarding() {
       });
 
       if (!res.ok) {
+        if (res.status === 404) {
+          localStorage.removeItem('pawwiz_onboarding_session_id');
+          setSessionId(null);
+        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `Failed to submit step ${step}`);
       }
@@ -131,6 +138,10 @@ export function useOnboarding() {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!res.ok) {
+        if (res.status === 404) {
+          localStorage.removeItem('pawwiz_onboarding_session_id');
+          setSessionId(null);
+        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to send OTP');
       }
@@ -150,6 +161,10 @@ export function useOnboarding() {
         body: JSON.stringify({ code }),
       });
       if (!res.ok) {
+        if (res.status === 404) {
+          localStorage.removeItem('pawwiz_onboarding_session_id');
+          setSessionId(null);
+        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to verify OTP');
       }

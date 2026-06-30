@@ -68,6 +68,7 @@ export function usePregnancyTracker() {
     const [calendarMonthIndex, setCalendarMonthIndex] = useState<number>(initialDisplayDate.getMonth());
     const [calendarYear, setCalendarYear] = useState<number>(initialDisplayDate.getFullYear());
 
+
     useEffect(() => {
         if (!trackedDate) return;
 
@@ -256,7 +257,7 @@ export function usePregnancyTracker() {
         const nextSymptoms = isAlreadyLogged
             ? activeLog.symptoms.filter((s: string) => s !== symptomLabel)
             : [...activeLog.symptoms, symptomLabel];
-        
+
         const nextSeverities = { ...(activeLog.symptomSeverities || {}) };
         if (!isAlreadyLogged) {
             nextSeverities[symptomLabel] = 'Mild';
@@ -329,6 +330,20 @@ export function usePregnancyTracker() {
         setIsWeightPickerOpen(false);
     };
 
+    const elapsedDayForSelected = selectedDateStr && matingDate ? (() => {
+        const base = new Date(matingDate + 'T00:00:00');
+        const target = new Date(selectedDateStr + 'T00:00:00');
+        const diff = target.getTime() - base.getTime();
+        const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+        return diffDays >= 0 ? diffDays + 1 : null;
+    })() : null;
+
+    const activeLogForSelected = selectedDateStr ? (logs[selectedDateStr] || { symptoms: [], symptomSeverities: {} }) : null;
+    const hasSevereSymptomForSelected = activeLogForSelected?.symptoms?.some(s => activeLogForSelected.symptomSeverities?.[s] === 'Severe') || false;
+    const selectedDateWeek = elapsedDayForSelected !== null ? Math.ceil(elapsedDayForSelected / 7) : currentWeek;
+    const hasNauseaInEarlyWeeksForSelected = (selectedDateWeek <= 3 && activeLogForSelected?.symptoms?.includes('Nausea') && activeLogForSelected.symptomSeverities?.['Nausea'] === 'Severe') || false;
+    const hasVetWarningForSelected = hasSevereSymptomForSelected || hasNauseaInEarlyWeeksForSelected;
+
     return {
         matingDate,
         setMatingDate,
@@ -370,5 +385,8 @@ export function usePregnancyTracker() {
         setUnitVal,
         handleUnitChange,
         handleWeightPickerDone,
+        elapsedDayForSelected,
+        hasVetWarningForSelected,
+        hasNauseaInEarlyWeeksForSelected
     };
 }

@@ -4,9 +4,16 @@ import loadingGif from '../assets/loading.gif';
 interface LoadingScreenProps {
     onComplete?: () => void;
     durationMs?: number; // Simulated loading time in milliseconds
+    catName?: string;
+    message?: string;
 }
 
-export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete, durationMs = 3000 }) => {
+export const LoadingScreen: React.FC<LoadingScreenProps> = ({ 
+    onComplete, 
+    durationMs = 3000,
+    catName,
+    message
+}) => {
     const [progress, setProgress] = useState(0);
 
     useEffect(() => {
@@ -55,7 +62,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete, durati
                 {/* Status Text and Percentage */}
                 <div className="flex justify-between items-center w-full px-1 text-slate-800">
                     <span className="text-xs sm:text-sm font-black uppercase tracking-widest animate-pulse">
-                        Loading Molly's stats...
+                        {message || (catName ? `Loading ${catName}'s stats...` : "Loading cat's stats...")}
                     </span>
                     <span className="text-xs sm:text-sm font-black tabular-nums">
                         {Math.floor(progress)}%
