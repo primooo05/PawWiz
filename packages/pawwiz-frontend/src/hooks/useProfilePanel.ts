@@ -15,6 +15,7 @@ interface UseProfilePanelReturn {
   profile: ProfileData | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  hasNoProfile: boolean;
 }
 
 export function useProfilePanel(optimisticData?: { displayName: string; catName: string }): UseProfilePanelReturn {
@@ -23,6 +24,7 @@ export function useProfilePanel(optimisticData?: { displayName: string; catName:
   );
   const [isLoading, setIsLoading] = useState(!optimisticData);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasNoProfile, setHasNoProfile] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +39,8 @@ export function useProfilePanel(optimisticData?: { displayName: string; catName:
         if (res.ok) {
           const data = await res.json();
           setProfile(data);
+        } else if (res.status === 404) {
+          setHasNoProfile(true);
         }
         // On failure: profile stays as optimistic data or null → CTA state shown
       }
@@ -62,5 +66,5 @@ export function useProfilePanel(optimisticData?: { displayName: string; catName:
     return () => { cancelled = true; };
   }, []);
 
-  return { profile, isLoading, isAuthenticated };
+  return { profile, isLoading, isAuthenticated, hasNoProfile };
 }

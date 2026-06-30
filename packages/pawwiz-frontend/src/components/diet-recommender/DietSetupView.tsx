@@ -28,6 +28,11 @@ interface DietSetupViewProps {
     profiles: CatProfile[];
     activeProfileId: string;
     switchProfile: (id: string) => void;
+
+    hasNoUserProfile: boolean;
+    displayName: string;
+    setDisplayName: (name: string) => void;
+    isLoading?: boolean;
 }
 
 export const DietSetupView: React.FC<DietSetupViewProps> = ({
@@ -52,6 +57,11 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
     profiles,
     activeProfileId,
     switchProfile,
+
+    hasNoUserProfile,
+    displayName,
+    setDisplayName,
+    isLoading = false,
 }) => {
     const navigate = useNavigate();
     const ageBracketDetails = getAgeBracketInfo(lifeStage, age);
@@ -146,6 +156,40 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
             )}
 
             <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 text-left">
+                {hasNoUserProfile && (
+                    <div className="col-span-1 md:col-span-2 p-5 bg-amber-50/80 border border-amber-200/60 rounded-2xl text-left text-amber-900 shadow-sm animate-fadeIn">
+                        <p className="text-xs font-black uppercase tracking-wider mb-1 text-amber-800 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" /> No Profile Found
+                        </p>
+                        <p className="text-[11px] leading-relaxed font-semibold text-amber-700">
+                            Your account doesn't have a profile yet. Fill out the details below to create your quick profile and start diet tracking immediately, or jump to onboarding.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/onboarding')}
+                            className="mt-2 text-xs font-extrabold text-[#2ec4b6] underline hover:text-[#28b2a5] cursor-pointer block"
+                        >
+                            Complete Full Onboarding →
+                        </button>
+                    </div>
+                )}
+
+                {hasNoUserProfile && (
+                    <div className="col-span-1 md:col-span-2">
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
+                            Your Name (Display Name)
+                        </label>
+                        <input
+                            type="text"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            placeholder="John Doe"
+                            required
+                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl font-bold text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white"
+                        />
+                    </div>
+                )}
+
                 {/* 0. Cat Selection (Onboarding vs New) */}
                 {onboardedCat && (
                     <div className="col-span-1 md:col-span-2">
@@ -358,9 +402,10 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
                 <button
                     type="submit"
-                    className="col-span-1 md:col-span-2 mt-4 w-full py-4 bg-teal-500 text-white border-2 border-slate-900 rounded-2xl font-bold shadow-[3px_3px_0_0_rgba(15,23,42,1)] hover:bg-teal-600 transition-all cursor-pointer"
+                    disabled={isLoading}
+                    className="col-span-1 md:col-span-2 mt-4 w-full py-4 bg-teal-500 text-white border-2 border-slate-900 rounded-2xl font-bold shadow-[3px_3px_0_0_rgba(15,23,42,1)] hover:bg-teal-600 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Get Recommendations
+                    {isLoading ? 'Setting up...' : 'Get Recommendations'}
                 </button>
             </form>
         </div>

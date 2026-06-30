@@ -133,6 +133,8 @@ export const useDietRecommender = () => {
     const [foodPreference, setFoodPreference] = useState<'dry' | 'wet' | 'mixed'>(activeProfile?.foodPreference || 'mixed');
     const [isSpayedNeutered, setIsSpayedNeutered] = useState<boolean>(activeProfile ? activeProfile.isSpayedNeutered : true);
     const [isTracking, setIsTracking] = useState<boolean>(activeProfile ? activeProfile.isTracking : false);
+    const [hasNoUserProfile, setHasNoUserProfile] = useState<boolean>(false);
+    const [displayName, setDisplayName] = useState<string>('');
 
     const getAuthHeaders = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -167,6 +169,10 @@ export const useDietRecommender = () => {
                         'Authorization': `Bearer ${session.access_token}`,
                     }
                 });
+                if (res.status === 404 && active) {
+                    setHasNoUserProfile(true);
+                    return;
+                }
                 if (res.ok && active) {
                     const data = await res.json();
                     if (data && data.length > 0) {
@@ -190,6 +196,10 @@ export const useDietRecommender = () => {
                                 'Authorization': `Bearer ${session.access_token}`,
                             }
                         });
+                        if (profileRes.status === 404 && active) {
+                            setHasNoUserProfile(true);
+                            return;
+                        }
                         if (profileRes.ok && active) {
                             const primaryProfile = await profileRes.json();
                             if (primaryProfile) {
@@ -314,6 +324,23 @@ export const useDietRecommender = () => {
                 isTracking: true,
             };
             const headers = await getAuthHeaders();
+
+            if (hasNoUserProfile) {
+                const profileRes = await fetch(`${API_BASE}/api/profile`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        displayName: displayName || (catName ? `${catName}'s Owner` : 'Owner'),
+                        catName: catName || 'My Cat',
+                        catSex: gender === 'female' ? 'female' : 'male',
+                        catLifeStage: lifeStage === 'kitten' ? 'kitten' : 'adult',
+                    }),
+                });
+                if (!profileRes.ok) {
+                    throw new Error('Failed to create primary profile');
+                }
+                setHasNoUserProfile(false);
+            }
             
             if (!activeProfileId) {
                 // No profile exists yet, create one via POST
@@ -625,5 +652,8 @@ export const useDietRecommender = () => {
         resetWater,
         loggedMeals: activeProfile?.loggedMeals || [],
         waterIntake: activeProfile?.waterIntake || 0,
+        hasNoUserProfile,
+        displayName,
+        setDisplayName,
     };
 };

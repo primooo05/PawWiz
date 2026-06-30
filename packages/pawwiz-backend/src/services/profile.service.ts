@@ -20,42 +20,72 @@ class ProfileService {
   async createProfile(
     supabaseUserId: string,
     displayName: string,
-    onboardingSessionId: string,
+    onboardingSessionId?: string,
+    catDetails?: {
+      catName: string;
+      catBreed?: string | null;
+      catMarking?: string | null;
+      catSex: string;
+      catLifeStage: string;
+    }
   ): Promise<Profile> {
     // 1. Guard: supabaseUserId and displayName non-empty
     assertNonEmpty(supabaseUserId, 'supabaseUserId');
     assertNonEmpty(displayName, 'displayName');
-    assertNonEmpty(onboardingSessionId, 'onboardingSessionId');
 
     // 2. Guard: no duplicate profile
     const existing = await profileRepository.findBySupabaseUserId(supabaseUserId);
     if (existing) {
-      // Mark session consumed even on duplicate to prevent replay
-      await onboardingRepository.markConsumed(onboardingSessionId);
+      if (onboardingSessionId) {
+        await onboardingRepository.markConsumed(onboardingSessionId);
+      }
       throw AppError.conflict('Profile already exists');
     }
 
-    // 3. Resolve session
-    const session = await onboardingRepository.findById(onboardingSessionId);
-    if (!session) throw AppError.badRequest('Invalid or missing onboardingSessionId');
-    if (session.consumedAt) throw AppError.badRequest('Invalid or missing onboardingSessionId');
-    if (session.step < 6) throw AppError.unprocessableEntity('Onboarding not yet complete');
+    let data: CreateProfileData;
 
-    // 4. Create profile with all cat fields
-    const data: CreateProfileData = {
-      supabaseUserId,
-      displayName: displayName.trim(),
-      catName: session.catName!.trim(),
-      catBreed: session.catBreed?.trim() ?? null,
-      catMarking: session.catMarking?.trim() ?? null,
-      catSex: session.catSex!,
-      catLifeStage: session.catLifeStage!,
-    };
+    if (onboardingSessionId !== undefined) {
+      assertNonEmpty(onboardingSessionId, 'onboardingSessionId');
+      // 3. Resolve session
+      const session = await onboardingRepository.findById(onboardingSessionId);
+      if (!session) throw AppError.badRequest('Invalid or missing onboardingSessionId');
+      if (session.consumedAt) throw AppError.badRequest('Invalid or missing onboardingSessionId');
+      if (session.step < 6) throw AppError.unprocessableEntity('Onboarding not yet complete');
+
+      // 4. Create profile with all cat fields
+      data = {
+        supabaseUserId,
+        displayName: displayName.trim(),
+        catName: session.catName!.trim(),
+        catBreed: session.catBreed?.trim() ?? null,
+        catMarking: session.catMarking?.trim() ?? null,
+        catSex: session.catSex!,
+        catLifeStage: session.catLifeStage!,
+      };
+    } else {
+      // Direct creation from client (e.g. Diet setup fallback)
+      assertDefined(catDetails, 'catDetails');
+      assertNonEmpty(catDetails.catName, 'catName');
+      assertNonEmpty(catDetails.catSex, 'catSex');
+      assertNonEmpty(catDetails.catLifeStage, 'catLifeStage');
+
+      data = {
+        supabaseUserId,
+        displayName: displayName.trim(),
+        catName: catDetails.catName.trim(),
+        catBreed: catDetails.catBreed?.trim() ?? null,
+        catMarking: catDetails.catMarking?.trim() ?? null,
+        catSex: catDetails.catSex,
+        catLifeStage: catDetails.catLifeStage,
+      };
+    }
 
     const profile = await profileRepository.create(data);
 
     // 5. Mark session as consumed (prevents replay)
-    await onboardingRepository.markConsumed(onboardingSessionId);
+    if (onboardingSessionId) {
+      await onboardingRepository.markConsumed(onboardingSessionId);
+    }
 
     return profile;
   }

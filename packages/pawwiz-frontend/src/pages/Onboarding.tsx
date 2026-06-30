@@ -491,8 +491,6 @@ function OnboardingView() {
       }
 
       // 2. Create profile on backend
-      // Create profile on backend
-      const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
       const response = await fetch(`${API_BASE}/api/profile`, {
         method: 'POST',
         headers: {

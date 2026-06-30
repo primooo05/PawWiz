@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import LoadingScreen from '../LoadingScreen';
 import DietSetupView from './DietSetupView';
 import DietDashboardView from './DietDashboardView';
@@ -41,6 +41,9 @@ export const DietRecommender: React.FC = () => {
         resetWater,
         loggedMeals,
         waterIntake,
+        hasNoUserProfile,
+        displayName,
+        setDisplayName,
     } = useDietRecommender();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -63,6 +66,18 @@ export const DietRecommender: React.FC = () => {
         setLoadingTarget('setup');
         setIsLoading(true);
     };
+
+    const handleLoadingComplete = useCallback(() => {
+        setIsLoading(false);
+        if (loadingTarget === 'dashboard') {
+            handleStartDietTracking();
+            setShowSetup(false);
+        } else if (loadingTarget === 'setup') {
+            handleResetDietTracking();
+            setShowSetup(true);
+        }
+        setLoadingTarget(null);
+    }, [loadingTarget, handleStartDietTracking, handleResetDietTracking]);
 
     const handleNavigation = (item: string) => {
         if (item === 'calendar') {
@@ -104,6 +119,10 @@ export const DietRecommender: React.FC = () => {
                         profiles={profiles}
                         activeProfileId={activeProfileId}
                         switchProfile={switchProfile}
+                        hasNoUserProfile={hasNoUserProfile}
+                        displayName={displayName}
+                        setDisplayName={setDisplayName}
+                        isLoading={isLoading}
                     />
                 ) : (
                     <DietDashboardView
@@ -143,17 +162,7 @@ export const DietRecommender: React.FC = () => {
                     durationMs={loadingTarget === 'setup' ? 2500 : 4000}
                     catName={catName}
                     message={loadingTarget === 'setup' ? `Resetting ${catName || "cat"}'s tracker...` : undefined}
-                    onComplete={() => {
-                        setIsLoading(false);
-                        if (loadingTarget === 'dashboard') {
-                            handleStartDietTracking();
-                            setShowSetup(false);
-                        } else if (loadingTarget === 'setup') {
-                            handleResetDietTracking();
-                            setShowSetup(true);
-                        }
-                        setLoadingTarget(null);
-                    }}
+                    onComplete={handleLoadingComplete}
                 />
             )}
         </div>

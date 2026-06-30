@@ -20,6 +20,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         const intervalTime = 30; // Update progress every 30ms
         const totalSteps = durationMs / intervalTime;
         const increment = 100 / totalSteps;
+        let timeoutId: ReturnType<typeof setTimeout>;
 
         const timer = setInterval(() => {
             setProgress((prev) => {
@@ -28,7 +29,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
                     clearInterval(timer);
                     if (onComplete) {
                         // Small delay to let user see 100% progress
-                        setTimeout(onComplete, 200);
+                        timeoutId = setTimeout(onComplete, 200);
                     }
                     return 100;
                 }
@@ -36,7 +37,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             });
         }, intervalTime);
 
-        return () => clearInterval(timer);
+        return () => {
+            clearInterval(timer);
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, [durationMs, onComplete]);
 
     return (
