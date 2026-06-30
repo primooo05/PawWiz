@@ -199,69 +199,16 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
   }, [active]);
 
   return (
-    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
+    <div className={`flex flex-col md:grid md:grid-cols-2 md:items-start justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
-      {/* Left Column: Password Fields */}
-      <div className={`flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
-        introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-      }`}>
-        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
-          Set a Password
-        </label>
-
-        {/* Password field */}
-        <div className="relative w-full">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter Password"
-            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
-            disabled={isTyping || !active}
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            disabled={isTyping || !active}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-          </button>
-        </div>
-
-        {/* Confirm Password field */}
-        <div className="relative w-full">
-          <input
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm Password"
-            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
-            disabled={isTyping || !active}
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword((v) => !v)}
-            disabled={isTyping || !active}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
-            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-          >
-            {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
-          </button>
-        </div>
-      </div>
-
-      {/* Right Column: Cat Mascot with Speech Bubble */}
-      <div className={`flex-1 flex justify-center items-center relative transition-all duration-500 ease-out ${
+      {/* 1. ChatBubble & Mascot SVG */}
+      <div className={`md:col-start-2 md:row-start-1 md:row-span-2 flex-1 flex justify-center items-center relative transition-all duration-500 ease-out w-full ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
         {/* Speech Bubble — same design as other screens */}
         {showBubble && (
-          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-0 animate-fade-in">
+          <div className="absolute -top-26 left-4 md:-top-18 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-[-10] animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
             {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
@@ -321,6 +268,59 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
               />
             </svg>
           )}
+        </div>
+      </div>
+
+      {/* 2. Password Fields */}
+      <div className={`md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
+        introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+      }`}>
+        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
+          Set a Password
+        </label>
+
+        {/* Password field */}
+        <div className="relative w-full">
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter Password"
+            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+            disabled={isTyping || !active}
+            autoComplete="new-password"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            disabled={isTyping || !active}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+          >
+            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        </div>
+
+        {/* Confirm Password field */}
+        <div className="relative w-full">
+          <input
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm Password"
+            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+            disabled={isTyping || !active}
+            autoComplete="new-password"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((v) => !v)}
+            disabled={isTyping || !active}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
+            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+          >
+            {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
         </div>
       </div>
 
