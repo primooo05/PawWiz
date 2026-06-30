@@ -10,8 +10,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { logger } from '../utils/winston.js';
 
 /** Model identifiers */
-const TEXT_MODEL = 'gemini-3.5-flash';
-const VISION_MODEL = 'gemini-3.1-pro';
+const TEXT_MODEL = 'gemini-2.5-flash';
+const VISION_MODEL = 'gemini-3.5-flash';
 
 class GeminiClient {
   private ai: GoogleGenAI | null;

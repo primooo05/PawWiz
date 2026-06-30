@@ -15,8 +15,8 @@ if (isApiKeyMissing) {
 const ai = isApiKeyMissing ? null : new GoogleGenAI({ apiKey: API_KEY });
 
 // Models specified in backend pipeline
-const TEXT_MODEL = 'gemini-3.5-flash';
-const VISION_MODEL = 'gemini-3.1-pro';
+const TEXT_MODEL = 'gemini-2.5-flash';
+const VISION_MODEL = 'gemini-3.5-flash';
 
 const VISION_TIMEOUT_MS = 10_000;
 
@@ -80,16 +80,16 @@ export async function optimizeDiet(request: DietOptimizeRequest): Promise<DietPl
     let factor = 1.2; // active/sedentary factor
     if (request.activityLevel === "sedentary") factor = 1.0;
     if (request.activityLevel === "active") factor = 1.4;
-    
+
     let calories = Math.round(rer * factor);
     let rationale = `Calculated RER for ${request.weightKg}kg cat is ${Math.round(rer)} kcal. Activity multiplier is ${factor}x.`;
     let avoid = ["Chocolate", "Onions/Garlic", "Grapes/Raisins", "Dairy (highly lactose sensitive)"];
-    
+
     if (request.healthConditions.some(c => c.toLowerCase().includes("renal"))) {
       rationale += " Adjusted for renal health: restricted phosphorus, moderate high-quality protein, and increased hydration support.";
       avoid.push("High phosphorus foods", "Dry kibble without water");
     }
-    
+
     return {
       dailyCalories: calories,
       macronutrientSplit: {
@@ -203,7 +203,7 @@ Analyze vocal signals, tail, eyes, and ear positions. Return a detailed behavior
             vocalAnalysis: { type: Type.STRING },
             bodyLanguageAnalysis: { type: Type.STRING },
             decodedMeaning: { type: Type.STRING },
-            catState: { 
+            catState: {
               type: Type.STRING,
               enum: ["Happy/Relaxed", "Anxious/Stressed", "Playful", "Aggressive/Defensive", "Overstimulated", "Sick/In Pain", "Unknown"]
             },

@@ -48,6 +48,29 @@ describe('ContentType Middleware', () => {
     );
   });
 
+  it('should allow mutation methods when Content-Type is multipart/form-data', async () => {
+    const methods = fc.constantFrom('POST', 'PUT', 'PATCH');
+    
+    await fc.assert(
+      fc.asyncProperty(methods, async (method) => {
+        const mockReq = {
+          method,
+          is: vi.fn().mockImplementation((type) => type === 'multipart/form-data')
+        } as unknown as Request;
+        const mockRes = {
+          status: vi.fn().mockReturnThis(),
+          json: vi.fn(),
+        } as unknown as Response;
+        const mockNext = vi.fn();
+
+        contentTypeMiddleware(mockReq, mockRes, mockNext);
+        
+        expect(mockNext).toHaveBeenCalled();
+        expect(mockRes.status).not.toHaveBeenCalled();
+      })
+    );
+  });
+
   it('should allow GET requests regardless of Content-Type', async () => {
     await fc.assert(
       fc.asyncProperty(fc.constant('GET'), async (method) => {
