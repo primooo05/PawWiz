@@ -2,7 +2,19 @@ import type { Request, Response } from 'express';
 import { withErrorHandling } from './base.controller.js';
 import { onboardingService } from '../services/onboarding.service.js';
 import { ZodError } from 'zod';
-import { otpVerifySchema } from '../schemas/onboarding.schemas.js';
+import { otpVerifySchema, checkEmailSchema } from '../schemas/onboarding.schemas.js';
+
+/**
+ * POST /api/onboarding/check-email
+ * Stateless check: returns { exists: boolean } indicating whether the given
+ * email address is already associated with a completed registration.
+ * Rate-limited to 5 requests/min per IP to prevent account enumeration.
+ */
+export const postCheckEmail = withErrorHandling(async (req: Request, res: Response) => {
+  const { email } = checkEmailSchema.parse(req.body);
+  const exists = await onboardingService.checkEmailExists(email);
+  res.json({ exists });
+});
 
 /**
  * POST /api/onboarding/start

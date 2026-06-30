@@ -37,3 +37,7 @@ export const profileCreateSchema = z.object({
 export const otpVerifySchema = z.object({
   code: z.string().length(6, 'Code must be exactly 6 digits').regex(/^\d{6}$/, 'Code must be 6 numeric digits'),
 });
+
+export const checkEmailSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
