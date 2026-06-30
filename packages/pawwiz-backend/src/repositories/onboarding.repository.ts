@@ -48,6 +48,21 @@ class OnboardingRepository {
     }
   }
 
+  /**
+   * Returns true if a consumed onboarding session exists for the given email,
+   * meaning that address has already been used to complete registration.
+   */
+  async isEmailConsumed(email: string): Promise<boolean> {
+    const session = await prisma.onboardingSession.findFirst({
+      where: {
+        ownerEmail: { equals: email, mode: 'insensitive' },
+        consumedAt: { not: null },
+      },
+      select: { id: true },
+    });
+    return session !== null;
+  }
+
   async markConsumed(id: string): Promise<void> {
     try {
       await prisma.onboardingSession.update({

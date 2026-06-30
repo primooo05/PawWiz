@@ -18,6 +18,14 @@ import {
 
 class OnboardingService {
   /**
+   * Checks whether the given email address is already associated with a completed
+   * registration (i.e., a consumed onboarding session exists for it).
+   */
+  async checkEmailExists(email: string): Promise<boolean> {
+    return onboardingRepository.isEmailConsumed(email);
+  }
+
+  /**
    * Starts a new onboarding session.
    */
   async startSession(): Promise<OnboardingSession> {

@@ -4,11 +4,14 @@ import {
   getOnboardingSession,
   updateOnboardingStep,
   postSendOtp,
-  postVerifyOtp
+  postVerifyOtp,
+  postCheckEmail,
 } from '../controllers/onboarding.controller.js';
+import { emailCheckLimiter } from '../middleware/rateLimiter.js';
 
 const onboardingRouter = Router();
 
+onboardingRouter.post('/check-email', emailCheckLimiter, postCheckEmail);
 onboardingRouter.post('/start', startOnboarding);
 onboardingRouter.get('/session/:id', getOnboardingSession);
 onboardingRouter.post('/session/:id/update', updateOnboardingStep);

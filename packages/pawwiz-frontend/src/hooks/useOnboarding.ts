@@ -152,6 +152,21 @@ export function useOnboarding() {
     }
   }, []);
 
+  const checkEmail = useCallback(async (email: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/onboarding/check-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) return false; // On error, optimistically allow progression
+      const data = await res.json();
+      return data.exists === true;
+    } catch {
+      return false; // Network failure — optimistically allow progression
+    }
+  }, []);
+
   const verifyOtp = useCallback(async (id: string, code: string): Promise<boolean> => {
     setError(null);
     try {
@@ -205,6 +220,7 @@ export function useOnboarding() {
     submitStep,
     sendOtp,
     verifyOtp,
+    checkEmail,
     resetSession,
   };
 }

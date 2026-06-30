@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { API_BASE } from '../lib/config.js';
 import { CircleWrapper } from '../components/CircleWrapper';
 import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
 import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
@@ -72,6 +71,7 @@ function OnboardingView() {
     submitStep,
     sendOtp,
     verifyOtp,
+    checkEmail,
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
@@ -156,7 +156,7 @@ function OnboardingView() {
     if ((location.state as { animateIn?: boolean })?.animateIn) {
       const timer = setTimeout(() => {
         setIsTransitioning(false);
-        { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 2000); };
+        { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 800); };
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -197,6 +197,8 @@ function OnboardingView() {
       resetBubble();
       setStep(nextStep);
       setIsTransitioning(false);
+      if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current);
+      zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 800);
     }, 800);
   };
 
@@ -238,7 +240,7 @@ function OnboardingView() {
     setTimeout(() => {
       setStep(2);
       setIsTransitioning(false);
-      { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 2000); };
+      { if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current); zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 800); };
     }, 800);
   };
 
@@ -317,11 +319,20 @@ function OnboardingView() {
       startTyping(result.message, {
         onComplete: async () => {
           if (result.isValid) {
+            const emailTaken = await checkEmail(ownerEmail.trim());
+            if (emailTaken) {
+              showStaticBubble('Email already exists, meow');
+              setTimeout(() => hideBubble(), 3000);
+              return;
+            }
             const success = await submitStep(2, { ownerName: ownerName.trim(), ownerEmail: ownerEmail.trim() });
             if (success) {
               setIsStep2Dirty(false);
+              // Send OTP immediately on advancing to step 3
               setTimeout(async () => {
                 transitionTo(3);
+                // Small delay to let step render first
+                setTimeout(() => handleSendOtp(), 200);
               }, 300);
             } else {
               showStaticBubble("Oh no, I couldn't save your name. Try again, meow!");
@@ -455,15 +466,20 @@ function OnboardingView() {
 
   const handleAccountCreation = async () => {
     try {
+      // Guard: password lives only in React state and is lost on page refresh.
+      // If either field is empty here, the user must re-enter their password.
+      if (!ownerEmail?.trim() || !password?.trim()) {
+        showStaticBubble('Please re-enter your password — it was lost on refresh. Meow!');
+        setTimeout(() => hideBubble(), 4000);
+        return;
+      }
+
       // 1. Create Supabase Auth account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: ownerEmail,
         password: password,
       });
       if (authError) {
-        if (authError.message.toLowerCase().includes('rate limit') || authError.message.toLowerCase().includes('too many requests')) {
-          throw new Error('Too many tries, try again later');
-        }
         throw new Error(authError.message);
       }
       if (!authData.user) throw new Error('Failed to create account');
@@ -490,7 +506,6 @@ function OnboardingView() {
         session = signInData.session;
       }
 
-      // 2. Create profile on backend
       // Create profile on backend
       const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
       const response = await fetch(`${API_BASE}/api/profile`, {
@@ -528,8 +543,17 @@ function OnboardingView() {
       {/* Decorative Circles */}
       <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
 
-      {/* Center Wrapper */}
-      <div className={`relative w-full flex-grow flex items-center justify-center ${(isTransitioning || isZIndexHigh) ? 'z-0' : 'z-10'}`}>
+      {/* Center Wrapper
+           - isTransitioning: circles fully cover screen → invisible (no paint at all, prevents flash)
+           - isZIndexHigh only: circles retreating → opacity-0 so child entrance transitions
+             have a visible parent to animate against once opacity lifts with isZIndexHigh */}
+      <div className={`relative w-full flex-grow flex items-center justify-center transition-opacity duration-150 ${
+        isTransitioning
+          ? 'z-0 invisible opacity-0'
+          : isZIndexHigh
+            ? 'z-0 opacity-0'
+            : 'z-10 opacity-100'
+      }`}>
         <OnboardingScreen1
           active={step === 1 && !isTransitioning}
           handleCreateAccountClick={handleCreateAccountClick}

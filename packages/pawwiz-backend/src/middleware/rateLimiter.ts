@@ -73,6 +73,18 @@ export const searchLimiter = rateLimit({
   },
 });
 
+/** Email collision check limiter: 5 requests per 60s per IP — prevents account enumeration. */
+export const emailCheckLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator,
+  handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
+    res.status(options.statusCode).json({ error: 'Too many requests. Please wait before trying again.' });
+  },
+});
+
 /**
  * Selector middleware for POST /api/toxicity/scan.
  * Delegates to scanLimiter when the request is authenticated (req.user present)
