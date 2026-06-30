@@ -43,7 +43,7 @@ export function useLogin() {
       }
 
       if (data.user) {
-        navigate('/');
+        navigate('/diet-recommender');
       }
     } catch (err: any) {
       setServerError(err.message || 'An error occurred during login');

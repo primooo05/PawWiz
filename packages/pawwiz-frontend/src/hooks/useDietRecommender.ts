@@ -182,6 +182,22 @@ export const useDietRecommender = () => {
 
                         const activeProfileData = data.find((p: any) => p.id === finalId) || data[0];
                         syncStatesToSetup(activeProfileData);
+                    } else {
+                        // Query the onboarding profile details to autofill
+                        const profileRes = await fetch(`${API_BASE}/api/profile`, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session.access_token}`,
+                            }
+                        });
+                        if (profileRes.ok && active) {
+                            const primaryProfile = await profileRes.json();
+                            if (primaryProfile) {
+                                setCatName(primaryProfile.catName || '');
+                                setGender(primaryProfile.catSex === 'female' ? 'female' : 'male');
+                                setLifeStage(primaryProfile.catLifeStage === 'kitten' ? 'kitten' : 'adult');
+                            }
+                        }
                     }
                 }
             } catch (e) {

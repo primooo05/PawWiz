@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
 import pawWizText from '../assets/PawWiz_Text_logo.png';
 
 const NAV_LINKS = [
@@ -15,30 +13,11 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLElement>(null);
-  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    await supabase.auth.signOut();
-    navigate('/login');
-  };
 
   // Close on outside click
   useEffect(() => {
@@ -181,30 +160,18 @@ export default function Navbar() {
                 </a>
               );
             })}
-            {user ? (
-              <button onClick={handleLogout} disabled={isLoggingOut} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100 cursor-pointer">
-                {isLoggingOut ? 'LOGGING OUT...' : 'LOGOUT'}
-              </button>
-            ) : (
-              <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
+            <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-2 rounded-xl text-xs tracking-wider transition-all duration-100
               shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer inline-block text-center border-none">
                 GET STARTED
-              </button>
-            )}
+            </button>
           </div>
 
           {/* Mobile: Sign In + Hamburger */}
           <div className="flex items-center gap-3 md:hidden">
-            {user ? (
-              <button onClick={handleLogout} disabled={isLoggingOut} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100 cursor-pointer">
-                {isLoggingOut ? 'LOGGING OUT...' : 'LOGOUT'}
-              </button>
-            ) : (
-              <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
+            <button onClick={handleGetStartedClick} className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all duration-100
               shadow-[0_3px_0_0_#b8862a] active:shadow-none active:translate-y-[3px] cursor-pointer inline-block text-center border-none">
                 GET STARTED
-              </button>
-            )}
+            </button>
             <button
               onClick={() => setMenuOpen(prev => !prev)}
               aria-label="Toggle menu"
