@@ -47,7 +47,7 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
           value={otpCode}
           onChange={(e) => setOtpCode(e.target.value)}
           placeholder="Enter 6-digit code"
-          className="w-full px-5 py-4 border-2 border-[#2ec4b6] rounded-2xl outline-none focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-20 text-slate-800 font-semibold placeholder-slate-400 bg-white shadow-sm transition-all text-center text-2xl tracking-[0.3em]"
+          className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40 text-center text-2xl tracking-[0.3em]"
           disabled={isTyping || !active}
           aria-label="OTP verification code"
         />

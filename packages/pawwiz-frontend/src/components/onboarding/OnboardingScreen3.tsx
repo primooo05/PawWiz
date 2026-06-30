@@ -69,7 +69,7 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
               setCatsCount(''); // Clear button selection if typing custom
             }}
             placeholder="Specify e.g., 4"
-            className="w-full px-5 py-4 border-2 border-[#2ec4b6] rounded-2xl outline-none focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-20 text-slate-800 font-semibold placeholder-slate-400 bg-white shadow-sm transition-all"
+            className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
             disabled={isTyping || !active}
           />
         </div>
