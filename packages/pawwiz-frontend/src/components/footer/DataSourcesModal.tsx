@@ -1,11 +1,11 @@
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
-interface AspcaModalProps {
+interface DataSourcesModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
+export default function DataSourcesModal({ isOpen, onClose }: DataSourcesModalProps) {
   useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
@@ -31,7 +31,7 @@ export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
             </svg>
             <div>
               <h3 className="text-xl font-black text-slate-900 leading-none">Data Sources & Attribution</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">ASPCA Reference Loop & Hotlines</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Plant Identification & Toxicity Data Providers</p>
             </div>
           </div>
           
@@ -49,7 +49,23 @@ export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
         {/* Scrollable Content */}
         <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-1 text-slate-600 text-sm leading-relaxed">
           
-          {/* Section 1 */}
+          {/* Section 1: Pl@ntNet */}
+          <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
+            <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </span>
+              1. Pl@ntNet API — Plant Identification
+            </h4>
+            <p className="text-xs text-slate-500 pl-9">
+              PawWiz uses the <a href="https://plantnet.org/" target="_blank" rel="noopener noreferrer" className="text-[#2ec4b6] hover:underline font-semibold">Pl@ntNet</a> REST API for Phase 1 visual botanical identification. When users upload plant photos, Pl@ntNet's machine learning model identifies the species, which we then cross-reference against our toxicity database. Pl@ntNet is a citizen science project developed by research organizations including INRAE, CIRAD, and TDWG.
+            </p>
+          </div>
+
+          {/* Section 2: ASPCA */}
           <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
             <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
               <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
@@ -58,14 +74,31 @@ export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
                   <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                 </svg>
               </span>
-              1. Where Our Toxicity Data Comes From
+              2. ASPCA — Toxicity Reference Database
             </h4>
             <p className="text-xs text-slate-500 pl-9">
-              Pawwise's plant toxicity information is compiled with reference to the ASPCA Animal Poison Control Center's published list of toxic and non-toxic plants for cats. We are not affiliated with, endorsed by, or sponsored by the ASPCA.
+              PawWiz's plant toxicity information is compiled with reference to the <a href="https://www.aspca.org/pet-care/animal-poison-control/toxic-and-non-toxic-plants" target="_blank" rel="noopener noreferrer" className="text-[#2ec4b6] hover:underline font-semibold">ASPCA Animal Poison Control Center</a>'s published list of toxic and non-toxic plants for cats. This data is offline-seeded and used for Phase 2 deterministic toxicity flagging. We are not affiliated with, endorsed by, or sponsored by the ASPCA.
             </p>
           </div>
 
-          {/* Section 2 */}
+          {/* Section 3: Perenual */}
+          <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
+            <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+              </span>
+              3. Perenual API — Plant Imagery & Metadata
+            </h4>
+            <p className="text-xs text-slate-500 pl-9">
+              For Phase 3 visual references, PawWiz uses the <a href="https://perenual.com/" target="_blank" rel="noopener noreferrer" className="text-[#2ec4b6] hover:underline font-semibold">Perenual</a> API as a fallback media hydration source. Perenual provides high-quality plant images and detailed botanical metadata that enhance our plant detail views when local data is insufficient.
+            </p>
+          </div>
+
+          {/* Section 4: Localized Sources */}
           <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
             <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
               <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
@@ -74,14 +107,14 @@ export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
                   <circle cx="12" cy="10" r="3" />
                 </svg>
               </span>
-              2. Localized & Supplementary Sources
+              4. Localized & Supplementary Sources
             </h4>
             <p className="text-xs text-slate-500 pl-9">
               Our index includes specialized regional flora common to Philippine households (including Fortune Plants, ZZ Plants, and local caladium varieties) that are not covered under western indices. These localized botanical profiles are curated by our team through academic literature reviews, regional farming bulletins, and direct consultations with licensed Filipino veterinarians.
             </p>
           </div>
 
-          {/* Section 3 */}
+          {/* Section 5: Data Audit */}
           <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
             <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
               <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
@@ -90,31 +123,14 @@ export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
               </span>
-              3. Data Audit & Update Frequency
+              5. Data Audit & Update Frequency
             </h4>
             <p className="text-xs text-slate-500 pl-9">
               To remain consistent with evolving toxicological journals and international veterinary reports, our plant safety indices and database files undergo structured reviews and updates quarterly.
             </p>
           </div>
 
-          {/* Section 4 */}
-          <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
-            <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
-              <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
-                <svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <line x1="9" y1="9" x2="15" y2="15" />
-                  <line x1="15" y1="9" x2="9" y2="15" />
-                </svg>
-              </span>
-              4. Database Limitations
-            </h4>
-            <p className="text-xs text-slate-500 pl-9">
-              This database is not exhaustive and should not replace professional veterinary or toxicology advice. If you suspect your cat has ingested a toxic plant, contact your veterinarian or a pet poison hotline immediately.
-            </p>
-          </div>
-
-          {/* Section 5 */}
+          {/* Section 6: Limitations */}
           <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
             <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
               <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
@@ -124,7 +140,24 @@ export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
               </span>
-              5. Report a Data Error
+              6. Database Limitations
+            </h4>
+            <p className="text-xs text-slate-500 pl-9">
+              This database is not exhaustive and should not replace professional veterinary or toxicology advice. If you suspect your cat has ingested a toxic plant, contact your veterinarian or a pet poison hotline immediately.
+            </p>
+          </div>
+
+          {/* Section 7: Report Error */}
+          <div className="space-y-3 group border border-slate-100 hover:border-slate-200/80 p-5 rounded-2xl transition-all duration-300 bg-white">
+            <h4 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-slate-50 text-slate-500 group-hover:bg-[#2ec4b6]/10 group-hover:text-[#2ec4b6] transition-colors">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 stroke-current" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                </svg>
+              </span>
+              7. Report a Data Error
             </h4>
             <p className="text-xs text-slate-500 pl-9 mb-2">
               Help us crowdsource quality control. If you locate an entry that contains incorrect classification flags, species info, or outdated symptoms, please alert our QA team:
@@ -143,14 +176,14 @@ export default function AspcaModal({ isOpen, onClose }: AspcaModalProps) {
             </div>
           </div>
 
-          {/* Section 6: Emergency Resources (High-Value Standout Card) */}
+          {/* Section 8: Emergency Resources */}
           <div className="bg-[#2ec4b6]/5 border border-[#2ec4b6]/20 hover:border-[#2ec4b6]/40 rounded-2xl p-5 flex gap-3.5 items-start group transition-all duration-300 shadow-sm">
             <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#2ec4b6] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
             </svg>
             <div className="space-y-3 w-full">
               <h4 className="text-sm font-extrabold text-[#259b90] uppercase tracking-wider">
-                6. Emergency Resources & Hotlines
+                8. Emergency Resources & Hotlines
               </h4>
               <p className="text-xs text-slate-600 leading-relaxed">
                 If your pet shows active signs of poisoning (excessive salivation, vomiting, lethargy, or collapse), contact these resources immediately:

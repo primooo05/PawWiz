@@ -112,17 +112,43 @@ function OnboardingView() {
     return () => clearInterval(interval);
   }, [otpCooldown]);
 
-  // Auto-send OTP when landing on step 3 (e.g., page reload or direct navigation)
-  const otpSentRef = useRef(false);
+  // Auto-send OTP when landing on step 3 for the FIRST time only.
+  // We track via sessionStep: if the server has already unlocked step 3,
+  // it means an OTP was already sent. We only auto-send when transitioning
+  // from step 2 → step 3 within the same session (sessionStep < 3).
+  // Returning users (sessionStep >= 3) must explicitly click "Resend code".
+  const otpAutoSentRef = useRef(false);
   useEffect(() => {
-    if (step === 3 && sessionId && otpCooldown === 0 && !otpSentRef.current) {
-      otpSentRef.current = true;
-      handleSendOtp();
+    // Only auto-send when:
+    // 1. We're on step 3 (OTP screen)
+    // 2. We have a valid session
+    // 3. No cooldown is active (prevents double-sends if user navigates away and back quickly)
+    // 4. We haven't already auto-sent in this mount cycle
+    // 5. The server hasn't already progressed past step 2 (i.e., this is a fresh OTP request, not a return visit)
+    if (step === 3 && sessionId && otpCooldown === 0 && !otpAutoSentRef.current && sessionStep < 3) {
+      otpAutoSentRef.current = true;
+      // Fire-and-forget: we don't need to await this
+      void (async () => {
+        try {
+          const result = await sendOtp(sessionId);
+          if (result) {
+            setOtpCooldown(result.cooldownSeconds);
+          }
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : 'Could not send code. Try again, meow!';
+          showStaticBubble(message);
+          setTimeout(() => hideBubble(), 3000);
+        }
+      })();
     }
-    if (step !== 3) {
-      otpSentRef.current = false;
+    // Reset the ref only when leaving the onboarding flow entirely (step 1)
+    if (step === 1) {
+      otpAutoSentRef.current = false;
     }
-  }, [step, sessionId]);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally excluded: otpCooldown (we only care about initial state),
+    // sendOtp/showStaticBubble/hideBubble (stable from context/hooks)
+  }, [step, sessionId, sessionStep]);
 
   // Clear animateIn state on mount
   useEffect(() => {
@@ -141,8 +167,13 @@ function OnboardingView() {
 
     const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
 
+    // For step 3, show different message if user is returning (sessionStep >= 3 means OTP already sent)
+    const step3Message = sessionStep >= 3
+      ? 'Welcome back! Enter your verification code or resend if needed.'
+      : 'Check your email for a 6-digit verification code!';
+
     const messages: Record<number, string> = {
-      3: 'Check your email for a 6-digit verification code!',
+      3: step3Message,
       4: 'How many cats do you have?',
       5: 'Wiz would like to know them!',
       6: 'How old is your Cat? Meow',
@@ -155,7 +186,7 @@ function OnboardingView() {
     if (messages[step]) {
       showStaticBubble(messages[step]);
     }
-  }, [step, isTransitioning, catsCount, customCatsCount, catsAdded, showStaticBubble]);
+  }, [step, isTransitioning, catsCount, customCatsCount, catsAdded, sessionStep, showStaticBubble]);
 
   // --- Navigation helpers ---
 
@@ -311,25 +342,22 @@ function OnboardingView() {
       }
 
       const result = validateStep3Otp(otpCode);
-      if (!result.isValid) {
-        startTyping(result.message, { onComplete: () => setTimeout(() => hideBubble(), 3000) });
-        return;
-      }
-      
-      showStaticBubble(result.message);
-      const ok = await verifyOtp(sessionId!, otpCode);
-      
-      if (ok) {
-        startTyping('Code accepted! Setting up your profile...', {
-          onComplete: () => {
-            setIsStep3Dirty(false);
-            setTimeout(() => transitionTo(4), 300);
+      startTyping(result.message, {
+        onComplete: async () => {
+          if (result.isValid) {
+            const ok = await verifyOtp(sessionId!, otpCode);
+            if (ok) {
+              setIsStep3Dirty(false);
+              setTimeout(() => transitionTo(4), 300);
+            } else {
+              showStaticBubble('Wrong code or expired. Try again, meow!');
+              setTimeout(() => hideBubble(), 3000);
+            }
+          } else {
+            setTimeout(() => hideBubble(), 3000);
           }
-        });
-      } else {
-        showStaticBubble('Wrong code or expired. Try again, meow!');
-        setTimeout(() => hideBubble(), 3000);
-      }
+        },
+      });
     } else if (step === 4) {
       // Cats count (was step 3)
       if (sessionStep > 4 && !isStep4Dirty) {
@@ -464,7 +492,7 @@ function OnboardingView() {
         session = signInData.session;
       }
 
-      // 2. Create profile on backend
+      // Create profile on backend
       const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
       const response = await fetch(`${API_BASE}/api/profile`, {
         method: 'POST',

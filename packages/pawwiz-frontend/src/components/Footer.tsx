@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import PrivacyModal from './footer/PrivacyModal';
 import TermsModal from './footer/TermsModal';
-import AspcaModal from './footer/AspcaModal';
+import DataSourcesModal from './footer/DataSourcesModal';
 
 export default function Footer() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
-  const [isAspcaOpen, setIsAspcaOpen] = useState(false);
+  const [isDataSourcesOpen, setIsDataSourcesOpen] = useState(false);
 
   return (
     <>
@@ -32,17 +32,17 @@ export default function Footer() {
               Terms
             </button>
             <button
-              onClick={() => setIsAspcaOpen(true)}
+              onClick={() => setIsDataSourcesOpen(true)}
               className="hover:text-slate-600 transition-colors cursor-pointer"
             >
-              ASPCA
+              Data Sources
             </button>
           </div>
         </div>
       </footer>
       <PrivacyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
       <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
-      <AspcaModal isOpen={isAspcaOpen} onClose={() => setIsAspcaOpen(false)} />
+      <DataSourcesModal isOpen={isDataSourcesOpen} onClose={() => setIsDataSourcesOpen(false)} />
     </>
   );
 }
