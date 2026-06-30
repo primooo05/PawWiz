@@ -6,6 +6,7 @@ interface OnboardingScreen6Props {
   catName: string;
   catsCount: string;
   customCatsCount: string;
+  catsAdded: number;
   isTyping: boolean;
   showBubble: boolean;
   bubbleText: string;
@@ -17,6 +18,9 @@ interface OnboardingScreen6Props {
 export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
   active,
   catName,
+  catsCount,
+  customCatsCount,
+  catsAdded,
   isTyping,
   showBubble,
   bubbleText,
@@ -24,6 +28,29 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
   handleBackClick,
   handleAddOtherBabies,
 }) => {
+  const getResolvedCatsCount = (countStr: string, customStr: string): number => {
+    const cats = countStr.trim().toLowerCase();
+    const custom = customStr.trim().toLowerCase();
+    if (cats) {
+      if (cats === 'one') return 1;
+      if (cats === 'two') return 2;
+      if (cats === 'three') return 3;
+    }
+    if (custom) {
+      const parsed = parseInt(custom, 10);
+      if (!isNaN(parsed)) return parsed;
+      const wordMap: Record<string, number> = {
+        one: 1, two: 2, three: 3, four: 4, five: 5,
+        six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+      };
+      return wordMap[custom] ?? null;
+    }
+    return 1;
+  };
+
+  const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
+  const showAddMore = catsAdded < totalCats;
+
   return (
     <div className={`flex flex-col md:grid md:grid-cols-2 md:items-start justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -58,14 +85,16 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
           <div className="w-full py-4 px-6 rounded-2xl bg-[#2ec4b6] text-white font-extrabold text-lg md:text-xl text-center shadow-[0_4px_0_0_#209f93] select-none">
             {catName}
           </div>
-          <button
-            type="button"
-            onClick={handleAddOtherBabies}
-            disabled={isTyping || !active}
-            className="w-full py-4 px-6 rounded-2xl bg-white hover:bg-slate-50 border-2 border-[#2ec4b6] text-[#2ec4b6] font-extrabold text-lg md:text-xl cursor-pointer transition-all duration-200 shadow-[0_4px_0_0_#2ec4b6] active:shadow-none active:translate-y-[4px] disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            + Add other babies
-          </button>
+          {showAddMore && (
+            <button
+              type="button"
+              onClick={handleAddOtherBabies}
+              disabled={isTyping || !active}
+              className="w-full py-4 px-6 rounded-2xl bg-white hover:bg-slate-50 border-2 border-[#2ec4b6] text-[#2ec4b6] font-extrabold text-lg md:text-xl cursor-pointer transition-all duration-200 shadow-[0_4px_0_0_#2ec4b6] active:shadow-none active:translate-y-[4px] disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              + Add other babies
+            </button>
+          )}
         </div>
       </div>
 

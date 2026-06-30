@@ -578,6 +578,7 @@ function OnboardingView() {
           catName={catName}
           catsCount={catsCount}
           customCatsCount={customCatsCount}
+          catsAdded={catsAdded}
           isTyping={isTyping}
           showBubble={showBubble && step === 7}
           bubbleText={bubbleText}
