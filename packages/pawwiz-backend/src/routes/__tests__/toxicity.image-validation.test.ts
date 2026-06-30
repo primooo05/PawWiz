@@ -49,6 +49,12 @@ vi.mock('../../services/gemini.js', () => ({
   decodeBehavior: vi.fn(),
 }));
 
+vi.mock('../../services/plantnet.service.js', () => ({
+  plantnetService: {
+    identify: vi.fn(),
+  },
+}));
+
 vi.mock('../../repositories/toxicity.repository.js', () => ({
   toxicityRepository: {
     findByScientificName: vi.fn(),
@@ -74,13 +80,13 @@ vi.mock('../../middleware/rateLimiter.js', () => ({
 // ── Imports that depend on the mocked modules ────────────────────────────────
 
 import { toxicityCacheService } from '../../services/toxicity_cache.service.js';
-import { scanPlantWithVision } from '../../services/gemini.js';
+import { plantnetService } from '../../services/plantnet.service.js';
 import { toxicityRouter } from '../toxicity.routes.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
-const IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'] as const;
+const IMAGE_UPLOAD_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 
 // ── Test Express app factory ─────────────────────────────────────────────────
 //
@@ -99,7 +105,7 @@ function buildToxicityApp(): express.Express {
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction): void => {
     // Multer file-size limit error
     if (err instanceof MulterError && err.code === 'LIMIT_FILE_SIZE') {
-      res.status(400).json({ error: 'File too large. Maximum allowed size is 10 MB.' });
+      res.status(400).json({ error: 'File too large. Maximum allowed size is 50 MB.' });
       return;
     }
     // AppError or any error with a statusCode/status of 400
@@ -155,11 +161,11 @@ describe('POST /api/toxicity/scan — image validation gate (Property 9)', () =>
     vi.restoreAllMocks();
   });
 
-  // ── Property: invalid MIME types → HTTP 400, Gemini not called ──────────────
+  // ── Property: invalid MIME types → HTTP 400, PlantNet not called ─────────
 
   it(
-    // Feature: plant-toxicity-caching, Property 9: Image validation gate — invalid inputs rejected before Gemini is called
-    'Validates: Requirements 5.2 — invalid MIME types are rejected with HTTP 400 before Gemini is called',
+    // Feature: plant-toxicity-caching, Property 9: Image validation gate — invalid inputs rejected before PlantNet is called
+    'Validates: Requirements 5.2 — invalid MIME types are rejected with HTTP 400 before PlantNet is called',
     async () => {
       await fc.assert(
         fc.asyncProperty(invalidMimeTypeArbitrary, async (invalidMimeType) => {
@@ -185,25 +191,25 @@ describe('POST /api/toxicity/scan — image validation gate (Property 9)', () =>
 
           // Gemini (via the cache service) must never be called for invalid inputs
           expect(toxicityCacheService.resolveImagePipeline).not.toHaveBeenCalled();
-          expect(scanPlantWithVision).not.toHaveBeenCalled();
+          expect(plantnetService.identify).not.toHaveBeenCalled();
         }),
         { numRuns: 20, verbose: false },
       );
     },
   );
 
-  // ── Example: file size > 10 MB → HTTP 400, Gemini not called ──────────────
+  // ── Example: file size > 50 MB → HTTP 400, PlantNet not called ───────────
   //
   // This is example-based (not purely property-based) because allocating
   // many multi-MB buffers in a fast-check loop is prohibitively slow.
-  // The property invariant is still verified: Gemini is never called.
+  // The property invariant is still verified: PlantNet is never called.
 
   it(
-    // Feature: plant-toxicity-caching, Property 9: Image validation gate — invalid inputs rejected before Gemini is called
-    'Validates: Requirements 5.2 — files exceeding 10 MB are rejected with HTTP 400 before Gemini is called',
+    // Feature: plant-toxicity-caching, Property 9: Image validation gate — invalid inputs rejected before PlantNet is called
+    'Validates: Requirements 5.2 — files exceeding 50 MB are rejected with HTTP 400 before PlantNet is called',
     async () => {
-      // Allocate 11 MB buffer — larger than the 10 MB multer limit
-      const oversizedBuffer = Buffer.alloc(11 * 1024 * 1024, 0xab);
+      // Allocate 51 MB buffer — larger than the 50 MB multer limit
+      const oversizedBuffer = Buffer.alloc(51 * 1024 * 1024, 0xab);
 
       const res = await request(app)
         .post('/api/toxicity/scan')
@@ -217,9 +223,9 @@ describe('POST /api/toxicity/scan — image validation gate (Property 9)', () =>
       expect(typeof res.body.error).toBe('string');
       expect(res.body.error.length).toBeGreaterThan(0);
 
-      // Key invariant: Gemini pipeline must not have been reached
+      // Key invariant: PlantNet pipeline must not have been reached
       expect(toxicityCacheService.resolveImagePipeline).not.toHaveBeenCalled();
-      expect(scanPlantWithVision).not.toHaveBeenCalled();
+      expect(plantnetService.identify).not.toHaveBeenCalled();
     },
   );
 
@@ -227,19 +233,19 @@ describe('POST /api/toxicity/scan — image validation gate (Property 9)', () =>
   //
   // Multer does NOT reject zero-byte files (size 0 < fileSize limit).
   // The file IS attached to req.file, so the controller calls resolveImagePipeline.
-  // The key safety invariant still holds: Gemini is not called because
-  // resolveImagePipeline is mocked and never reaches scanPlantWithVision.
+  // The key safety invariant still holds: PlantNet is not called because
+  // resolveImagePipeline is mocked and never reaches plantnetService.identify.
   //
   // Requirement 5.2 states zero-byte files should be rejected with HTTP 400.
   // This test documents that zero-byte enforcement requires an explicit size
   // check at the controller layer (not currently implemented in the controller).
   // The test currently verifies the actual observable behavior: multer passes
-  // the zero-byte file through to the controller, and Gemini is NOT called
+  // the zero-byte file through to the controller, and PlantNet is NOT called
   // because the service is mocked (the key security invariant holds).
 
   it(
-    // Feature: plant-toxicity-caching, Property 9: Image validation gate — invalid inputs rejected before Gemini is called
-    'Validates: Requirements 5.2 — zero-byte files: Gemini is not called (key safety invariant holds)',
+    // Feature: plant-toxicity-caching, Property 9: Image validation gate — invalid inputs rejected before PlantNet is called
+    'Validates: Requirements 5.2 — zero-byte files: PlantNet is not called (key safety invariant holds)',
     async () => {
       // Mock resolveImagePipeline to simulate it being called and returning a result
       // This lets us verify the service WAS called (for documentation) without
@@ -267,11 +273,11 @@ describe('POST /api/toxicity/scan — image validation gate (Property 9)', () =>
         });
 
       // Gemini (direct) was never called — the service mock intercepted
-      expect(scanPlantWithVision).not.toHaveBeenCalled();
+      expect(plantnetService.identify).not.toHaveBeenCalled();
 
       // Document the actual behavior: currently either 200 (service mock) or
       // depends on whether multer creates req.file for zero-byte input.
-      // The critical invariant is that scanPlantWithVision is never reached.
+      // The critical invariant is that plantnetService.identify is never reached.
       expect([200, 400]).toContain(res.status);
     },
   );

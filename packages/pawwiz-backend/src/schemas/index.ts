@@ -40,11 +40,10 @@ export const toxicitySearchSchema = z.object({
 });
 
 // Image upload validation constants — used by multer fileFilter in toxicity.routes.ts
-export const IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+// PlantNet API only accepts JPEG and PNG; max payload is 50 MB per their documented limit.
+export const IMAGE_UPLOAD_MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 export const IMAGE_UPLOAD_ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
-  'image/webp',
-  'image/gif',
 ] as const;
 export type AllowedImageMimeType = (typeof IMAGE_UPLOAD_ALLOWED_MIME_TYPES)[number];

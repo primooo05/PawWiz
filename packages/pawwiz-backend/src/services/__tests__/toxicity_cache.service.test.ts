@@ -238,12 +238,20 @@ vi.mock('../perenual.js', () => ({
 
 vi.mock('../gemini.js', () => ({
   scanPlantWithVision: vi.fn(),
+  optimizeDiet: vi.fn(),
+  decodeBehavior: vi.fn(),
+}));
+
+vi.mock('../plantnet.service.js', () => ({
+  plantnetService: {
+    identify: vi.fn(),
+  },
 }));
 
 // Import the mocked modules so we can configure them per-test
 import { toxicityRepository } from '../../repositories/toxicity.repository.js';
 import { searchPlantByName } from '../perenual.js';
-import { scanPlantWithVision } from '../gemini.js';
+import { plantnetService } from '../plantnet.service.js';
 import { toxicityCacheService } from '../toxicity_cache.service.js';
 
 // ── Plant-shaped arbitrary ───────────────────────────────────────────────────
@@ -477,8 +485,8 @@ describe('Property 5: Fallback safety — fallback responses have isToxic=null a
 
         switch (mode.kind) {
           case 'gemini_timeout': {
-            // Gemini rejects → ImagePipeline buildFallbackResponse (stage: gemini_vision)
-            vi.mocked(scanPlantWithVision).mockRejectedValue(
+            // PlantNet rejects → ImagePipeline buildFallbackResponse (stage: plantnet_vision)
+            vi.mocked(plantnetService.identify).mockRejectedValue(
               new Error(mode.errorMessage),
             );
             // Perenual should not be reached, but set a safe default anyway
@@ -489,8 +497,8 @@ describe('Property 5: Fallback safety — fallback responses have isToxic=null a
           }
 
           case 'gemini_unknown_plant': {
-            // Gemini resolves with null scientificName → ImagePipeline buildFallbackResponse
-            vi.mocked(scanPlantWithVision).mockResolvedValue({
+            // PlantNet resolves with null scientificName → ImagePipeline buildFallbackResponse
+            vi.mocked(plantnetService.identify).mockResolvedValue({
               scientificName: null,
               confidence: 0.3,
             });
@@ -511,8 +519,8 @@ describe('Property 5: Fallback safety — fallback responses have isToxic=null a
           }
 
           case 'perenual_image_error': {
-            // ImagePipeline: Gemini succeeds with a real plant name, then Perenual throws
-            vi.mocked(scanPlantWithVision).mockResolvedValue({
+            // ImagePipeline: PlantNet succeeds with a real plant name, then Perenual throws
+            vi.mocked(plantnetService.identify).mockResolvedValue({
               scientificName: mode.plantName,
               confidence: 0.85,
             });
@@ -804,8 +812,8 @@ describe('Property 10: Low-confidence warning correctness', () => {
         async (confidence, plantName) => {
           vi.clearAllMocks();
 
-          // Mock Gemini to return the generated confidence and plant name
-          vi.mocked(scanPlantWithVision).mockResolvedValue({
+          // Mock PlantNet to return the generated confidence and plant name
+          vi.mocked(plantnetService.identify).mockResolvedValue({
             scientificName: plantName,
             confidence,
           });

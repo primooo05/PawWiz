@@ -133,7 +133,7 @@ export default function Hero({ apiBase }: HeroProps) {
                   {scanLoading && (
                     <div className="flex items-center justify-center space-x-3 bg-white/10 p-4 rounded-xl border border-white/15 backdrop-blur-sm animate-pulse w-full">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span className="text-sm font-semibold">Running ASPCA validation loop...</span>
+                      <span className="text-sm font-semibold">Searching...</span>
                     </div>
                   )}
 

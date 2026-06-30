@@ -18,10 +18,11 @@
 
 import { createHash } from 'node:crypto';
 import { toxicityRepository } from '../repositories/toxicity.repository.js';
-import { scanPlantWithVision } from './gemini.js';
+import { aspcaRepository } from '../repositories/aspca.repository.js';
+import { plantnetService } from './plantnet.service.js';
 import { searchPlantByName, type PerenualApiResult } from './perenual.js';
 import { logger } from '../utils/winston.js';
-import type { CacheRecord, ToxicityScanResult } from '../types/shared.js';
+import type { CacheRecord, ToxicityScanResult, PlantToxicityRecord } from '../types/shared.js';
 import type { Plant } from '@prisma/client';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -143,6 +144,30 @@ function perenualResultToScanResult(
   };
 }
 
+/**
+ * Map a PlantToxicityRecord (ASPCA in-memory shape) to a ToxicityScanResult.
+ * Used as an authoritative fallback in the image pipeline when the Postgres DB misses.
+ */
+function aspcaRecordToScanResult(
+  record: PlantToxicityRecord,
+  identificationConfidence: number | null,
+  lowConfidenceWarning: boolean,
+  actionRequired?: string,
+): ToxicityScanResult {
+  return {
+    identifiedPlant: record.plantName,
+    scientificName: record.scientificName,
+    toxicityStatus: record.isToxic ? 'TOXIC' : 'SAFE',
+    severity: (record.severity?.toLowerCase() ?? null) as ToxicityScanResult['severity'],
+    clinicalSigns: record.clinicalSigns,
+    actionRequired: actionRequired ?? record.actionRequired,
+    identificationConfidence,
+    lowConfidenceWarning,
+    dataSource: 'aspca',
+    mediaUrl: null,
+  };
+}
+
 // ── ToxicityCacheService ───────────────────────────────────────────────────────
 
 class ToxicityCacheService {
@@ -239,31 +264,60 @@ class ToxicityCacheService {
       imageBytes: file.size,
     };
 
-    // Step 1: call Gemini Vision (timeout enforced inside scanPlantWithVision — 10 s)
-    let geminiResult: { scientificName: string | null; confidence: number };
+    // Step 1: call PlantNet API (timeout enforced inside repository — 30 s)
+    let plantNetResult: { scientificName: string | null; confidence: number } | null = null;
+    let plantNetError: Error | null = null;
     try {
-      geminiResult = await scanPlantWithVision(file.buffer);
+      plantNetResult = await plantnetService.identify(file.buffer, file.mimetype);
     } catch (err) {
-      const error = err as Error;
-      return this.buildFallbackResponse('gemini_vision', error.message, imageContext, error.constructor.name);
+      plantNetError = err as Error;
+      logger.warn('PlantNet identification failed — attempting filename-based ASPCA fallback', {
+        pipeline: 'image',
+        imageHash: imageContext.imageHash,
+        errorType: plantNetError.constructor.name,
+        reason: plantNetError.message,
+        timestamp: new Date().toISOString(),
+      });
     }
 
-    // Gemini returned no identifiable plant (scientificName is null or empty)
-    const rawScientificName = geminiResult.scientificName ?? '';
-    const plantName = rawScientificName.trim();
-    if (!plantName) {
-      return this.buildFallbackResponse(
-        'gemini_vision',
-        'Gemini Vision could not identify a plant in the image',
-        imageContext,
-      );
+    // PlantNet failed (timeout, error) or returned no identifiable plant — try filename as ASPCA query
+    if (plantNetResult === null || !plantNetResult.scientificName?.trim()) {
+      const filenameHint = file.originalname
+        .replace(/\.[^.]+$/, '')   // strip extension
+        .replace(/[-_]/g, ' ')     // normalise separators
+        .trim();
+
+      if (filenameHint.length >= 3) {
+        const aspcaByFilename = await aspcaRepository.findByFuzzyMatch(filenameHint);
+        if (aspcaByFilename !== null) {
+          logger.debug('Image pipeline: ASPCA hit via filename fallback', {
+            filenameHint,
+            toxicity: aspcaByFilename.isToxic,
+          });
+          return aspcaRecordToScanResult(aspcaByFilename, null, false);
+        }
+      }
+
+      // Nothing found — emit the original PlantNet error as fallback
+      const reason = plantNetError?.message ?? 'PlantNet API could not identify a plant in the image';
+      const errorType = plantNetError?.constructor.name ?? 'unknown';
+      return this.buildFallbackResponse('plantnet_vision', reason, imageContext, errorType);
     }
 
     // Use raw (untrimmed) name for human-readable messages; trimmed name for DB lookups
+    const rawScientificName = plantNetResult.scientificName;
+    const plantName = rawScientificName.trim();
     const displayPlantName = rawScientificName;
-    const confidence = geminiResult.confidence;
+    const confidence = plantNetResult.confidence;
 
-    // Step 2: resolve via scientific name (Gemini returns common name; try both lookups)
+    logger.info('PlantNet identification result', {
+      pipeline: 'image',
+      identifiedName: plantName,
+      confidence,
+      imageHash: imageContext.imageHash,
+    });
+
+    // Step 2: resolve via scientific name from Postgres plant table (seeded + cached records)
     let record: CacheRecord | null = await this.resolveByScientificName(plantName);
     if (record === null) {
       record = await this.resolveByCommonName(plantName);
@@ -274,7 +328,22 @@ class ToxicityCacheService {
       return this.applyConfidenceAndReturn(record, displayPlantName, confidence, imageContext);
     }
 
-    // Step 3: DB miss — call Perenual API
+    // Step 3: Postgres miss — consult ASPCA in-memory database (authoritative, zero-cost)
+    const aspcaRecord = await aspcaRepository.findByFuzzyMatch(plantName);
+    if (aspcaRecord !== null) {
+      const lowConfidenceWarning = confidence < 0.6;
+      const actionRequired = lowConfidenceWarning
+        ? this.buildLowConfidenceActionRequired(displayPlantName)
+        : undefined;
+      logger.debug('Image pipeline: ASPCA in-memory hit', {
+        plantName,
+        confidence,
+        toxicity: aspcaRecord.isToxic,
+      });
+      return aspcaRecordToScanResult(aspcaRecord, confidence, lowConfidenceWarning, actionRequired);
+    }
+
+    // Step 4: DB + ASPCA miss — call Perenual API
     let perenualResult: PerenualApiResult | null;
     try {
       perenualResult = await searchPlantByName(plantName);
@@ -306,7 +375,7 @@ class ToxicityCacheService {
       });
     }
 
-    // Step 4: background media URL fetch if needed
+    // Step 5: background media URL fetch if needed
     if (writtenRecord !== null) {
       if (writtenRecord.mediaUrl === null && writtenRecord.perenualId !== null) {
         this.backgroundFetchMediaUrl(writtenRecord);

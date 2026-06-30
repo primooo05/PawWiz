@@ -20,6 +20,17 @@ export function usePlantScan(apiBase: string) {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Client-side validation: PlantNet only accepts JPEG and PNG, max 50 MB.
+    if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+      setScanError('Only JPEG and PNG images are supported.');
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setScanError('Image must be smaller than 50 MB.');
+      return;
+    }
+
     setScanLoading(true); setScanError(''); setScanResult(null);
 
     const previewUrl = URL.createObjectURL(file);
