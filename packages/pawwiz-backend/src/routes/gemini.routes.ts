@@ -1,22 +1,23 @@
 /**
  * Chain of Responsibility (Middleware Pattern)
- * Gemini AI service routes — vision, diet, behavior.
+ * Gemini AI service routes — diet, behavior.
  * All endpoints require authentication and request validation.
+ *
+ * NOTE: The /vision/scan route has been removed as part of the plant-toxicity-caching
+ * migration (Req 9.1, 9.2, 9.3). Plant toxicity scanning is now served by:
+ *   POST /api/toxicity/scan  (toxicity.routes.ts → toxicity.controller.ts)
  */
 
 import { Router } from 'express';
-import { scanPlant, optimizeDiet, decodeBehavior } from '../controllers/gemini.controller.js';
+import { optimizeDiet, decodeBehavior } from '../controllers/gemini.controller.js';
 import { validate } from '../middleware/validate.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { scanSchema, dietSchema, behaviorSchema } from '../schemas/index.js';
+import { dietSchema, behaviorSchema } from '../schemas/index.js';
 
 const geminiRouter = Router();
 
 // All Gemini routes require authentication
 geminiRouter.use(authMiddleware);
-
-// Vision — Plant toxicity scan (image or text query)
-geminiRouter.post('/vision/scan', validate(scanSchema), scanPlant);
 
 // Diet — Personalized feline nutrition plan
 geminiRouter.post('/diet/optimize', validate(dietSchema), optimizeDiet);

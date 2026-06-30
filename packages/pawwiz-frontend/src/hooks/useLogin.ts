@@ -22,12 +22,20 @@ export function useLogin() {
       return;
     }
 
+    const email = form.values.email;
+    const password = form.values.password;
+
+    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+      setServerError('Malformed credential payload');
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: form.values.email,
-        password: form.values.password,
+        email,
+        password,
       });
 
       if (error) {

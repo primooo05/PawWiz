@@ -8,7 +8,7 @@ interface HeroProps {
 }
 
 export default function Hero({ apiBase }: HeroProps) {
-  const { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch } = usePlantScan(apiBase);
+  const { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch, imagePreview } = usePlantScan(apiBase);
   const sectionRef = useScrollReveal<HTMLElement>(0.08);
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = useState(
@@ -23,6 +23,14 @@ export default function Hero({ apiBase }: HeroProps) {
       return () => clearTimeout(timer);
     }
   }, [location.state]);
+
+  const resolvedMedia = scanResult?.mediaUrl || imagePreview;
+  const isSafeUrl = !!resolvedMedia && (
+    resolvedMedia.startsWith('blob:') ||
+    resolvedMedia.startsWith('https://') ||
+    resolvedMedia.startsWith('http://')
+  );
+  const mediaSource = isSafeUrl ? resolvedMedia : undefined;
 
   return (
     <section ref={sectionRef} id="home" className="scroll-mt-20 w-full pt-24 md:pt-28 pb-16 text-center bg-grid-pattern border-b border-slate-200/40 relative">
@@ -89,62 +97,101 @@ export default function Hero({ apiBase }: HeroProps) {
             Search by name or snap a photo. Get an instant safe / caution / toxic verdict, severity level, and symptoms to watch for — pulled from ASPCA's Animal Poison Control database, verified quarterly.
           </p>
 
-          {scanLoading && (
-            <div className="mt-8 flex items-center justify-center space-x-3 bg-white/10 p-4 rounded-full max-w-md mx-auto border border-white/15 backdrop-blur-sm animate-pulse relative z-10">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              <span className="text-sm font-semibold">Running ASPCA validation loop...</span>
-            </div>
-          )}
-
-          {scanError && (
-            <div className="mt-8 bg-rose-500/20 border border-rose-500/30 p-4 rounded-2xl text-xs text-rose-100 max-w-md mx-auto relative z-10">
-              {scanError}
-            </div>
-          )}
-
-          {scanResult && (
-            <div className="mt-6 relative z-10 max-w-2xl mx-auto w-full animate-fadeIn px-1">
-              <div className={`rounded-2xl border backdrop-blur-md overflow-hidden ${
-                scanResult.isToxic
-                  ? 'bg-rose-950/90 border-rose-700/50'
-                  : 'bg-emerald-950/90 border-emerald-700/50'
+          {(scanResult || scanLoading || imagePreview) && (
+            <div className="mt-8 relative z-10 max-w-3xl mx-auto w-full animate-fadeIn px-1">
+              <div className={`rounded-2xl border backdrop-blur-md overflow-hidden flex flex-col md:flex-row items-center md:items-stretch gap-6 p-5 text-left ${
+                scanResult
+                  ? (scanResult.toxicityStatus === 'TOXIC'
+                      ? 'bg-rose-950/90 border-rose-700/50'
+                      : scanResult.toxicityStatus === 'SAFE'
+                      ? 'bg-emerald-950/90 border-emerald-700/50'
+                      : 'bg-amber-950/90 border-amber-700/50')
+                  : 'bg-slate-900/90 border-slate-700/50'
               }`}>
-                {/* Row 1: badge + plant name + severity */}
-                <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-white/10">
-                  <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                    scanResult.isToxic ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white'
-                  }`}>
-                    {scanResult.isToxic ? '⚠ TOXIC' : '✓ SAFE'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-extrabold text-white text-sm leading-tight truncate">{scanResult.identifiedPlant}</p>
-                    {scanResult.scientificName && (
-                      <p className="text-[10px] text-white/50 font-mono italic truncate">{scanResult.scientificName}</p>
-                    )}
-                  </div>
-                  {scanResult.isToxic && scanResult.severity && (
-                    <span className="shrink-0 text-[10px] font-bold text-rose-300 bg-rose-900/60 px-2 py-0.5 rounded-md border border-rose-700/40">
-                      {scanResult.severity}
-                    </span>
+                {/* Media Container */}
+                <div className="w-full max-w-[240px] shrink-0 aspect-square rounded-xl bg-white/10 overflow-hidden flex items-center justify-center relative shadow-inner">
+                  {mediaSource && !scanLoading ? (
+                    <img
+                      src={mediaSource}
+                      alt="Verification Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className={`absolute inset-0 bg-white/5 flex flex-col items-center justify-center p-4 text-white/40 ${scanLoading ? 'animate-pulse' : ''}`}>
+                      <svg className="w-12 h-12 mb-2 text-[#2ec4b6]/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.263 10.185a11.966 11.966 0 005.656 5.656m0 0l-5.656-5.656m5.656 5.656L18 4m-7.83 11.83a5.98 5.98 0 003.585-1.792 5.982 5.982 0 001.792-3.585M18 4a8.966 8.966 0 01-5.657 2.528A8.966 8.966 0 014.263 10.185Z" />
+                      </svg>
+                      <span className="text-[10px] text-center uppercase font-bold tracking-wider text-white/60">
+                        {scanLoading ? 'Analyzing...' : (scanResult ? `${scanResult.identifiedPlant} Media` : 'Plant Media')}
+                      </span>
+                    </div>
                   )}
                 </div>
 
-                {/* Row 2: action text */}
-                <div className="px-4 py-3">
-                  <p className="text-xs text-white/85 leading-relaxed">{scanResult.actionRequired}</p>
-                </div>
+                {/* Text Content */}
+                <div className="flex-1 flex flex-col justify-center w-full min-w-0">
+                  {scanLoading && (
+                    <div className="flex items-center justify-center space-x-3 bg-white/10 p-4 rounded-xl border border-white/15 backdrop-blur-sm animate-pulse w-full">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span className="text-sm font-semibold">Running ASPCA validation loop...</span>
+                    </div>
+                  )}
 
-                {/* Row 3: clinical signs */}
-                {scanResult.clinicalSigns && scanResult.clinicalSigns.length > 0 && (
-                  <div className="px-4 pb-4 flex flex-wrap gap-1.5">
-                    {scanResult.clinicalSigns.slice(0, 5).map((s, i) => (
-                      <span key={i} className="bg-white/10 text-white/75 text-[10px] px-2 py-0.5 rounded-full border border-white/10 font-medium">{s}</span>
-                    ))}
-                    {scanResult.clinicalSigns.length > 5 && (
-                      <span className="text-[10px] text-white/40 self-center">+{scanResult.clinicalSigns.length - 5} more</span>
-                    )}
-                  </div>
-                )}
+                  {scanError && (
+                    <div className="bg-rose-500/20 border border-rose-500/30 p-4 rounded-xl text-xs text-rose-100 w-full">
+                      {scanError}
+                    </div>
+                  )}
+
+                  {scanResult && !scanLoading && (
+                    <div className="w-full space-y-4">
+                      {/* Row 1: badge + plant name + severity */}
+                      <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+                        <span className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                          scanResult.toxicityStatus === 'TOXIC'
+                            ? 'bg-rose-600 text-white animate-pulse'
+                            : scanResult.toxicityStatus === 'SAFE'
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-amber-600 text-white'
+                        }`}>
+                          {scanResult.toxicityStatus === 'TOXIC'
+                            ? '⚠ TOXIC'
+                            : scanResult.toxicityStatus === 'SAFE'
+                            ? '✓ SAFE'
+                            : '⚠ UNVERIFIED'}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-extrabold text-white text-base leading-tight truncate">{scanResult.identifiedPlant}</p>
+                          {scanResult.scientificName && (
+                            <p className="text-[11px] text-white/50 font-mono italic truncate">{scanResult.scientificName}</p>
+                          )}
+                        </div>
+                        {scanResult.toxicityStatus === 'TOXIC' && scanResult.severity && (
+                          <span className="shrink-0 text-[10px] font-bold text-rose-300 bg-rose-900/60 px-2 py-0.5 rounded-md border border-rose-700/40">
+                            {scanResult.severity}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Row 2: action text */}
+                      <div className="py-1">
+                        <p className="text-xs text-white/85 leading-relaxed">{scanResult.actionRequired}</p>
+                      </div>
+
+                      {/* Row 3: clinical signs */}
+                      {scanResult.clinicalSigns && scanResult.clinicalSigns.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-2">
+                          {scanResult.clinicalSigns.slice(0, 5).map((s, i) => (
+                            <span key={i} className="bg-white/10 text-white/75 text-[10px] px-2 py-0.5 rounded-full border border-white/10 font-medium">{s}</span>
+                          ))}
+                          {scanResult.clinicalSigns.length > 5 && (
+                            <span className="text-[10px] text-white/40 self-center">+{scanResult.clinicalSigns.length - 5} more</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

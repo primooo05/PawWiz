@@ -309,22 +309,25 @@ function OnboardingView() {
       }
 
       const result = validateStep3Otp(otpCode);
-      startTyping(result.message, {
-        onComplete: async () => {
-          if (result.isValid) {
-            const ok = await verifyOtp(sessionId!, otpCode);
-            if (ok) {
-              setIsStep3Dirty(false);
-              setTimeout(() => transitionTo(4), 300);
-            } else {
-              showStaticBubble('Wrong code or expired. Try again, meow!');
-              setTimeout(() => hideBubble(), 3000);
-            }
-          } else {
-            setTimeout(() => hideBubble(), 3000);
+      if (!result.isValid) {
+        startTyping(result.message, { onComplete: () => setTimeout(() => hideBubble(), 3000) });
+        return;
+      }
+      
+      showStaticBubble(result.message);
+      const ok = await verifyOtp(sessionId!, otpCode);
+      
+      if (ok) {
+        startTyping('Code accepted! Setting up your profile...', {
+          onComplete: () => {
+            setIsStep3Dirty(false);
+            setTimeout(() => transitionTo(4), 300);
           }
-        },
-      });
+        });
+      } else {
+        showStaticBubble('Wrong code or expired. Try again, meow!');
+        setTimeout(() => hideBubble(), 3000);
+      }
     } else if (step === 4) {
       // Cats count (was step 3)
       if (sessionStep > 4 && !isStep4Dirty) {
@@ -572,6 +575,7 @@ function OnboardingView() {
           catName={catName}
           catsCount={catsCount}
           customCatsCount={customCatsCount}
+          catsAdded={catsAdded}
           isTyping={isTyping}
           showBubble={showBubble && step === 7}
           bubbleText={bubbleText}

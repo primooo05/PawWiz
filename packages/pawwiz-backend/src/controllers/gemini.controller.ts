@@ -2,24 +2,18 @@
  * Controller Layer — Gemini AI Services
  * Thin layer: extracts request data, delegates to services, formats response.
  * Uses Template Method (withErrorHandling) for standardized try/catch flow.
- * Covers: Vision (plant scan), Diet Optimization, Behavior Decoder.
+ * Covers: Diet Optimization, Behavior Decoder.
+ *
+ * NOTE: The legacy `scanPlant` handler (POST /api/gemini/vision/scan) has been
+ * removed as part of the plant-toxicity-caching migration (Req 9.1, 9.2, 9.3).
+ * Plant toxicity scanning is now served exclusively by:
+ *   POST /api/toxicity/scan  (toxicity.controller.ts → toxicity_cache.service.ts)
  */
 
 import type { Request, Response } from 'express';
 import { withErrorHandling } from './base.controller.js';
-import { visionService } from '../services/vision.service.js';
 import { dietOptimizationService } from '../services/diet-optimization.service.js';
 import { behaviorDecoderService } from '../services/behavior-decoder.service.js';
-
-/**
- * POST /api/gemini/vision/scan
- * Identify a plant from an image or text query and check toxicity.
- * Body: { image?: string, plantNameQuery?: string }
- */
-export const scanPlant = withErrorHandling(async (req: Request, res: Response) => {
-  const result = await visionService.scan(req.body);
-  res.json(result);
-});
 
 /**
  * POST /api/gemini/diet/optimize

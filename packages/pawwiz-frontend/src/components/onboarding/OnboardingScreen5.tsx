@@ -29,63 +29,13 @@ export const OnboardingScreen5: React.FC<OnboardingScreen5Props> = ({
   ];
 
   return (
-    <div className={`flex flex-col md:flex-row justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
-      active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-    }`}>
-      {/* Left Column: Life Stage Selection */}
-      <div className="flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4">
-        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
-          Life Stage
-        </label>
-        <div className="flex flex-col gap-4 w-full">
-          <div className="flex gap-4 w-full">
-            {options.slice(0, 2).map((opt) => {
-              const isSelected = catLifeStage === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setCatLifeStage(opt.value)}
-                  disabled={isTyping || !active}
-                  className={`flex-1 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
-                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex justify-center w-full">
-            {options.slice(2).map((opt) => {
-              const isSelected = catLifeStage === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setCatLifeStage(opt.value)}
-                  disabled={isTyping || !active}
-                  className={`w-2/3 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
-                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Right Column: Cat Mascot with Custom Speech Bubble */}
-      <div className="flex-1 flex justify-center items-center relative">
+    <div className={`flex flex-col md:grid md:grid-cols-2 md:items-start justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}>
+      {/* 1. ChatBubble & Mascot SVG */}
+      <div className="md:col-start-2 md:row-start-1 md:row-span-2 flex justify-center items-center relative w-full">
         {/* Custom Speech Bubble */}
         {showBubble && (
-          <div className="absolute top-0 left-4 md:-top-10 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-0 animate-fade-in">
+          <div className="absolute -top-28 left-4 md:-top-24 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-10 animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
             {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
@@ -102,15 +52,61 @@ export const OnboardingScreen5: React.FC<OnboardingScreen5Props> = ({
         </div>
       </div>
 
-      {/* Bottom Actions Overlay */}
-      <div className="w-full md:absolute md:bottom-2 left-0 flex flex-col items-center gap-4 z-0 mt-6 md:mt-0">
+      {/* 2. Life Stage Selection */}
+      <div className="md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4">
+        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
+          Life Stage
+        </label>
+        <div className="flex flex-col gap-4 w-full">
+          <div className="flex gap-4 w-full">
+            {options.slice(0, 2).map((opt) => {
+              const isSelected = catLifeStage === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCatLifeStage(opt.value)}
+                  disabled={isTyping || !active}
+                  className={`flex-1 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${isSelected
+                      ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
+                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+                    }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex justify-center w-full">
+            {options.slice(2).map((opt) => {
+              const isSelected = catLifeStage === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCatLifeStage(opt.value)}
+                  disabled={isTyping || !active}
+                  className={`w-2/3 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${isSelected
+                      ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
+                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+                    }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Bottom Actions Overlay */}
+      <div className="w-full md:absolute md:bottom-2 left-0 flex flex-col items-center gap-4 z-0 mt-6 md:mt-0 md:col-span-2">
         <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
           <button
             onClick={handleBackClick}
             disabled={isTyping || !active}
-            className={`w-1/2 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider cursor-pointer transition-all ${
-              isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
-            }`}
+            className={`w-1/2 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider cursor-pointer transition-all ${isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
           >
             Back
           </button>
@@ -118,9 +114,8 @@ export const OnboardingScreen5: React.FC<OnboardingScreen5Props> = ({
           <button
             onClick={handleNextClick}
             disabled={isTyping || !active}
-            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none ${
-              isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
-            }`}
+            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none ${isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
           >
             Next
           </button>
