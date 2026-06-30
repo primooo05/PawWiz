@@ -33,3 +33,18 @@ export const behaviorSchema = z.object({
   bodyLanguageSigns: z.array(z.string()).nonempty(),
   context: z.string().min(1),
 });
+
+// Toxicity search endpoint — POST /api/toxicity/search
+export const toxicitySearchSchema = z.object({
+  plantNameQuery: z.string().min(1).max(200),
+});
+
+// Image upload validation constants — used by multer fileFilter in toxicity.routes.ts
+export const IMAGE_UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+export const IMAGE_UPLOAD_ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
+export type AllowedImageMimeType = (typeof IMAGE_UPLOAD_ALLOWED_MIME_TYPES)[number];

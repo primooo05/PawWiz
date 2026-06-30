@@ -12,9 +12,15 @@ export function sanitizeObject(obj: any): any {
     return obj.map(sanitizeObject);
   }
   if (typeof obj === 'object' && obj !== null) {
-    const newObj: any = {};
+    const newObj: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
-      newObj[key] = sanitizeObject(value);
+      // Use defineProperty to safely set any key (including __proto__) as an own property
+      Object.defineProperty(newObj, key, {
+        value: sanitizeObject(value),
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
     }
     return newObj;
   }

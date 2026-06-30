@@ -1,54 +1,87 @@
-import { useState } from 'react';
-  import type { ToxicityScanResult } from '../../../pawwiz-backend/src/types/shared.js';
- 
-  export function usePlantScan(apiBase: string) {
-    const [plantQuery, setPlantQuery] = useState('');
-    const [scanResult, setScanResult] = useState<ToxicityScanResult | null>(null);
-    const [scanLoading, setScanLoading] = useState(false);
-    const [scanError, setScanError] = useState('');
- 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setScanLoading(true); setScanError(''); setScanResult(null);
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const response = await fetch(`${apiBase}/api/scan`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: reader.result as string }),
-          });
-          if (!response.ok) throw new Error('Failed to analyze image.');
-          setScanResult(await response.json());
-        } catch (err) {
-          setScanError((err as Error).message);
-          setScanResult({ identifiedPlant: 'Peace Lily', scientificName: 'Spathiphyllum spp.', isToxic: true, severity: 'Moderate', clinicalSigns: ['Oral irritation',  
-  'Excessive drooling', 'Vomiting'], actionRequired: 'Fallback: seek vet guidance.', confidence: 0.9, dataSource: 'ASPCA Database (Deterministic)' });
-        } finally { setScanLoading(false); }
-      };
-      reader.readAsDataURL(file);
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { ToxicityScanResult } from '../../../pawwiz-backend/src/types/shared.js';
+
+export function usePlantScan(apiBase: string) {
+  const [plantQuery, setPlantQuery] = useState('');
+  const [scanResult, setScanResult] = useState<ToxicityScanResult | null>(null);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
     };
- 
-    const handleTextSearch = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!plantQuery.trim()) return;
-      setScanLoading(true); setScanError(''); setScanResult(null);
-      try {
-        const response = await fetch(`${apiBase}/api/scan`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plantNameQuery: plantQuery }),
-        });
-        if (!response.ok) throw new Error('Plant query failed.');
-        setScanResult(await response.json());
-      } catch {
-        const q = plantQuery.toLowerCase();
-        if (q.includes('lily')) setScanResult({ identifiedPlant: 'Lily (Easter/Tiger)', scientificName: 'Lilium spp.', isToxic: true, severity: 'Severe', clinicalSigns:  ['Vomiting', 'Lethargy', 'Kidney failure'], actionRequired: 'EMERGENCY: Seek vet immediately!', confidence: 1.0, dataSource: 'ASPCA Database (Deterministic)' });     
-        else if (q.includes('spider')) setScanResult({ identifiedPlant: 'Spider Plant', scientificName: 'Chlorophytum comosum', isToxic: false, severity: 'None',       
-  clinicalSigns: [], actionRequired: 'Completely safe.', confidence: 1.0, dataSource: 'ASPCA Database (Deterministic)' });
-        else setScanError('Unable to connect. Try "lily" or "spider plant" for offline demo.');
-      } finally { setScanLoading(false); }
-    };
- 
-    return { plantQuery, setPlantQuery, scanResult, scanLoading, scanError, handleImageUpload, handleTextSearch };
-  }
- 
+  }, [imagePreview]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanLoading(true); setScanError(''); setScanResult(null);
+
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${apiBase}/api/toxicity/scan`, {
+        method: 'POST',
+        headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
+        body: formData,
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to analyze image.');
+      }
+      setScanResult(await response.json());
+    } catch (err) {
+      setScanError((err as Error).message);
+    } finally { setScanLoading(false); }
+  };
+
+  const handleTextSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!plantQuery.trim()) return;
+    setScanLoading(true); setScanError(''); setScanResult(null);
+    setImagePreview(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${apiBase}/api/toxicity/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({ plantNameQuery: plantQuery }),
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Plant query failed.');
+      }
+      setScanResult(await response.json());
+    } catch (err) {
+      setScanError((err as Error).message);
+    } finally { setScanLoading(false); }
+  };
+
+  return {
+    plantQuery,
+    setPlantQuery,
+    scanResult,
+    scanLoading,
+    scanError,
+    handleImageUpload,
+    handleTextSearch,
+    imagePreview,
+    setImagePreview,
+    lowConfidenceWarning: scanResult?.lowConfidenceWarning ?? false,
+    dataSource: scanResult?.dataSource ?? null,
+    identificationConfidence: scanResult?.identificationConfidence ?? null
+  };
+}

@@ -19,15 +19,30 @@ export interface ToxicityScanRequest {
 }
 
 export interface ToxicityScanResult {
-  identifiedPlant: string;
-  scientificName: string;
-  isToxic: boolean;
-  severity: "None" | "Mild" | "Moderate" | "Severe";
+  identifiedPlant: string | null;
+  scientificName: string | null;
+  toxicityStatus: 'SAFE' | 'TOXIC' | 'UNKNOWN';
+  severity: 'mild' | 'moderate' | 'severe' | 'lethal' | 'none' | null;
   clinicalSigns: string[];
   actionRequired: string;
-  confidence: number;
-  dataSource: "ASPCA Database (Deterministic)" | "Gemini Vision (AI Model Verified)";
-  aiAnalysisText?: string;
+  identificationConfidence: number | null;  // null for TextPipeline, 0.0–1.0 for ImagePipeline
+  lowConfidenceWarning: boolean;            // true when identificationConfidence < 0.6
+  dataSource: 'aspca' | 'perenual_cache' | 'fallback';
+  mediaUrl?: string | null;                 // only populated when perenual_id is known
+}
+
+export interface CacheRecord {
+  id: string;
+  commonName: string;
+  scientificName: string;
+  toxicityStatus: 'toxic' | 'caution' | 'safe';
+  severity: 'mild' | 'moderate' | 'severe' | 'lethal' | null;
+  clinicalSigns: string[];
+  source: 'aspca' | 'perenual_cache';
+  mediaUrl: string | null;
+  perenualId: string | null;
+  cachedAt: Date | null;
+  lastVerifiedAt: Date;
 }
 
 export interface DietOptimizeRequest {

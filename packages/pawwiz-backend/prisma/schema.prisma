@@ -89,3 +89,23 @@ model DietMealLog {
 
   @@map("diet_meal_logs")
 }
+
+model Plant {
+  id             String    @id @default(cuid())
+  commonName     String    @map("common_name")
+  scientificName String    @unique @map("scientific_name")
+  toxicityStatus String    @map("toxicity_status")  // 'toxic' | 'caution' | 'safe'
+  severity       String?                             // 'mild' | 'moderate' | 'severe' | 'lethal' | null
+  clinicalSigns  String[]  @map("clinical_signs")
+  source         String                              // 'aspca' | 'perenual_cache'
+  mediaUrl       String?   @map("media_url")
+  perenualId     String?   @map("perenual_id")
+  cachedAt       DateTime? @map("cached_at")
+  lastVerifiedAt DateTime  @map("last_verified_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([scientificName])
+  @@index([commonName])
+  @@map("plants")
+}

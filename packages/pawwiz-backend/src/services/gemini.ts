@@ -18,24 +18,27 @@ const ai = isApiKeyMissing ? null : new GoogleGenAI({ apiKey: API_KEY });
 const TEXT_MODEL = 'gemini-3.5-flash';
 const VISION_MODEL = 'gemini-3.1-pro';
 
-export async function scanPlantWithVision(imageBase64: string): Promise<{ plantName: string; confidence: number; details: string }> {
+const VISION_TIMEOUT_MS = 10_000;
+
+export async function scanPlantWithVision(imageBuffer: Buffer): Promise<{ scientificName: string | null; confidence: number }> {
   if (isApiKeyMissing || !ai) {
-    // Generate intelligent mock response based on whether they uploaded a file
+    // Mock fallback: return a recognisable scientific name with high confidence
     return {
-      plantName: "Peace Lily",
+      scientificName: "Spathiphyllum wallisii",
       confidence: 0.94,
-      details: "The image shows dark green ribbed leaves with characteristic white spathe flowers, matching a Peace Lily (Spathiphyllum)."
     };
   }
 
-  try {
-    const response = await ai.models.generateContent({
+  const geminiCall = async (): Promise<{ scientificName: string | null; confidence: number }> => {
+    const response = await ai!.models.generateContent({
       model: VISION_MODEL,
       contents: [
-        { text: "Identify the plant in this image. Return the common name, your confidence level as a fraction between 0.0 and 1.0, and details about physical features. You must respond strictly in JSON matching the schema." },
+        {
+          text: "Identify the plant in this image. Return the scientific name (binomial nomenclature) and your confidence level as a fraction between 0.0 and 1.0. You must respond strictly in JSON matching the schema."
+        },
         {
           inlineData: {
-            data: imageBase64.replace(/^data:image\/\w+;base64,/, ""),
+            data: imageBuffer.toString('base64'),
             mimeType: "image/jpeg"
           }
         }
@@ -45,27 +48,28 @@ export async function scanPlantWithVision(imageBase64: string): Promise<{ plantN
         responseJsonSchema: {
           type: Type.OBJECT,
           properties: {
-            plantName: { type: Type.STRING },
+            scientificName: { type: Type.STRING },
             confidence: { type: Type.NUMBER },
-            details: { type: Type.STRING }
           },
-          required: ['plantName', 'confidence', 'details']
+          required: ['scientificName', 'confidence']
         }
       }
     });
 
     const text = response.text;
     if (!text) throw new Error("Empty response from Gemini vision model.");
-    return JSON.parse(text);
-  } catch (error) {
-    console.error("Gemini Vision API error:", error);
-    // Graceful fallback
+    const parsed = JSON.parse(text) as { scientificName?: string | null; confidence: number };
     return {
-      plantName: "Unknown Plant",
-      confidence: 0.5,
-      details: "Could not classify accurately via Gemini API. Error: " + (error as Error).message
+      scientificName: parsed.scientificName ?? null,
+      confidence: parsed.confidence,
     };
-  }
+  };
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Gemini vision request timed out after 10 seconds")), VISION_TIMEOUT_MS)
+  );
+
+  return Promise.race([geminiCall(), timeoutPromise]);
 }
 
 export async function optimizeDiet(request: DietOptimizeRequest): Promise<DietPlan> {

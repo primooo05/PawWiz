@@ -58,12 +58,13 @@ class VisionService {
     return {
       identifiedPlant: record.plantName,
       scientificName: record.scientificName,
-      isToxic: record.isToxic,
-      severity: record.severity,
+      toxicityStatus: record.isToxic ? 'TOXIC' : 'SAFE',
+      severity: record.severity?.toLowerCase() as ToxicityScanResult['severity'] ?? null,
       clinicalSigns: record.clinicalSigns,
       actionRequired: record.actionRequired,
-      confidence: 1.0,
-      dataSource: 'ASPCA Database (Deterministic)',
+      identificationConfidence: null,
+      lowConfidenceWarning: false,
+      dataSource: 'aspca' as const,
     };
   }
 
@@ -80,28 +81,28 @@ class VisionService {
       return {
         identifiedPlant: aspcaRecord.plantName,
         scientificName: aspcaRecord.scientificName,
-        isToxic: aspcaRecord.isToxic,
-        severity: aspcaRecord.severity,
+        toxicityStatus: aspcaRecord.isToxic ? 'TOXIC' : 'SAFE',
+        severity: aspcaRecord.severity?.toLowerCase() as ToxicityScanResult['severity'] ?? null,
         clinicalSigns: aspcaRecord.clinicalSigns,
         actionRequired: aspcaRecord.actionRequired,
-        confidence: visionResult.confidence,
-        dataSource: 'ASPCA Database (Deterministic)',
-        aiAnalysisText: visionResult.details,
+        identificationConfidence: visionResult.confidence,
+        lowConfidenceWarning: visionResult.confidence < 0.6,
+        dataSource: 'aspca' as const,
       };
     }
 
     // Plant not in ASPCA DB — return AI-only result with caveat
     return {
       identifiedPlant: visionResult.plantName,
-      scientificName: 'Unknown',
-      isToxic: false,
-      severity: 'None',
+      scientificName: null,
+      toxicityStatus: 'UNKNOWN',
+      severity: null,
       clinicalSigns: [],
       actionRequired:
         'Plant not found in ASPCA database. Exercise caution and consult a veterinarian if your cat has ingested this plant.',
-      confidence: visionResult.confidence,
-      dataSource: 'Gemini Vision (AI Model Verified)',
-      aiAnalysisText: visionResult.details,
+      identificationConfidence: visionResult.confidence,
+      lowConfidenceWarning: visionResult.confidence < 0.6,
+      dataSource: 'fallback' as const,
     };
   }
 
