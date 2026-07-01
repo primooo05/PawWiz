@@ -52,6 +52,11 @@ export async function searchPlantByName(query: string): Promise<PerenualApiResul
     };
 
     if (!data?.data || data.data.length === 0) {
+      const words = query.trim().split(/\s+/);
+      if (words.length > 1) {
+        console.warn(`[Perenual] No results for species query "${query}". Falling back to genus search for "${words[0]}"`);
+        return searchPlantByName(words[0]);
+      }
       return null;
     }
 

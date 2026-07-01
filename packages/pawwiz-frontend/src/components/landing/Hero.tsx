@@ -4,6 +4,7 @@ import { usePlantScan } from '../../hooks/usePlantScan';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import TallGrass from './effects/TallGrass';
 import WindFlow from './effects/WindFlow';
+import CatHero01 from '../../assets/Cat_Hero01.svg';
 
 interface HeroProps {
   apiBase: string;
@@ -56,6 +57,12 @@ export default function Hero({ apiBase }: HeroProps) {
 
       {/* Large Full-width-ready Green Toxicity Search Box */}
       <div className="reveal-item stagger-3 max-w-5xl mx-auto px-4 md:px-6 mt-12 relative z-10">
+        {/* Hanging Cat Mascot */}
+        <img
+          src={CatHero01}
+          alt="Hanging Cat Mascot"
+          className="absolute -top-10 left-10 md:-top-18 md:left-20 w-32 md:w-44 z-20 pointer-events-none select-none"
+        />
         <div className="w-full bg-[#2ec4b6] py-16 md:py-20 px-6 md:px-12 rounded-3xl md:rounded-[56px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_25px_60px_-15px_rgba(46,196,182,0.3)] text-center text-white relative overflow-hidden">
           {/* Subtle graphic accent inside green card */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full filter blur-2xl pointer-events-none -mr-20 -mt-20" />
