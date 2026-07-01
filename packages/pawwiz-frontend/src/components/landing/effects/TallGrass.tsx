@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './TallGrass.module.css';
+import styles from '../styles/TallGrass.module.css';
 
 interface BladeData {
   id: number;
@@ -25,7 +25,7 @@ const BLADES: BladeData[] = Array.from({ length: BLADE_COUNT }, (_, i) => {
   const x = xPercent * viewWidth + xNoise;
 
   // Blade dimensions (viewBox height is 165)
-  const height = 50 + seededRandom(i + 2) * 90; // Height range: 50 to 140
+  const height = 30 + seededRandom(i + 2) * 60; // Height range: 50 to 140
   const w = 5 + seededRandom(i + 3) * 5; // Width range: 5 to 10
   const curve = (seededRandom(i + 4) - 0.5) * 22; // Curve deflection: -11 to 11
 

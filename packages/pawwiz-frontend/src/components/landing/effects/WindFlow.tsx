@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './WindFlow.module.css';
+import styles from '../styles/WindFlow.module.css';
 
 export default function WindFlow() {
   return (

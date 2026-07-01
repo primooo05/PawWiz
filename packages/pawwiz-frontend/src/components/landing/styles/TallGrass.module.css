@@ -4,7 +4,7 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 190px;
+  height: 290px;
   pointer-events: none;
   z-index: 1; /* Below interactive elements but visible on bottom edge */
   overflow: hidden; /* Prevent horizontal scrollbar distortion */
@@ -19,7 +19,7 @@
 
 .svg {
   width: 100%;
-  height: 10px;
+  height: 290px;
   overflow: visible;
   pointer-events: auto; /* Enable hover on individual blades */
 }

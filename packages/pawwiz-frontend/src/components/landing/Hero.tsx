@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { usePlantScan } from '../../hooks/usePlantScan';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
-import TallGrass from './TallGrass';
-import WindFlow from './WindFlow';
-import grassStyles from './TallGrass.module.css';
+import TallGrass from './effects/TallGrass';
+import WindFlow from './effects/WindFlow';
 
 interface HeroProps {
   apiBase: string;
