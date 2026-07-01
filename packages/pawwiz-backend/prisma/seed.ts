@@ -1,5 +1,4 @@
 import { prisma } from '../src/lib/prisma.js';
-import { ASPCA_DATABASE } from '../src/data/aspca.js';
 import { ASPCA_CSV_PLANTS } from '../src/data/aspca-csv.js';
 import { ASPCA_SAFE_PLANTS } from '../src/data/safe-plants-csv.js';
 
@@ -19,7 +18,7 @@ function mapSeverity(severity: 'None' | 'Mild' | 'Moderate' | 'Severe'): string 
 async function main(): Promise<void> {
   console.log('Seeding ASPCA plant toxicity records...');
 
-  const records = Object.values(ASPCA_DATABASE);
+  const records = Object.values(ASPCA_CSV_PLANTS);
 
   for (const record of records) {
     const toxicityStatus = mapToxicityStatus(record.isToxic);
@@ -55,51 +54,13 @@ async function main(): Promise<void> {
     console.log(`  Upserted: ${record.scientificName}`);
   }
 
-  console.log(`Done — seeded ${records.length} ASPCA records.`);
+  console.log(`Done — seeded ${records.length} ASPCA CSV records.`);
 
-  // Seed CSV plants that aren't already in ASPCA_DATABASE
-  console.log('\nSeeding supplementary ASPCA CSV plant records...');
-  const existingScientificNames = new Set(records.map(r => r.scientificName));
-  const csvOnlyPlants = ASPCA_CSV_PLANTS.filter(
-    p => !existingScientificNames.has(p.scientificName)
-  );
-
-  for (const plant of csvOnlyPlants) {
-    const now = new Date();
-    await prisma.plant.upsert({
-      where: { scientificName: plant.scientificName },
-      create: {
-        commonName:     plant.commonName,
-        scientificName: plant.scientificName,
-        toxicityStatus: 'toxic',
-        severity:       null,
-        clinicalSigns:  [],
-        source:         'aspca',
-        mediaUrl:       null,
-        perenualId:     null,
-        cachedAt:       null,
-        lastVerifiedAt: now,
-      },
-      update: {
-        commonName:     plant.commonName,
-        toxicityStatus: 'toxic',
-        clinicalSigns:  [],
-        source:         'aspca',
-        lastVerifiedAt: now,
-      },
-    });
-    console.log(`  Upserted CSV: ${plant.scientificName}`);
-  }
-
-  console.log(`Done — seeded ${csvOnlyPlants.length} supplementary CSV records.`);
 
   // Seed safe plants
   console.log('\nSeeding ASPCA safe plant records...');
-  const allSeededNames = new Set([
-    ...records.map(r => r.scientificName),
-    ...csvOnlyPlants.map(p => p.scientificName),
-  ]);
-  const safePlantsToSeed = ASPCA_SAFE_PLANTS.filter(
+  const allSeededNames = new Set(records.map(r => r.scientificName));
+  const safePlantsToSeed = Object.values(ASPCA_SAFE_PLANTS).filter(
     p => !allSeededNames.has(p.scientificName)
   );
 
@@ -108,22 +69,23 @@ async function main(): Promise<void> {
     await prisma.plant.upsert({
       where: { scientificName: plant.scientificName },
       create: {
-        commonName:     plant.commonName,
+        commonName:     plant.plantName,
         scientificName: plant.scientificName,
         toxicityStatus: 'safe',
         severity:       null,
         clinicalSigns:  [],
         source:         'aspca',
-        mediaUrl:       null,
+        mediaUrl:       plant.mediaUrl ?? null,
         perenualId:     null,
         cachedAt:       null,
         lastVerifiedAt: now,
       },
       update: {
-        commonName:     plant.commonName,
+        commonName:     plant.plantName,
         toxicityStatus: 'safe',
         clinicalSigns:  [],
         source:         'aspca',
+        mediaUrl:       plant.mediaUrl ?? null,
         lastVerifiedAt: now,
       },
     });

@@ -12,6 +12,7 @@ interface OnboardingScreen7Props {
   bubbleText: string;
   handleCreateProfileClick: () => void;
   handleBackClick: () => void;
+  showKeyboardHint?: boolean;
 }
 
 /**
@@ -179,6 +180,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
   bubbleText,
   handleCreateProfileClick,
   handleBackClick,
+  showKeyboardHint,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -343,11 +345,16 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
           <button
             onClick={handleCreateProfileClick}
             disabled={isTyping || !active}
-            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none ${
+            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none flex flex-col items-center justify-center ${
               isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
             }`}
           >
-            Create Profile
+            <span>Create Profile</span>
+            {showKeyboardHint && (
+              <span className="block text-[10px] font-normal opacity-50 mt-0.5">
+                Press <kbd className="font-mono bg-slate-800/10 px-1 rounded text-[9px]">Enter ↵</kbd>
+              </span>
+            )}
           </button>
         </div>
 

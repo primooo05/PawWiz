@@ -13,6 +13,7 @@ interface OnboardingScreen6Props {
   handleCreateProfileClick: () => void;
   handleBackClick: () => void;
   handleAddOtherBabies: () => void;
+  showKeyboardHint?: boolean;
 }
 
 export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
@@ -27,6 +28,7 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
   handleCreateProfileClick,
   handleBackClick,
   handleAddOtherBabies,
+  showKeyboardHint,
 }) => {
   const getResolvedCatsCount = (countStr: string, customStr: string): number => {
     const cats = countStr.trim().toLowerCase();
@@ -114,11 +116,16 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
           <button
             onClick={handleCreateProfileClick}
             disabled={isTyping || !active}
-            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none ${
+            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none flex flex-col items-center justify-center ${
               isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
             }`}
           >
-            Next
+            <span>Next</span>
+            {showKeyboardHint && (
+              <span className="block text-[10px] font-normal opacity-50 mt-0.5">
+                Press <kbd className="font-mono bg-slate-800/10 px-1 rounded text-[9px]">Enter ↵</kbd>
+              </span>
+            )}
           </button>
         </div>
 

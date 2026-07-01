@@ -98,6 +98,10 @@ function OnboardingView() {
   const [rippleStyle, setRippleStyle] = useState<React.CSSProperties | null>(null);
   const [isClicked, setIsClicked] = useState(false);
 
+  // Track active input focus state
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+
   // OTP cooldown countdown
   useEffect(() => {
     if (otpCooldown <= 0) return;
@@ -540,6 +544,40 @@ function OnboardingView() {
       setTimeout(() => hideBubble(), 4000);
     }
   };
+
+  // Listen for Enter key progression
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      if (step < 2 || step > 8) return;
+
+      const target = document.activeElement;
+      const isField = !!(target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'));
+
+      if (isTyping || isField) return;
+
+      e.preventDefault();
+      void handleNextClick();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [step, isTyping, handleNextClick]);
+
+  // Track active input focus state
+  useEffect(() => {
+    const handleFocus = () => {
+      const activeEl = document.activeElement;
+      setIsInputFocused(!!(activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')));
+    };
+
+    document.addEventListener('focus', handleFocus, true);
+    document.addEventListener('blur', handleFocus, true);
+    return () => {
+      document.removeEventListener('focus', handleFocus, true);
+      document.removeEventListener('blur', handleFocus, true);
+    };
+  }, []);
  
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">
@@ -576,6 +614,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenOtp
           active={step === 3 && !isTransitioning}
@@ -588,6 +627,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenCats
           active={step === 4 && !isTransitioning}
@@ -600,6 +640,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenCatDetails
           active={step === 5 && !isTransitioning}
@@ -616,6 +657,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenLifeStage
           active={step === 6 && !isTransitioning}
@@ -626,6 +668,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenCatAdded
           active={step === 7 && !isTransitioning}
@@ -639,6 +682,7 @@ function OnboardingView() {
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
           handleAddOtherBabies={handleAddOtherBabies}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenPassword
           active={step === 8 && !isTransitioning}
@@ -651,6 +695,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
       </div>
     </div>

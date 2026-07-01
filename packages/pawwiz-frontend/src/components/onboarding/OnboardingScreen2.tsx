@@ -12,6 +12,7 @@ interface OnboardingScreen2Props {
   bubbleText: string;
   handleNextClick: () => void;
   handleBackClick: () => void;
+  showKeyboardHint?: boolean;
 }
 
 export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
@@ -25,6 +26,7 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
   bubbleText,
   handleNextClick,
   handleBackClick,
+  showKeyboardHint,
 }) => {
   return (
     <div className={`flex flex-col md:grid md:grid-cols-2 md:items-start justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -97,10 +99,15 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
           <button
             onClick={handleNextClick}
             disabled={isTyping || !active}
-            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none ${isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
+            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none flex flex-col items-center justify-center ${isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
               }`}
           >
-            Next
+            <span>Next</span>
+            {showKeyboardHint && (
+              <span className="block text-[10px] font-normal opacity-50 mt-0.5">
+                Press <kbd className="font-mono bg-slate-800/10 px-1 rounded text-[9px]">Enter ↵</kbd>
+              </span>
+            )}
           </button>
         </div>
 

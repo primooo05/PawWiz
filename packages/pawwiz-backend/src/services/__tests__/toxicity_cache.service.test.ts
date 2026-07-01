@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fc from 'fast-check';
-import { ASPCA_DATABASE } from '../../data/aspca.js';
+import { type PlantToxicityRecord } from '../../types/shared.js';
+import { ASPCA_CSV_PLANTS } from '../../data/aspca-csv.js';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Inline seed-mapping helpers (mirrors prisma/seed.ts logic exactly)
@@ -25,7 +26,7 @@ function mapSeverity(severity: 'None' | 'Mild' | 'Moderate' | 'Severe'): string 
  * The test validates the invariants on this shape — the same invariants that Property 8
  * requires the real seed to satisfy.
  */
-function buildAspcsCreatePayload(record: (typeof ASPCA_DATABASE)[string]) {
+function buildAspcsCreatePayload(record: PlantToxicityRecord) {
   return {
     commonName:     record.plantName,
     scientificName: record.scientificName,
@@ -155,7 +156,7 @@ describe('Property 8: Cache write source and timestamp correctness', () => {
   // ── Property 8b: ASPCA seed source / timestamp invariants ───────────────
 
   describe('Property 8b — ASPCA seed record shape', () => {
-    const aspcaRecords = Object.values(ASPCA_DATABASE);
+    const aspcaRecords = Object.values(ASPCA_CSV_PLANTS);
 
     // Feature: plant-toxicity-caching, Property 8: Cache write source and timestamp correctness
     it('every ASPCA record maps to source=aspca and cachedAt=null', () => {
