@@ -79,12 +79,12 @@
     transform: rotate(var(--sway-min, 0deg));
   }
   35% {
-    transform: rotate(var(--sway-max, 6deg)); /* main gust push */
+    transform: rotate(var(--sway-max, 6deg));
   }
   70% {
-    transform: rotate(calc(var(--sway-max, 6deg) * 0.45)); /* recoil/settle */
+    transform: rotate(calc(var(--sway-max, 6deg) * 0.45));
   }
   85% {
-    transform: rotate(calc(var(--sway-max, 6deg) * 0.8)); /* secondary push */
+    transform: rotate(calc(var(--sway-max, 6deg) * 0.8));
   }
 }

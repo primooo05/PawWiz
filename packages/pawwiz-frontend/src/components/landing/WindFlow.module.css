@@ -1,0 +1,250 @@
+.container {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 480px;
+  pointer-events: none;
+  z-index: 0; /* Positioned behind headers/elements */
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .container {
+    display: block;
+  }
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.windLayer, .leavesLayer {
+  pointer-events: none;
+}
+
+/* Wind Lines Styling */
+.windLine {
+  fill: none;
+  stroke: url(#wind-gradient-hero);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.windLine1 {
+  stroke-dasharray: 200 800;
+  animation: windSweep1 8s infinite linear;
+}
+
+.windLine2 {
+  stroke-dasharray: 250 750;
+  animation: windSweep2 11s infinite linear;
+  animation-delay: 2s;
+}
+
+.windLine3 {
+  stroke-dasharray: 180 820;
+  animation: windSweep3 9s infinite linear;
+  animation-delay: 4.5s;
+}
+
+/* Leaf Styling */
+.leaf {
+  fill: url(#leaf-gradient-hero);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.leaf1 {
+  animation: leafFly1 7s infinite ease-in-out;
+}
+
+.leaf2 {
+  animation: leafFly2 10s infinite ease-in-out;
+  animation-delay: 1.5s;
+}
+
+.leaf3 {
+  animation: leafFly3 8.5s infinite ease-in-out;
+  animation-delay: 3s;
+}
+
+.leaf4 {
+  animation: leafFly4 12s infinite ease-in-out;
+  animation-delay: 5s;
+}
+
+.leaf5 {
+  animation: leafFly5 9.5s infinite ease-in-out;
+  animation-delay: 0.5s;
+}
+
+/* Wind Sweep Keyframes - Fades halfway */
+@keyframes windSweep1 {
+  0% {
+    transform: translate(-300px, 20px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.65;
+  }
+  45% {
+    opacity: 0.75;
+  }
+  55% {
+    opacity: 0; /* Faded by halfway */
+  }
+  100% {
+    transform: translate(1100px, -40px);
+    opacity: 0;
+  }
+}
+
+@keyframes windSweep2 {
+  0% {
+    transform: translate(-300px, 40px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.65;
+  }
+  60% {
+    opacity: 0; /* Faded by halfway */
+  }
+  100% {
+    transform: translate(1100px, -20px);
+    opacity: 0;
+  }
+}
+
+@keyframes windSweep3 {
+  0% {
+    transform: translate(-300px, -20px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.75;
+  }
+  40% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0; /* Faded by halfway */
+  }
+  100% {
+    transform: translate(1100px, -60px);
+    opacity: 0;
+  }
+}
+
+/* Leaf Flying & Fluttering Keyframes - Fades halfway */
+@keyframes leafFly1 {
+  0% {
+    transform: translate(-100px, 50px) rotate(0deg) scale(0.8);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  45% {
+    opacity: 0.9;
+  }
+  55% {
+    opacity: 0; /* Faded by halfway */
+    transform: translate(450px, 20px) rotate(180deg) scale(0.85);
+  }
+  100% {
+    transform: translate(1100px, 80px) rotate(360deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes leafFly2 {
+  0% {
+    transform: translate(-100px, 150px) rotate(0deg) scale(1);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  48% {
+    opacity: 0.9;
+  }
+  58% {
+    opacity: 0; /* Faded by halfway */
+    transform: translate(480px, 90px) rotate(-140deg) scale(1.1);
+  }
+  100% {
+    transform: translate(1100px, 50px) rotate(-360deg) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes leafFly3 {
+  0% {
+    transform: translate(-100px, 20px) rotate(0deg) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  42% {
+    opacity: 0.8;
+  }
+  52% {
+    opacity: 0; /* Faded by halfway */
+    transform: translate(400px, 40px) rotate(220deg) scale(0.7);
+  }
+  100% {
+    transform: translate(1100px, -10px) rotate(480deg) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes leafFly4 {
+  0% {
+    transform: translate(-100px, 220px) rotate(0deg) scale(0.7);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.85;
+  }
+  60% {
+    opacity: 0; /* Faded by halfway */
+    transform: translate(500px, 130px) rotate(-200deg) scale(0.75);
+  }
+  100% {
+    transform: translate(1100px, 180px) rotate(-450deg) scale(0.7);
+    opacity: 0;
+  }
+}
+
+@keyframes leafFly5 {
+  0% {
+    transform: translate(-100px, 100px) rotate(0deg) scale(0.9);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.9;
+  }
+  44% {
+    opacity: 0.85;
+  }
+  54% {
+    opacity: 0; /* Faded by halfway */
+    transform: translate(430px, 60px) rotate(160deg) scale(0.95);
+  }
+  100% {
+    transform: translate(1100px, 30px) rotate(320deg) scale(0.9);
+    opacity: 0;
+  }
+}

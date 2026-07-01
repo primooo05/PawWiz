@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { usePlantScan } from '../../hooks/usePlantScan';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import TallGrass from './TallGrass';
+import WindFlow from './WindFlow';
 import grassStyles from './TallGrass.module.css';
 
 interface HeroProps {
@@ -36,6 +37,7 @@ export default function Hero({ apiBase }: HeroProps) {
 
   return (
     <section ref={sectionRef} id="home" className="scroll-mt-20 w-full pt-24 md:pt-28 pb-20 md:pb-36 lg:pb-44 text-center bg-grid-pattern border-b border-slate-200/40 relative">
+      <WindFlow />
       {/* Transition circles scaling down on landing entry */}
       <div className={`fixed inset-0 pointer-events-none z-[9999] overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-100' : 'opacity-0'}`}>
         <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
