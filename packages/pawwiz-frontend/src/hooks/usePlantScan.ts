@@ -21,12 +21,20 @@ export function usePlantScan(apiBase: string) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('[usePlantScan] Image selected for upload:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
     // Client-side validation: PlantNet only accepts JPEG and PNG, max 50 MB.
     if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+      console.warn('[usePlantScan] Validation failed: Unsupported image type', file.type);
       setScanError('Only JPEG and PNG images are supported.');
       return;
     }
     if (file.size > 50 * 1024 * 1024) {
+      console.warn('[usePlantScan] Validation failed: File size exceeds 50MB limit', file.size);
       setScanError('Image must be smaller than 50 MB.');
       return;
     }
@@ -41,6 +49,7 @@ export function usePlantScan(apiBase: string) {
       const formData = new FormData();
       formData.append('image', file);
 
+      console.log('[usePlantScan] Sending POST /api/toxicity/scan request...');
       const response = await fetch(`${apiBase}/api/toxicity/scan`, {
         method: 'POST',
         headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
@@ -48,10 +57,14 @@ export function usePlantScan(apiBase: string) {
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
+        console.error('[usePlantScan] API Error status:', response.status, errData);
         throw new Error(errData.error || 'Failed to analyze image.');
       }
-      setScanResult(await response.json());
+      const data = await response.json();
+      console.log('[usePlantScan] Toxicity scan result received:', data);
+      setScanResult(data);
     } catch (err) {
+      console.error('[usePlantScan] Exception in handleImageUpload:', err);
       setScanError((err as Error).message);
     } finally { setScanLoading(false); }
   };

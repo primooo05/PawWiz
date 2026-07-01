@@ -19,10 +19,10 @@ import {
   validateStep4 as validateStepCatDetails,
   validateStep5 as validateStepLifeStage,
   validateStep7 as validateStepPassword,
-  getOtherCatsText,
   getResolvedCatsCount,
 } from '../hooks/useOnboardingValidation';
 import { supabase } from '../lib/supabase';
+import { useOnboardingState, getStepMessage } from '../hooks/useOnboardingState';
 
 export default function Onboarding() {
   return (
@@ -81,13 +81,6 @@ function OnboardingView() {
   const [otpCode, setOtpCode] = useState('');
   const [otpCooldown, setOtpCooldown] = useState(0);
 
-  // Dirty flags — track if user changed a field after it was already submitted
-  const [isStep2Dirty, setIsStep2Dirty] = useState(false);
-  const [isStep3Dirty, setIsStep3Dirty] = useState(false); // OTP step
-  const [isStep4Dirty, setIsStep4Dirty] = useState(false); // Cats count
-  const [isStep5Dirty, setIsStep5Dirty] = useState(false); // Cat details
-  const [isStep6Dirty, setIsStep6Dirty] = useState(false); // Life stage
-
   // Transition state for the circular scale animation
   const zIndexTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isZIndexHigh, setIsZIndexHigh] = useState(!!(location.state as { animateIn?: boolean })?.animateIn);
@@ -98,6 +91,21 @@ function OnboardingView() {
   // Ripple effect for "Already have an account" link
   const [rippleStyle, setRippleStyle] = useState<React.CSSProperties | null>(null);
   const [isClicked, setIsClicked] = useState(false);
+
+  const {
+    isStep2Dirty,
+    setIsStep2Dirty,
+    isStep3Dirty,
+    setIsStep3Dirty,
+    isStep4Dirty,
+    setIsStep4Dirty,
+    isStep5Dirty,
+    setIsStep5Dirty,
+    isStep6Dirty,
+    setIsStep6Dirty,
+    isInputFocused,
+  } = useOnboardingState({ step, isTyping, handleNextClick: () => handleNextClick() });
+
 
   // OTP cooldown countdown
   useEffect(() => {
@@ -166,27 +174,9 @@ function OnboardingView() {
   // Show static bubble when entering steps 3-8
   useEffect(() => {
     if (isTransitioning) return;
-
-    const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
-
-    // For step 3, show different message if user is returning (sessionStep >= 3 means OTP already sent)
-    const step3Message = sessionStep >= 3
-      ? 'Welcome back! Enter your verification code or resend if needed.'
-      : 'Check your email for a 6-digit verification code!';
-
-    const messages: Record<number, string> = {
-      3: step3Message,
-      4: 'How many cats do you have?',
-      5: 'Wiz would like to know them!',
-      6: 'How old is your Cat? Meow',
-      7: catsAdded >= totalCats
-        ? `You only have ${totalCats} remember? You can add more later!`
-        : `Would you like to create a separate profile for other ${getOtherCatsText(catsCount, customCatsCount)}?`,
-      8: "Enter your strongest password you can think of! Just make sure you don't forget! meow",
-    };
-
-    if (messages[step]) {
-      showStaticBubble(messages[step]);
+    const msg = getStepMessage(step, sessionStep, catsCount, customCatsCount, catsAdded);
+    if (msg) {
+      showStaticBubble(msg);
     }
   }, [step, isTransitioning, catsCount, customCatsCount, catsAdded, sessionStep, showStaticBubble]);
 
@@ -319,15 +309,18 @@ function OnboardingView() {
       }
 
       const result = validateStep2(ownerName, ownerEmail);
+      if (result.isValid) {
+        const emailTaken = await checkEmail(ownerEmail.trim());
+        if (emailTaken) {
+          showStaticBubble('Email already exists, meow');
+          setTimeout(() => hideBubble(), 3000);
+          return;
+        }
+      }
+
       startTyping(result.message, {
         onComplete: async () => {
           if (result.isValid) {
-            const emailTaken = await checkEmail(ownerEmail.trim());
-            if (emailTaken) {
-              showStaticBubble('Email already exists, meow');
-              setTimeout(() => hideBubble(), 3000);
-              return;
-            }
             const success = await submitStep(2, { ownerName: ownerName.trim(), ownerEmail: ownerEmail.trim() });
             if (success) {
               setIsStep2Dirty(false);
@@ -503,6 +496,7 @@ function OnboardingView() {
           password: password,
         });
         if (signInError || !signInData.session) {
+          throw new Error(signInError?.message || 'Failed to acquire verified session.');
           // Account is created and email is verified — just send them through.
           navigate(redirectTo, { state: { displayName: ownerName, catName } });
           return;
@@ -542,7 +536,8 @@ function OnboardingView() {
       setTimeout(() => hideBubble(), 4000);
     }
   };
- 
+
+
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">
       {/* Decorative Circles */}
@@ -578,6 +573,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenOtp
           active={step === 3 && !isTransitioning}
@@ -590,6 +586,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenCats
           active={step === 4 && !isTransitioning}
@@ -602,6 +599,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenCatDetails
           active={step === 5 && !isTransitioning}
@@ -618,6 +616,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenLifeStage
           active={step === 6 && !isTransitioning}
@@ -628,6 +627,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleNextClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenCatAdded
           active={step === 7 && !isTransitioning}
@@ -641,6 +641,7 @@ function OnboardingView() {
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
           handleAddOtherBabies={handleAddOtherBabies}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
         <OnboardingScreenPassword
           active={step === 8 && !isTransitioning}
@@ -653,6 +654,7 @@ function OnboardingView() {
           bubbleText={bubbleText}
           handleCreateProfileClick={handleNextClick}
           handleBackClick={handleBackClick}
+          showKeyboardHint={!isTyping && !isInputFocused}
         />
       </div>
     </div>

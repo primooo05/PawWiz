@@ -21,6 +21,7 @@ import { toxicityRepository } from '../repositories/toxicity.repository.js';
 import { aspcaRepository } from '../repositories/aspca.repository.js';
 import { plantnetService } from './plantnet.service.js';
 import { searchPlantByName, type PerenualApiResult } from './perenual.js';
+import { scanPlantWithVision } from './gemini.js';
 import { logger } from '../utils/winston.js';
 import type { CacheRecord, ToxicityScanResult, PlantToxicityRecord } from '../types/shared.js';
 import type { Plant } from '@prisma/client';
@@ -264,11 +265,19 @@ class ToxicityCacheService {
       imageBytes: file.size,
     };
 
+    logger.info('[ToxicityCacheService] resolveImagePipeline triggered:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      imageHash,
+    });
+
     // Step 1: call PlantNet API (timeout enforced inside repository — 30 s)
     let plantNetResult: { scientificName: string | null; confidence: number } | null = null;
     let plantNetError: Error | null = null;
     try {
       plantNetResult = await plantnetService.identify(file.buffer, file.mimetype);
+      logger.info('[ToxicityCacheService] PlantNet API identification result:', plantNetResult);
     } catch (err) {
       plantNetError = err as Error;
       logger.warn('PlantNet identification failed — attempting filename-based ASPCA fallback', {
@@ -287,26 +296,69 @@ class ToxicityCacheService {
         .replace(/[-_]/g, ' ')     // normalise separators
         .trim();
 
+      logger.info('[ToxicityCacheService] PlantNet failed/empty. Trying filename-based fallback with hint:', { filenameHint });
+
       if (filenameHint.length >= 3) {
         const aspcaByFilename = await aspcaRepository.findByFuzzyMatch(filenameHint);
         if (aspcaByFilename !== null) {
-          logger.debug('Image pipeline: ASPCA hit via filename fallback', {
+          logger.info('Image pipeline: ASPCA hit via filename fallback', {
             filenameHint,
             toxicity: aspcaByFilename.isToxic,
           });
           return aspcaRecordToScanResult(aspcaByFilename, null, false);
         }
+        logger.info('[ToxicityCacheService] ASPCA filename fallback miss for:', filenameHint);
+      } else {
+        logger.info('[ToxicityCacheService] Filename hint too short for ASPCA lookup:', filenameHint);
+      }
+
+      // Try Gemini Vision Model as the last fallback
+      logger.info('[ToxicityCacheService] Filename fallback missed. Trying Gemini Vision Model last fallback.');
+      try {
+        const geminiResult = await scanPlantWithVision(file.buffer);
+        if (geminiResult && geminiResult.scientificName?.trim()) {
+          const rawGeminiName = geminiResult.scientificName;
+          const geminiCleanedName = rawGeminiName.trim().split(/\s+/).slice(0, 2).join(' ');
+          
+          logger.info('[ToxicityCacheService] Gemini Vision Model identified plant:', {
+            rawGeminiName,
+            geminiCleanedName,
+            confidence: geminiResult.confidence,
+          });
+
+          // Query ASPCA (local db)
+          const aspcaRecord = await aspcaRepository.findByFuzzyMatch(geminiCleanedName);
+          if (aspcaRecord !== null) {
+            const lowConfidenceWarning = geminiResult.confidence < 0.6;
+            const actionRequired = lowConfidenceWarning
+              ? this.buildLowConfidenceActionRequired(rawGeminiName)
+              : undefined;
+            logger.info('Image pipeline: ASPCA hit via Gemini Vision Model fallback', {
+              geminiCleanedName,
+              toxicity: aspcaRecord.isToxic,
+            });
+            return aspcaRecordToScanResult(aspcaRecord, geminiResult.confidence, lowConfidenceWarning, actionRequired);
+          }
+          logger.info('[ToxicityCacheService] ASPCA fallback miss for Gemini identified plant:', geminiCleanedName);
+        }
+      } catch (geminiErr) {
+        const gErr = geminiErr as Error;
+        logger.warn('[ToxicityCacheService] Gemini Vision Model fallback failed:', {
+          errorType: gErr.constructor.name,
+          reason: gErr.message,
+        });
       }
 
       // Nothing found — emit the original PlantNet error as fallback
       const reason = plantNetError?.message ?? 'PlantNet API could not identify a plant in the image';
       const errorType = plantNetError?.constructor.name ?? 'unknown';
+      logger.warn('[ToxicityCacheService] Fallback response triggered due to no identification / no filename match:', { reason, errorType });
       return this.buildFallbackResponse('plantnet_vision', reason, imageContext, errorType);
     }
 
-    // Use raw (untrimmed) name for human-readable messages; trimmed name for DB lookups
+    // Use raw (untrimmed) name for human-readable messages; trimmed binomial name (first two words) for DB/API lookups to strip author suffixes
     const rawScientificName = plantNetResult.scientificName;
-    const plantName = rawScientificName.trim();
+    const plantName = rawScientificName.trim().split(/\s+/).slice(0, 2).join(' ');
     const displayPlantName = rawScientificName;
     const confidence = plantNetResult.confidence;
 

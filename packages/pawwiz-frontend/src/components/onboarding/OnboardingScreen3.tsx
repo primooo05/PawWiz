@@ -12,6 +12,7 @@ interface OnboardingScreen3Props {
   bubbleText: string;
   handleNextClick: () => void;
   handleBackClick: () => void;
+  showKeyboardHint?: boolean;
 }
 
 export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
@@ -25,6 +26,7 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
   bubbleText,
   handleNextClick,
   handleBackClick,
+  showKeyboardHint,
 }) => {
   const options = ['One', 'Two', 'Three'];
 
@@ -109,10 +111,15 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
           <button
             onClick={handleNextClick}
             disabled={isTyping || !active}
-            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none ${isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
+            className={`w-1/2 bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold py-3 px-8 rounded-2xl text-center text-sm tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none flex flex-col items-center justify-center ${isTyping || !active ? 'opacity-60 cursor-not-allowed' : ''
               }`}
           >
-            Next
+            <span>Next</span>
+            {showKeyboardHint && (
+              <span className="block text-[10px] font-normal opacity-50 mt-0.5">
+                Press <kbd className="font-mono bg-slate-800/10 px-1 rounded text-[9px]">Enter ↵</kbd>
+              </span>
+            )}
           </button>
         </div>
 

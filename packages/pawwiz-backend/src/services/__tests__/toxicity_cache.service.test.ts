@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import fc from 'fast-check';
-import { ASPCA_DATABASE } from '../../data/aspca.js';
+import { type PlantToxicityRecord } from '../../types/shared.js';
+import { ASPCA_CSV_PLANTS } from '../../data/aspca-csv.js';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Inline seed-mapping helpers (mirrors prisma/seed.ts logic exactly)
@@ -25,7 +26,7 @@ function mapSeverity(severity: 'None' | 'Mild' | 'Moderate' | 'Severe'): string 
  * The test validates the invariants on this shape — the same invariants that Property 8
  * requires the real seed to satisfy.
  */
-function buildAspcsCreatePayload(record: (typeof ASPCA_DATABASE)[string]) {
+function buildAspcsCreatePayload(record: PlantToxicityRecord) {
   return {
     commonName:     record.plantName,
     scientificName: record.scientificName,
@@ -155,7 +156,7 @@ describe('Property 8: Cache write source and timestamp correctness', () => {
   // ── Property 8b: ASPCA seed source / timestamp invariants ───────────────
 
   describe('Property 8b — ASPCA seed record shape', () => {
-    const aspcaRecords = Object.values(ASPCA_DATABASE);
+    const aspcaRecords = Object.values(ASPCA_CSV_PLANTS);
 
     // Feature: plant-toxicity-caching, Property 8: Cache write source and timestamp correctness
     it('every ASPCA record maps to source=aspca and cachedAt=null', () => {
@@ -232,6 +233,14 @@ vi.mock('../../repositories/toxicity.repository.js', () => ({
   },
 }));
 
+vi.mock('../../repositories/aspca.repository.js', () => ({
+  aspcaRepository: {
+    findByKey: vi.fn(),
+    findByFuzzyMatch: vi.fn().mockResolvedValue(null),
+    findAll: vi.fn(),
+  },
+}));
+
 vi.mock('../perenual.js', () => ({
   searchPlantByName: vi.fn(),
 }));
@@ -250,8 +259,10 @@ vi.mock('../plantnet.service.js', () => ({
 
 // Import the mocked modules so we can configure them per-test
 import { toxicityRepository } from '../../repositories/toxicity.repository.js';
+import { aspcaRepository } from '../../repositories/aspca.repository.js';
 import { searchPlantByName } from '../perenual.js';
 import { plantnetService } from '../plantnet.service.js';
+import { scanPlantWithVision } from '../gemini.js';
 import { toxicityCacheService } from '../toxicity_cache.service.js';
 
 // ── Plant-shaped arbitrary ───────────────────────────────────────────────────
@@ -447,7 +458,7 @@ function makeFakeFile(plantLabel: string): {
   const buf = Buffer.from(`fake-image-bytes-${plantLabel}`);
   return {
     fieldname: 'image',
-    originalname: 'plant.jpg',
+    originalname: `${plantLabel}.jpg`,
     encoding: '7bit',
     mimetype: 'image/jpeg',
     size: buf.length,
@@ -869,3 +880,97 @@ describe('Property 10: Low-confidence warning correctness', () => {
     );
   });
 });
+
+describe('PlantNet scientific name author stripping', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should strip author suffixes from scientific name before DB and API queries', async () => {
+    const rawName = 'Strelitzia nicolai Regel & K.Koch';
+    const cleanedName = 'Strelitzia nicolai';
+
+    vi.mocked(plantnetService.identify).mockResolvedValue({
+      scientificName: rawName,
+      confidence: 0.9,
+    });
+
+    vi.mocked(toxicityRepository.findByScientificName).mockResolvedValue(null);
+    vi.mocked(toxicityRepository.findByCommonName).mockResolvedValue(null);
+    vi.mocked(aspcaRepository.findByFuzzyMatch).mockResolvedValue(null);
+    
+    // Perenual API returns a result for the cleaned name
+    vi.mocked(searchPlantByName).mockResolvedValue({
+      scientific_name: cleanedName,
+      common_name: 'Giant White Bird of Paradise',
+      toxicity_status: 'toxic',
+      severity: 'mild',
+      clinical_signs: ['vomiting'],
+      media_url: 'http://example.com/media.jpg',
+      perenual_id: '123',
+    });
+
+    const fakeFile = makeFakeFile('strelitzia');
+    const result = await toxicityCacheService.resolveImagePipeline(fakeFile);
+
+    // Verify DB & API lookup was called with the cleaned binomial name, not the raw name
+    expect(toxicityRepository.findByScientificName).toHaveBeenCalledWith(cleanedName);
+    expect(aspcaRepository.findByFuzzyMatch).toHaveBeenCalledWith(cleanedName);
+    expect(searchPlantByName).toHaveBeenCalledWith(cleanedName);
+
+    expect(result.scientificName).toBe(cleanedName);
+    expect(result.identifiedPlant).toBe('Giant White Bird of Paradise');
+  });
+});
+
+describe('Gemini Vision Model fallback', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should trigger Gemini Vision model when PlantNet and filename match fail, then query ASPCA', async () => {
+    // PlantNet fails (returns empty identification)
+    vi.mocked(plantnetService.identify).mockResolvedValue({
+      scientificName: null,
+      confidence: 0,
+    });
+
+    // Filename check does not match (we pass a filename hint that misses ASPCA)
+    vi.mocked(aspcaRepository.findByFuzzyMatch).mockImplementation(async (query) => {
+      if (query === 'Spathiphyllum wallisii' || query === 'Spathiphyllum') {
+        return {
+          plantName: 'Peace Lily',
+          scientificName: 'Spathiphyllum wallisii',
+          isToxic: true,
+          clinicalSigns: ['vomiting'],
+          severity: 'Mild',
+          actionRequired: 'Peace Lily is toxic.',
+          mediaUrl: null,
+        };
+      }
+      return null;
+    });
+
+    // Gemini Vision model succeeds
+    vi.mocked(scanPlantWithVision).mockResolvedValue({
+      scientificName: 'Spathiphyllum wallisii Regel',
+      confidence: 0.95,
+    });
+
+    const fakeFile = makeFakeFile('not-a-plant-name'); // filename fallback miss
+    const result = await toxicityCacheService.resolveImagePipeline(fakeFile);
+
+    // Verify scanPlantWithVision was called
+    expect(scanPlantWithVision).toHaveBeenCalled();
+    // Verify ASPCA repository was queried with the cleaned scientific name from Gemini
+    expect(aspcaRepository.findByFuzzyMatch).toHaveBeenCalledWith('Spathiphyllum wallisii');
+
+    expect(result.scientificName).toBe('Spathiphyllum wallisii');
+    expect(result.identifiedPlant).toBe('Peace Lily');
+    expect(result.toxicityStatus).toBe('TOXIC');
+    expect(result.dataSource).toBe('aspca');
+    expect(result.identificationConfidence).toBe(0.95);
+  });
+});
+
+

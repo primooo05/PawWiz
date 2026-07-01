@@ -50,8 +50,9 @@ class PlantNetRepository {
     try {
       // Build multipart/form-data — attach image as `images` field and organ hint.
       const formData = new FormData();
-      const blob = new Blob([imageBuffer], { type: mimetype });
-      formData.append('images', blob, 'plant.jpg');
+      const extension = mimetype === 'image/png' ? 'png' : 'jpg';
+      const file = new File([imageBuffer], `plant.${extension}`, { type: mimetype });
+      formData.append('images', file);
       formData.append('organs', 'auto');
 
       const url = `${PLANTNET_API_BASE}/all?api-key=${apiKey}&include-related-images=false&no-reject=false&lang=en`;

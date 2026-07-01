@@ -87,7 +87,7 @@ class ProfileService {
     if (onboardingSessionId) {
       await prisma.cat.updateMany({
         where: { onboardingSessionId },
-        data: { profileId: profile.id },
+        data: { profileId: profile.id },  
       });
 
       const onboardingCats = await prisma.cat.findMany({
