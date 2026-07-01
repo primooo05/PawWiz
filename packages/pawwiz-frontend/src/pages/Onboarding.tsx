@@ -19,10 +19,10 @@ import {
   validateStep4 as validateStepCatDetails,
   validateStep5 as validateStepLifeStage,
   validateStep7 as validateStepPassword,
-  getOtherCatsText,
   getResolvedCatsCount,
 } from '../hooks/useOnboardingValidation';
 import { supabase } from '../lib/supabase';
+import { useOnboardingState, getStepMessage } from '../hooks/useOnboardingState';
 
 export default function Onboarding() {
   return (
@@ -80,13 +80,6 @@ function OnboardingView() {
   const [otpCode, setOtpCode] = useState('');
   const [otpCooldown, setOtpCooldown] = useState(0);
 
-  // Dirty flags — track if user changed a field after it was already submitted
-  const [isStep2Dirty, setIsStep2Dirty] = useState(false);
-  const [isStep3Dirty, setIsStep3Dirty] = useState(false); // OTP step
-  const [isStep4Dirty, setIsStep4Dirty] = useState(false); // Cats count
-  const [isStep5Dirty, setIsStep5Dirty] = useState(false); // Cat details
-  const [isStep6Dirty, setIsStep6Dirty] = useState(false); // Life stage
-
   // Transition state for the circular scale animation
   const zIndexTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isZIndexHigh, setIsZIndexHigh] = useState(!!(location.state as { animateIn?: boolean })?.animateIn);
@@ -98,8 +91,19 @@ function OnboardingView() {
   const [rippleStyle, setRippleStyle] = useState<React.CSSProperties | null>(null);
   const [isClicked, setIsClicked] = useState(false);
 
-  // Track active input focus state
-  const [isInputFocused, setIsInputFocused] = useState(false);
+  const {
+    isStep2Dirty,
+    setIsStep2Dirty,
+    isStep3Dirty,
+    setIsStep3Dirty,
+    isStep4Dirty,
+    setIsStep4Dirty,
+    isStep5Dirty,
+    setIsStep5Dirty,
+    isStep6Dirty,
+    setIsStep6Dirty,
+    isInputFocused,
+  } = useOnboardingState({ step, isTyping, handleNextClick: () => handleNextClick() });
 
 
   // OTP cooldown countdown
@@ -169,27 +173,9 @@ function OnboardingView() {
   // Show static bubble when entering steps 3-8
   useEffect(() => {
     if (isTransitioning) return;
-
-    const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
-
-    // For step 3, show different message if user is returning (sessionStep >= 3 means OTP already sent)
-    const step3Message = sessionStep >= 3
-      ? 'Welcome back! Enter your verification code or resend if needed.'
-      : 'Check your email for a 6-digit verification code!';
-
-    const messages: Record<number, string> = {
-      3: step3Message,
-      4: 'How many cats do you have?',
-      5: 'Wiz would like to know them!',
-      6: 'How old is your Cat? Meow',
-      7: catsAdded >= totalCats
-        ? `You only have ${totalCats} remember? You can add more later!`
-        : `Would you like to create a separate profile for other ${getOtherCatsText(catsCount, customCatsCount)}?`,
-      8: "Enter your strongest password you can think of! Just make sure you don't forget! meow",
-    };
-
-    if (messages[step]) {
-      showStaticBubble(messages[step]);
+    const msg = getStepMessage(step, sessionStep, catsCount, customCatsCount, catsAdded);
+    if (msg) {
+      showStaticBubble(msg);
     }
   }, [step, isTransitioning, catsCount, customCatsCount, catsAdded, sessionStep, showStaticBubble]);
 
@@ -506,9 +492,7 @@ function OnboardingView() {
           password: password,
         });
         if (signInError || !signInData.session) {
-          // Account is created and email is verified — just send them through.
-          navigate('/pregnancy-tracker', { state: { displayName: ownerName, catName } });
-          return;
+          throw new Error(signInError?.message || 'Failed to acquire verified session.');
         }
         session = signInData.session;
       }
@@ -545,40 +529,7 @@ function OnboardingView() {
     }
   };
 
-  // Listen for Enter key progression
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter') return;
-      if (step < 2 || step > 8) return;
 
-      const target = document.activeElement;
-      const isField = !!(target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'));
-
-      if (isTyping || isField) return;
-
-      e.preventDefault();
-      void handleNextClick();
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [step, isTyping, handleNextClick]);
-
-  // Track active input focus state
-  useEffect(() => {
-    const handleFocus = () => {
-      const activeEl = document.activeElement;
-      setIsInputFocused(!!(activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')));
-    };
-
-    document.addEventListener('focus', handleFocus, true);
-    document.addEventListener('blur', handleFocus, true);
-    return () => {
-      document.removeEventListener('focus', handleFocus, true);
-      document.removeEventListener('blur', handleFocus, true);
-    };
-  }, []);
- 
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">
       {/* Decorative Circles */}
