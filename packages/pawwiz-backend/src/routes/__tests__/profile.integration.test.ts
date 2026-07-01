@@ -41,6 +41,7 @@ vi.mock('../../lib/prisma.js', () => ({
     cat: {
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       findMany: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue({ id: 'mock-cat-id' }),
     },
     dietProfile: {
       create: vi.fn().mockResolvedValue({}),

@@ -10,6 +10,7 @@ export type AvatarData = {
   src?: string | null;
   alt: string;
   isActive?: boolean;
+  isNew?: boolean;
 };
 
 export type AnimatedAvatarGroupProps = {
@@ -185,6 +186,12 @@ const AnimatedAvatarGroup = ({
               >
                 {content}
               </div>
+
+              {avatar.isNew && (
+                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 border-2 border-slate-900 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-md z-[101] pointer-events-none select-none">
+                  !
+                </div>
+              )}
 
               {/* Tooltip */}
               <AnimatePresence>

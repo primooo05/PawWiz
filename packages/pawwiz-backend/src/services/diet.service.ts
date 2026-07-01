@@ -3,6 +3,7 @@ import { profileRepository } from '../repositories/profile.repository.js';
 import { assertDefined } from '../utils/guards.js';
 import { AppError } from '../utils/errors.js';
 import { profileService } from './profile.service.js';
+import { prisma } from '../lib/prisma.js';
 
 function mapProfileToFrontend(profile: any) {
   const mealMap: Record<string, string> = {
@@ -37,6 +38,8 @@ function mapProfileToFrontend(profile: any) {
     isSpayedNeutered: profile.isSpayedNeutered,
     isTracking: profile.isTracking,
     waterIntake: profile.waterIntake,
+    breed: profile.cat ? profile.cat.breed : profile.profile.catBreed,
+    marking: profile.cat ? profile.cat.marking : profile.profile.catMarking,
     loggedMeals,
   };
 }
@@ -75,7 +78,13 @@ class DietService {
     const existing = await dietRepository.findByIdAndProfileId(id, profileId);
     if (!existing) throw AppError.notFound('Diet profile not found');
 
-    await dietRepository.delete(id);
+    if (existing.catId) {
+      await prisma.cat.delete({
+        where: { id: existing.catId },
+      });
+    } else {
+      await dietRepository.delete(id);
+    }
     return { success: true };
   }
 

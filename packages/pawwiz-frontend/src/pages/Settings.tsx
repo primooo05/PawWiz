@@ -3,6 +3,23 @@ import { useDietRecommender } from '../hooks/useDietRecommender';
 import BottomNav from '../components/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/LoadingScreen';
+import { SearchableDropdown } from '../components/onboarding/SearchableDropdown';
+import { AnimatePresence, motion } from 'motion/react';
+
+const markingOptions = [
+    'Solid Color',
+    'Tabby (Striped)',
+    'Classic Tabby (Marbled)',
+    'Spotted Tabby',
+    'Mackerel Tabby',
+    'Calico',
+    'Tortoiseshell',
+    'Tuxedo',
+    'Bicolor (Piebald)',
+    'Colorpoint (Dark points)',
+    'Tricolor',
+    'Harlequin'
+];
 
 export default function Settings() {
     const navigate = useNavigate();
@@ -30,22 +47,69 @@ export default function Settings() {
     // Add Cat Form State
     const [newCatName, setNewCatName] = useState('');
     const [newCatGender, setNewCatGender] = useState<'male' | 'female'>('male');
-    const [newCatLifeStage, setNewCatLifeStage] = useState<'kitten' | 'adult'>('adult');
-    const [newCatAge, setNewCatAge] = useState<number>(3);
-    const [newCatWeight, setNewCatWeight] = useState<number>(4.5);
-    const [newCatIsKg, setNewCatIsKg] = useState<boolean>(true);
-    const [newCatFoodPreference, setNewCatFoodPreference] = useState<'dry' | 'wet' | 'mixed'>('mixed');
-    const [newCatIsSpayedNeutered, setNewCatIsSpayedNeutered] = useState<boolean>(true);
+    const [newCatLifeStage, setNewCatLifeStage] = useState<'kitten' | 'adult' | 'senior'>('adult');
+    const [newCatBreed, setNewCatBreed] = useState('');
+    const [newCatMarking, setNewCatMarking] = useState('');
+    const [breedOptions, setBreedOptions] = useState<string[]>([]);
+    const [breedLoading, setBreedLoading] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        setBreedLoading(true);
+        const fallbackBreeds = [
+            'Domestic Short Hair',
+            'Domestic Long Hair',
+            'Siamese',
+            'Persian',
+            'Maine Coon',
+            'Ragdoll',
+            'Bengal',
+            'Abyssinian',
+            'Sphynx',
+            'British Shorthair'
+        ];
+
+        try {
+            const resPromise = fetch('https://api.thecatapi.com/v1/breeds');
+            if (resPromise && typeof resPromise.then === 'function') {
+                resPromise
+                    .then((res) => {
+                        if (!res.ok) throw new Error('API error');
+                        return res.json();
+                    })
+                    .then((data) => {
+                        if (isMounted && Array.isArray(data)) {
+                            setBreedOptions(data.map((b: any) => b.name));
+                        }
+                    })
+                    .catch(() => {
+                        if (isMounted) {
+                            setBreedOptions(fallbackBreeds);
+                        }
+                    })
+                    .finally(() => {
+                        if (isMounted) setBreedLoading(false);
+                    });
+            } else {
+                setBreedOptions(fallbackBreeds);
+                setBreedLoading(false);
+            }
+        } catch {
+            setBreedOptions(fallbackBreeds);
+            setBreedLoading(false);
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const clearAddCatForm = () => {
         setNewCatName('');
         setNewCatGender('male');
         setNewCatLifeStage('adult');
-        setNewCatAge(3);
-        setNewCatWeight(4.5);
-        setNewCatIsKg(true);
-        setNewCatFoodPreference('mixed');
-        setNewCatIsSpayedNeutered(true);
+        setNewCatBreed('');
+        setNewCatMarking('');
     };
 
     const handleNavigation = (item: string) => {
@@ -71,31 +135,25 @@ export default function Settings() {
             const serverProf = await createNewProfile(newCatName.trim(), {
                 gender: newCatGender,
                 lifeStage: newCatLifeStage,
-                age: newCatAge,
-                weight: newCatWeight,
-                isKg: newCatIsKg,
-                foodPreference: newCatFoodPreference,
-                isSpayedNeutered: newCatIsSpayedNeutered,
-                isTracking: true,
+                breed: newCatBreed,
+                marking: newCatMarking || 'Solid Color',
+                isTracking: false,
+                age: 3,
+                weight: 4.0,
+                isKg: true,
+                foodPreference: 'mixed',
+                isSpayedNeutered: false,
             });
 
             if (serverProf) {
                 setToast({
                     show: true,
-                    message: `${newCatName.trim()} has been added`,
+                    message: `${newCatName.trim()} has been added to your family`,
                     catId: serverProf.id,
                 });
             }
 
-            // Reset form
-            setNewCatName('');
-            setNewCatGender('male');
-            setNewCatLifeStage('adult');
-            setNewCatAge(3);
-            setNewCatWeight(4.5);
-            setNewCatIsKg(true);
-            setNewCatFoodPreference('mixed');
-            setNewCatIsSpayedNeutered(true);
+            clearAddCatForm();
             setShowAddForm(false);
         } catch (error) {
             console.error('Failed to add another cat', error);
@@ -263,7 +321,6 @@ export default function Settings() {
                                         type="button"
                                         onClick={() => {
                                             setNewCatLifeStage('kitten');
-                                            setNewCatAge(3);
                                         }}
                                         className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'kitten' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
@@ -273,111 +330,48 @@ export default function Settings() {
                                         type="button"
                                         onClick={() => {
                                             setNewCatLifeStage('adult');
-                                            setNewCatAge(3);
                                         }}
                                         className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'adult' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
                                         Adult
                                     </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setNewCatLifeStage('senior');
+                                        }}
+                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'senior' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                    >
+                                        Senior
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Age */}
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                    <span>Age:</span>
-                                    <span className="font-extrabold text-[#2ec4b6] uppercase">
-                                        {newCatAge} {newCatLifeStage === 'kitten' ? (newCatAge === 1 ? 'month' : 'months') : (newCatAge === 1 ? 'year' : 'years')}
-                                    </span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max={newCatLifeStage === 'kitten' ? "12" : "20"}
-                                    step="1"
-                                    value={newCatAge}
-                                    onChange={(e) => setNewCatAge(parseInt(e.target.value))}
-                                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
+                            {/* Breed */}
+                            <div className="flex flex-col space-y-1.5 w-full">
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                    Breed
+                                </label>
+                                <SearchableDropdown
+                                    value={newCatBreed}
+                                    onChange={setNewCatBreed}
+                                    options={breedOptions}
+                                    placeholder="Search breed..."
+                                    loading={breedLoading}
                                 />
                             </div>
 
-                            {/* Weight & Unit */}
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                    <span>Weight:</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-extrabold text-[#2ec4b6]">
-                                            {newCatWeight.toFixed(1)} {newCatIsKg ? 'kg' : 'lbs'}
-                                        </span>
-                                        <div className="bg-slate-100 p-0.5 rounded-lg flex items-center border border-slate-200/50">
-                                            <button
-                                                type="button"
-                                                onClick={() => setNewCatIsKg(true)}
-                                                className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${newCatIsKg ? 'bg-[#2ec4b6] text-white' : 'text-slate-500'}`}
-                                            >
-                                                KG
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setNewCatIsKg(false)}
-                                                className={`px-2 py-0.5 rounded text-[10px] font-black transition-all cursor-pointer ${!newCatIsKg ? 'bg-[#2ec4b6] text-white' : 'text-slate-500'}`}
-                                            >
-                                                LBS
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <input
-                                    type="range"
-                                    min={newCatIsKg ? "1" : "2.2"}
-                                    max={newCatIsKg ? "13" : "28.6"}
-                                    step={newCatIsKg ? "0.1" : "0.2"}
-                                    value={newCatWeight}
-                                    onChange={(e) => setNewCatWeight(parseFloat(e.target.value))}
-                                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
+                            {/* Marking */}
+                            <div className="flex flex-col space-y-1.5 w-full">
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                    Marking
+                                </label>
+                                <SearchableDropdown
+                                    value={newCatMarking}
+                                    onChange={setNewCatMarking}
+                                    options={markingOptions}
+                                    placeholder="Search marking..."
                                 />
-                            </div>
-
-                            {/* Food Preference */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                    Food Preference
-                                </label>
-                                <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
-                                    {(['dry', 'wet', 'mixed'] as const).map((pref) => (
-                                        <button
-                                            key={pref}
-                                            type="button"
-                                            onClick={() => setNewCatFoodPreference(pref)}
-                                            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer capitalize ${newCatFoodPreference === pref ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                        >
-                                            {pref}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Spayed/Neutered */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                    Spayed / Neutered
-                                </label>
-                                <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewCatIsSpayedNeutered(true)}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatIsSpayedNeutered ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                    >
-                                        Yes
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewCatIsSpayedNeutered(false)}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${!newCatIsSpayedNeutered ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                    >
-                                        No
-                                    </button>
-                                </div>
                             </div>
 
                             {/* Action Buttons */}
@@ -406,22 +400,34 @@ export default function Settings() {
                 <BottomNav activeItem="settings" onItemClick={handleNavigation} className="w-full max-w-sm md:w-auto md:scale-110" />
             </div>
 
-            {toast && toast.show && (
-                <div className="fixed top-6 right-6 z-[9999] bg-[#FFB870] border-2 border-slate-900 rounded-2xl p-4 shadow-[4px_4px_0_0_#1e293b] flex items-center justify-between gap-4 max-w-sm w-full animate-slide-in">
-                    <div>
-                        <p className="font-extrabold text-slate-900 text-sm">{toast.message}</p>
-                    </div>
-                    <button
-                        onClick={() => {
-                            switchProfile(toast.catId);
-                            navigate('/diet-recommender');
-                        }}
-                        className="bg-[#2ec4b6] hover:bg-[#39d3c5] text-white font-extrabold px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer whitespace-nowrap"
+            <AnimatePresence>
+                {toast && toast.show && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                        className="fixed top-6 right-6 z-[9999] bg-[#FFB870] border-2 border-slate-900 rounded-2xl p-4 shadow-[4px_4px_0_0_#1e293b] flex items-center justify-between gap-4 max-w-sm w-full"
                     >
-                        View
-                    </button>
-                </div>
-            )}
+                        <div>
+                            <p className="font-extrabold text-slate-900 text-sm">{toast.message}</p>
+                        </div>
+                        {toast.catId && (
+                            <button
+                                onClick={() => {
+                                    setIsLoading(true);
+                                    setTimeout(() => {
+                                        navigate('/diet-recommender', { state: { askSetupFor: toast.catId } });
+                                    }, 800);
+                                }}
+                                className="bg-[#2ec4b6] hover:bg-[#39d3c5] text-white font-extrabold px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer whitespace-nowrap"
+                            >
+                                View
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {catToDelete && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -440,9 +446,15 @@ export default function Settings() {
                             <button
                                 onClick={async () => {
                                     setIsLoading(true);
+                                    const name = catToDelete.name;
                                     await deleteProfile(catToDelete.id);
                                     setCatToDelete(null);
                                     setIsLoading(false);
+                                    setToast({
+                                        show: true,
+                                        message: `${name} has been officially deleted`,
+                                        catId: '',
+                                    });
                                 }}
                                 className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-extrabold py-3 px-4 rounded-2xl text-center text-sm cursor-pointer transition-all border-none shadow-[0_4px_0_0_#991b1b] active:shadow-none active:translate-y-[4px]"
                             >

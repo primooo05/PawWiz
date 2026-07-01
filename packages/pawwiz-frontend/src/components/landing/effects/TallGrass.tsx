@@ -115,7 +115,7 @@ const BLADES: BladeData[] = Array.from({ length: BLADE_COUNT }, (_, i) => {
     let petals = '';
 
     for (let p = 0; p < petalCount; p++) {
-      const t = petalCount === 1 ? 0.5 : p / (petalCount - 1);
+      const t = (petalCount as number) === 1 ? 0.5 : p / (petalCount - 1);
       const angle = baseAngle - spread / 2 + spread * t + (seededRandom(i + 19 + p) - 0.5) * 0.15;
       const tipX = cx + Math.cos(angle) * petalLen;
       const tipY = cy + Math.sin(angle) * petalLen * 0.95;

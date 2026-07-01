@@ -8,8 +8,8 @@ interface ProfileCardProps {
     isKg: boolean;
     foodPreference: 'dry' | 'wet' | 'mixed';
     isSpayedNeutered: boolean;
-    activeLifeStage: 'kitten' | 'adult';
-    lifeStage: 'kitten' | 'adult';
+    activeLifeStage: 'kitten' | 'adult' | 'senior';
+    lifeStage: 'kitten' | 'adult' | 'senior';
     age: number;
     onEditProfile: () => void;
     photoUrl?: string | null;

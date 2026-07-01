@@ -142,6 +142,9 @@ describe('Diet Service', () => {
       isSpayedNeutered: true,
       isTracking: false,
       waterIntake: 0,
+      breed: null,
+      marking: null,
+      age: undefined,
       loggedMeals: [
         { id: '1', mealName: 'Breakfast', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined },
         { id: '2', mealName: 'Lunch', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined },

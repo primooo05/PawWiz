@@ -18,8 +18,8 @@ export interface CatProfile {
     id: string;
     name: string;
     gender: 'male' | 'female';
-    lifeStage: 'kitten' | 'adult';
-    age: number; // months for kitten, years for adult
+    lifeStage: 'kitten' | 'adult' | 'senior';
+    age: number; // months for kitten, years for adult/senior
     weight: number;
     isKg: boolean;
     foodPreference: 'dry' | 'wet' | 'mixed';
@@ -28,6 +28,8 @@ export interface CatProfile {
     loggedMeals: MealLog[];
     waterIntake: number; // in ml
     photoUrl?: string | null;
+    breed?: string | null;
+    marking?: string | null;
 }
 
 export interface AgeBracketDetails {
@@ -37,7 +39,7 @@ export interface AgeBracketDetails {
     portionGuide: string;
 }
 
-export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult', age: number): AgeBracketDetails => {
+export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult' | 'senior', age: number): AgeBracketDetails => {
     if (lifeStage === 'kitten') {
         if (age <= 1) {
             return {
@@ -75,6 +77,13 @@ export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult', age: number): A
                 portionGuide: "Adjust portion based on activity and spay/neuter status",
             };
         }
+    } else if (lifeStage === 'senior') {
+        return {
+            bracket: `Senior: ${age} years old`,
+            recommendedFood: "Senior cat food (easy to digest)",
+            frequency: "2 times per day",
+            portionGuide: "Controlled portions (weight and kidney health based)",
+        };
     } else {
         return {
             bracket: `Adult: ${age} ${age === 1 ? 'year' : 'years'} old`,
@@ -126,7 +135,7 @@ export const useDietRecommender = () => {
     // Profile form states (synced to the current active profile)
     const [catName, setCatName] = useState<string>(activeProfile?.name || '');
     const [gender, setGender] = useState<'male' | 'female'>(activeProfile?.gender || 'male');
-    const [lifeStage, setLifeStage] = useState<'kitten' | 'adult'>(activeProfile?.lifeStage || 'adult');
+    const [lifeStage, setLifeStage] = useState<'kitten' | 'adult' | 'senior'>(activeProfile?.lifeStage || 'adult');
     const [age, setAge] = useState<number>(activeProfile?.age || 0);
     const [weight, setWeight] = useState<number>(activeProfile?.weight || 0);
     const [isKg, setIsKg] = useState<boolean>(activeProfile ? activeProfile.isKg : true);
@@ -170,6 +179,21 @@ export const useDietRecommender = () => {
         const loadFromBackend = async (session: any) => {
             if (!session) return;
             try {
+                // Fetch primary profile details first to get displayName
+                let primaryProfile: any = null;
+                const profileRes = await fetch(`${API_BASE}/api/profile`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                    }
+                });
+                if (profileRes.ok && active) {
+                    primaryProfile = await profileRes.json();
+                    if (primaryProfile && primaryProfile.displayName) {
+                        setDisplayName(primaryProfile.displayName);
+                    }
+                }
+
                 const res = await fetch(`${API_BASE}/api/diet/profiles`, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -198,24 +222,11 @@ export const useDietRecommender = () => {
                         syncStatesToSetup(activeProfileData);
                     } else {
                         clearLocalProfileData();
-                        // Query the onboarding profile details to autofill
-                        const profileRes = await fetch(`${API_BASE}/api/profile`, {
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${session.access_token}`,
-                            }
-                        });
-                        if (profileRes.status === 404 && active) {
-                            setHasNoUserProfile(true);
-                            return;
-                        }
-                        if (profileRes.ok && active) {
-                            const primaryProfile = await profileRes.json();
-                            if (primaryProfile) {
-                                setCatName(primaryProfile.catName || '');
-                                setGender(primaryProfile.catSex === 'female' ? 'female' : 'male');
-                                setLifeStage(primaryProfile.catLifeStage === 'kitten' ? 'kitten' : 'adult');
-                            }
+                        // Query the onboarding profile details to autofill if profileRes has already loaded
+                        if (primaryProfile) {
+                            setCatName(primaryProfile.catName || '');
+                            setGender(primaryProfile.catSex === 'female' ? 'female' : 'male');
+                            setLifeStage(primaryProfile.catLifeStage === 'kitten' ? 'kitten' : 'adult');
                         }
                     }
                 }
@@ -277,13 +288,15 @@ export const useDietRecommender = () => {
             isKg: customDetails?.isKg ?? true,
             foodPreference: customDetails?.foodPreference || 'mixed',
             isSpayedNeutered: customDetails?.isSpayedNeutered ?? true,
-            isTracking: customDetails?.isTracking ?? true,
+            isTracking: customDetails?.isTracking ?? false,
             loggedMeals: [
                 { id: '1', mealName: 'Breakfast', status: 'pending', kcal: 0 },
                 { id: '2', mealName: 'Lunch', status: 'pending', kcal: 0 },
                 { id: '3', mealName: 'Dinner', status: 'pending', kcal: 0 }
             ],
-            waterIntake: 0
+            waterIntake: 0,
+            breed: customDetails?.breed || null,
+            marking: customDetails?.marking || null
         };
         const tempProfiles = [...profiles, tempProf];
         setProfiles(tempProfiles);
@@ -305,6 +318,8 @@ export const useDietRecommender = () => {
                     foodPreference: tempProf.foodPreference,
                     isSpayedNeutered: tempProf.isSpayedNeutered,
                     isTracking: tempProf.isTracking,
+                    breed: tempProf.breed,
+                    marking: tempProf.marking
                 }),
             });
             if (res.ok) {

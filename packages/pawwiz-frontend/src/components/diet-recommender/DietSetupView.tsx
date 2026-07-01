@@ -11,8 +11,8 @@ interface DietSetupViewProps {
     setCatName: (name: string) => void;
     gender: 'male' | 'female';
     setGender: (g: 'male' | 'female') => void;
-    lifeStage: 'kitten' | 'adult';
-    setLifeStage: (stage: 'kitten' | 'adult') => void;
+    lifeStage: 'kitten' | 'adult' | 'senior';
+    setLifeStage: (stage: 'kitten' | 'adult' | 'senior') => void;
     age: number;
     setAge: (age: number) => void;
     weight: number;
@@ -66,7 +66,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
     const navigate = useNavigate();
     const ageBracketDetails = getAgeBracketInfo(lifeStage, age);
 
-    const [onboardedCat, setOnboardedCat] = useState<{ name: string; gender: 'male' | 'female'; lifeStage: 'kitten' | 'adult' } | null>(null);
+    const [onboardedCat, setOnboardedCat] = useState<{ name: string; gender: 'male' | 'female'; lifeStage: 'kitten' | 'adult' | 'senior' } | null>(null);
     const [selectedCatId, setSelectedCatId] = useState<string>('onboarding');
 
     // Fetch user profile from backend on mount to auto-fill onboarding details
@@ -83,7 +83,8 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     const data = await res.json();
                     if (data && data.catName) {
                         const gender = data.catSex.toLowerCase() === 'female' ? 'female' : 'male';
-                        const lifeStage = data.catLifeStage.toLowerCase() === 'kitten' ? 'kitten' : 'adult';
+                        const lifeStageVal = data.catLifeStage.toLowerCase();
+                        const lifeStage = lifeStageVal === 'senior' ? 'senior' : (lifeStageVal === 'kitten' ? 'kitten' : 'adult');
                         setOnboardedCat({
                             name: data.catName,
                             gender,
@@ -122,10 +123,12 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
     }, [setCatName, setGender, setLifeStage]);
 
     // Sync default age value when changing lifeStage
-    const handleLifeStageChange = (stage: 'kitten' | 'adult') => {
+    const handleLifeStageChange = (stage: 'kitten' | 'adult' | 'senior') => {
         setLifeStage(stage);
         if (stage === 'kitten') {
             setAge(3); // default 3 months
+        } else if (stage === 'senior') {
+            setAge(10); // default 10 years
         } else {
             setAge(3); // default 3 years
         }
@@ -147,7 +150,8 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                             name: p.name,
                             src: p.photoUrl,
                             alt: p.name,
-                            isActive: p.id === activeProfileId
+                            isActive: p.id === activeProfileId,
+                            isNew: !p.isTracking
                         }))}
                         onAvatarClick={(id) => switchProfile(id)}
                         onAddClick={() => navigate('/settings')}
@@ -190,8 +194,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     </div>
                 )}
 
-                {/* 0. Cat Selection (Onboarding vs New) */}
-                {onboardedCat && (
+                {onboardedCat && profiles.length <= 1 && (selectedCatId === 'new' || catName === onboardedCat.name) && (
                     <div className="col-span-1 md:col-span-2">
                         <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                             Select Cat to Set Up First
@@ -302,9 +305,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                         onChange={(e) => setWeight(parseFloat(e.target.value))}
                         className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
                     />
-                </div>
-
-                {/* 4. Life Stage Selection */}
+                </div>                 {/* 4. Life Stage Selection */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Life Stage
@@ -324,6 +325,13 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                         >
                             Adult
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => handleLifeStageChange('senior')}
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${lifeStage === 'senior' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                            Senior
+                        </button>
                     </div>
                 </div>
 
@@ -337,8 +345,8 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     </div>
                     <input
                         type="range"
-                        min="1"
-                        max={lifeStage === 'kitten' ? "12" : "20"}
+                        min={lifeStage === 'senior' ? "7" : "1"}
+                        max={lifeStage === 'kitten' ? "12" : (lifeStage === 'adult' ? "6" : "20")}
                         step="1"
                         value={age}
                         onChange={(e) => setAge(parseInt(e.target.value))}

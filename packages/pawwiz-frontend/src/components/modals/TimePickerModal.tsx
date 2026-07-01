@@ -10,53 +10,33 @@ interface ScrollColumnProps {
 
 const ScrollColumn: React.FC<ScrollColumnProps> = ({ values, selectedValue, onChange, className }) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [isProgrammatic, setIsProgrammatic] = useState(false);
     const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        if (isProgrammatic) return;
         const target = e.currentTarget;
-        const itemHeight = target.clientHeight / 3;
-        if (itemHeight <= 0) return;
+        const itemHeight = 48;
 
-        const scrollTop = target.scrollTop;
-        const index = Math.round(scrollTop / itemHeight);
-        if (index >= 0 && index < values.length) {
-            const val = values[index];
-            if (String(val) !== String(selectedValue)) {
-                onChange(val);
-            }
-        }
-
-        // Align scroll position on scroll end
+        // Debounce to detect scroll end
         if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
         scrollTimeoutRef.current = setTimeout(() => {
-            const finalScrollTop = target.scrollTop;
-            const finalIndex = Math.round(finalScrollTop / itemHeight);
-            if (finalIndex >= 0 && finalIndex < values.length) {
-                const val = values[finalIndex];
-                onChange(val);
-                target.scrollTo({
-                    top: finalIndex * itemHeight,
-                    behavior: 'smooth'
-                });
+            const scrollTop = target.scrollTop;
+            const index = Math.round(scrollTop / itemHeight);
+            if (index >= 0 && index < values.length) {
+                const val = values[index];
+                if (String(val) !== String(selectedValue)) {
+                    onChange(val);
+                }
             }
-        }, 150);
+        }, 120);
     };
 
     useEffect(() => {
         const index = values.findIndex(v => String(v) === String(selectedValue));
         if (index !== -1 && containerRef.current) {
-            const itemHeight = containerRef.current.clientHeight / 3;
-            if (itemHeight <= 0) return;
+            const itemHeight = 48;
             const targetScrollTop = index * itemHeight;
             if (Math.abs(containerRef.current.scrollTop - targetScrollTop) > 2) {
-                setIsProgrammatic(true);
                 containerRef.current.scrollTop = targetScrollTop;
-                const timer = setTimeout(() => {
-                    setIsProgrammatic(false);
-                }, 100);
-                return () => clearTimeout(timer);
             }
         }
     }, [selectedValue, values]);
@@ -69,7 +49,7 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ values, selectedValue, onCh
             style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
-                scrollSnapType: isProgrammatic ? 'none' : 'y mandatory',
+                scrollSnapType: 'y mandatory',
             }}
         >
             <div className="h-12 flex-shrink-0" />
@@ -79,8 +59,9 @@ const ScrollColumn: React.FC<ScrollColumnProps> = ({ values, selectedValue, onCh
                     <div
                         key={idx}
                         onClick={() => {
+                            onChange(val);
                             if (containerRef.current) {
-                                const itemHeight = containerRef.current.clientHeight / 3;
+                                const itemHeight = 48;
                                 containerRef.current.scrollTo({
                                     top: idx * itemHeight,
                                     behavior: 'smooth'
