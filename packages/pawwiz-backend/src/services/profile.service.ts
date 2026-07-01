@@ -9,6 +9,7 @@ import { profileRepository, type CreateProfileData } from '../repositories/profi
 import { onboardingRepository } from '../repositories/onboarding.repository.js';
 import { assertDefined, assertNonEmpty } from '../utils/guards.js';
 import { AppError } from '../utils/errors.js';
+import { prisma } from '../lib/prisma.js';
 import type { Profile } from '@prisma/client';
 
 class ProfileService {
@@ -82,23 +83,66 @@ class ProfileService {
 
     const profile = await profileRepository.create(data);
 
-    // 5. Mark session as consumed (prevents replay)
+    // 5. Link all cats from onboarding session to the new profile and create default diet profiles
     if (onboardingSessionId) {
+      await prisma.cat.updateMany({
+        where: { onboardingSessionId },
+        data: { profileId: profile.id },
+      });
+
+      const onboardingCats = await prisma.cat.findMany({
+        where: { profileId: profile.id },
+      });
+
+      for (const cat of onboardingCats) {
+        await prisma.dietProfile.create({
+          data: {
+            profileId: profile.id,
+            catId: cat.id,
+            weight: 4.0,
+            isKg: true,
+            foodPreference: 'mixed',
+            isSpayedNeutered: false,
+            isTracking: false,
+            mealLogs: {
+              create: [
+                { mealName: 'Breakfast', status: 'pending', kcal: 0 },
+                { mealName: 'Lunch', status: 'pending', kcal: 0 },
+                { mealName: 'Dinner', status: 'pending', kcal: 0 },
+              ],
+            },
+          },
+        });
+      }
+
       await onboardingRepository.markConsumed(onboardingSessionId);
     }
 
     return profile;
   }
 
-  /**
-   * Retrieve a profile by Supabase user ID.
-   * Guards: throws 404 if not found.
-   */
-  async getProfileByUserId(supabaseUserId: string): Promise<Profile> {
+  async getProfileByUserId(supabaseUserId: string, email?: string): Promise<Profile> {
     assertNonEmpty(supabaseUserId, 'supabaseUserId');
 
-    const profile = await profileRepository.findBySupabaseUserId(supabaseUserId);
-    assertDefined(profile, 'Profile not found');
+    let profile = await profileRepository.findBySupabaseUserId(supabaseUserId);
+
+    if (profile && email) {
+      const onboardingSession = await onboardingRepository.findLatestByEmail(email);
+      if (onboardingSession && profile.catName === 'Aki' && onboardingSession.catName && onboardingSession.catName !== 'Aki') {
+        profile = await profileRepository.update(profile.id, {
+          displayName: onboardingSession.ownerName || profile.displayName,
+          catName: onboardingSession.catName,
+          catSex: onboardingSession.catSex || profile.catSex,
+          catLifeStage: onboardingSession.catLifeStage || profile.catLifeStage,
+          catBreed: onboardingSession.catBreed || profile.catBreed,
+          catMarking: onboardingSession.catMarking || profile.catMarking,
+        });
+      }
+    }
+
+    if (!profile) {
+      throw AppError.notFound('Profile not found');
+    }
     return profile;
   }
 

@@ -31,10 +31,19 @@ vi.mock('../../lib/prisma.js', () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       count: vi.fn(),
+      update: vi.fn(),
     },
     onboardingSession: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      findFirst: vi.fn(),
+    },
+    cat: {
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    dietProfile: {
+      create: vi.fn().mockResolvedValue({}),
     },
   },
   connectDatabase: vi.fn(),
