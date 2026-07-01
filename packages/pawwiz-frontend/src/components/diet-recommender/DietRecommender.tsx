@@ -49,10 +49,19 @@ export const DietRecommender: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [loadingTarget, setLoadingTarget] = useState<'dashboard' | 'setup' | null>(null);
     const [showSetup, setShowSetup] = useState<boolean>(true);
+    const [hasCheckedInitialState, setHasCheckedInitialState] = useState<boolean>(false);
 
     useEffect(() => {
-        setShowSetup(!isTracking);
-    }, [isTracking]);
+        if (!hasCheckedInitialState) {
+            if (!hasNoUserProfile && profiles.length > 0) {
+                setShowSetup(false);
+                setHasCheckedInitialState(true);
+            } else if (hasNoUserProfile) {
+                setShowSetup(!isTracking);
+                setHasCheckedInitialState(true);
+            }
+        }
+    }, [profiles, isTracking, hasNoUserProfile, hasCheckedInitialState]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
