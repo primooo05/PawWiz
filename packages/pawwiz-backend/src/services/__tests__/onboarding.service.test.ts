@@ -8,8 +8,9 @@ vi.mock('../../repositories/onboarding.repository.js', () => ({
   onboardingRepository: {
     findById: vi.fn(),
     create: vi.fn(),
-    update: vi.fn()
-  }
+    update: vi.fn(),
+    isEmailConsumed: vi.fn().mockResolvedValue(false),
+  },
 }));
 
 const makeSession = (overrides: Record<string, unknown> = {}) => ({

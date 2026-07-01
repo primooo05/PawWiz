@@ -316,15 +316,18 @@ function OnboardingView() {
       }
 
       const result = validateStep2(ownerName, ownerEmail);
+      if (result.isValid) {
+        const emailTaken = await checkEmail(ownerEmail.trim());
+        if (emailTaken) {
+          showStaticBubble('Email already exists, meow');
+          setTimeout(() => hideBubble(), 3000);
+          return;
+        }
+      }
+
       startTyping(result.message, {
         onComplete: async () => {
           if (result.isValid) {
-            const emailTaken = await checkEmail(ownerEmail.trim());
-            if (emailTaken) {
-              showStaticBubble('Email already exists, meow');
-              setTimeout(() => hideBubble(), 3000);
-              return;
-            }
             const success = await submitStep(2, { ownerName: ownerName.trim(), ownerEmail: ownerEmail.trim() });
             if (success) {
               setIsStep2Dirty(false);

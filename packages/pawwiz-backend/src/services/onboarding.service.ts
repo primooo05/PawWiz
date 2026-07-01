@@ -103,6 +103,11 @@ class OnboardingService {
       throw AppError.badRequest('Email address is required before OTP can be sent');
     }
 
+    const emailExists = await this.checkEmailExists(session.ownerEmail.trim());
+    if (emailExists) {
+      throw AppError.badRequest('Email already exists, meow');
+    }
+
     // Rate-limit: 60s cooldown
     if (session.otpLastSentAt) {
       const elapsed = Date.now() - session.otpLastSentAt.getTime();

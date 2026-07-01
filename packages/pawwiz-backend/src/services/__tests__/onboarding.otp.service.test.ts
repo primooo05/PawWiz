@@ -16,6 +16,7 @@ vi.mock('../../repositories/onboarding.repository.js', () => ({
     findById: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    isEmailConsumed: vi.fn().mockResolvedValue(false),
   },
 }));
 
@@ -89,6 +90,18 @@ describe('onboardingService.sendOtp', () => {
 
     await expect(onboardingService.sendOtp('test-session-id')).rejects.toMatchObject({
       statusCode: 400,
+    });
+  });
+
+  it('throws 400 when ownerEmail is already associated with a completed registration', async () => {
+    vi.mocked(onboardingRepository.findById).mockResolvedValue(
+      makeSession({ ownerEmail: 'ayla@example.com' })
+    );
+    vi.mocked(onboardingRepository.isEmailConsumed).mockResolvedValueOnce(true);
+
+    await expect(onboardingService.sendOtp('test-session-id')).rejects.toMatchObject({
+      statusCode: 400,
+      message: 'Email already exists, meow',
     });
   });
 
