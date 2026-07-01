@@ -160,6 +160,13 @@ export const useDietRecommender = () => {
     useEffect(() => {
         let active = true;
 
+        const clearLocalProfileData = () => {
+            setProfiles([]);
+            setActiveProfileId('');
+            localStorage.removeItem('diet_profiles');
+            localStorage.removeItem('diet_active_profile_id');
+        };
+
         const loadFromBackend = async (session: any) => {
             if (!session) return;
             try {
@@ -171,6 +178,7 @@ export const useDietRecommender = () => {
                 });
                 if (res.status === 404 && active) {
                     setHasNoUserProfile(true);
+                    clearLocalProfileData();
                     return;
                 }
                 if (res.ok && active) {
@@ -178,17 +186,18 @@ export const useDietRecommender = () => {
                     if (data && data.length > 0) {
                         setProfiles(data);
                         localStorage.setItem('diet_profiles', JSON.stringify(data));
-                        
+
                         const activeId = localStorage.getItem('diet_active_profile_id') || data[0].id;
                         const exists = data.some((p: any) => p.id === activeId);
                         const finalId = exists ? activeId : data[0].id;
-                        
+
                         setActiveProfileId(finalId);
                         localStorage.setItem('diet_active_profile_id', finalId);
 
                         const activeProfileData = data.find((p: any) => p.id === finalId) || data[0];
                         syncStatesToSetup(activeProfileData);
                     } else {
+                        clearLocalProfileData();
                         // Query the onboarding profile details to autofill
                         const profileRes = await fetch(`${API_BASE}/api/profile`, {
                             headers: {
@@ -217,15 +226,23 @@ export const useDietRecommender = () => {
 
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
-            if (active && session) {
-                loadFromBackend(session);
+            if (active) {
+                if (session) {
+                    loadFromBackend(session);
+                } else {
+                    clearLocalProfileData();
+                }
             }
         });
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (active && session) {
-                loadFromBackend(session);
+            if (active) {
+                if (session) {
+                    loadFromBackend(session);
+                } else {
+                    clearLocalProfileData();
+                }
             }
         });
 
@@ -308,61 +325,111 @@ export const useDietRecommender = () => {
         }
     };
 
-    const handleStartDietTracking = async () => {
-        setIsTracking(true); // Optimistic UI update
-
-        try {
-            const profileData = {
-                name: catName,
-                gender,
-                lifeStage,
-                age,
-                weight,
-                isKg,
-                foodPreference,
-                isSpayedNeutered,
-                isTracking: true,
-            };
-            const headers = await getAuthHeaders();
-
-            if (hasNoUserProfile) {
-                const profileRes = await fetch(`${API_BASE}/api/profile`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({
-                        displayName: displayName || (catName ? `${catName}'s Owner` : 'Owner'),
-                        catName: catName || 'My Cat',
-                        catSex: gender === 'female' ? 'female' : 'male',
-                        catLifeStage: lifeStage === 'kitten' ? 'kitten' : 'adult',
-                    }),
-                });
-                if (!profileRes.ok) {
-                    throw new Error('Failed to create primary profile');
-                }
-                setHasNoUserProfile(false);
+    const deleteProfile = async (id: string) => {
+            const updatedProfilesLocal = profiles.filter(p => p.id !== id);
+            setProfiles(updatedProfilesLocal);
+            saveProfilesToStorage(updatedProfilesLocal);
+            if (activeProfileId === id && updatedProfilesLocal.length > 0) {
+                setActiveProfileId(updatedProfilesLocal[0].id);
+                localStorage.setItem('diet_active_profile_id', updatedProfilesLocal[0].id);
+                syncStatesToSetup(updatedProfilesLocal[0]);
+            } else if (updatedProfilesLocal.length === 0) {
+                setActiveProfileId('');
+                localStorage.removeItem('diet_active_profile_id');
             }
-            
-            if (!activeProfileId) {
-                // No profile exists yet, create one via POST
-                const res = await fetch(`${API_BASE}/api/diet/profiles`, {
-                    method: 'POST',
+
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${id}`, {
+                    method: 'DELETE',
                     headers,
-                    body: JSON.stringify(profileData),
                 });
-                if (res.ok) {
-                    const newProf = await res.json();
-                    setProfiles([newProf]);
-                    setActiveProfileId(newProf.id);
-                    localStorage.setItem('diet_active_profile_id', newProf.id);
-                    saveProfilesToStorage([newProf]);
-                    syncStatesToSetup(newProf);
+                if (!res.ok) {
+                    throw new Error('Failed to delete profile on server');
                 }
-            } else {
-                // Profile exists, update it via PUT
+            } catch (e) {
+                console.error('Failed to delete profile', e);
+            }
+        };
+
+        const handleStartDietTracking = async () => {
+            setIsTracking(true); // Optimistic UI update
+
+            try {
+                const profileData = {
+                    name: catName,
+                    gender,
+                    lifeStage,
+                    age,
+                    weight,
+                    isKg,
+                    foodPreference,
+                    isSpayedNeutered,
+                    isTracking: true,
+                };
+                const headers = await getAuthHeaders();
+
+                if (hasNoUserProfile) {
+                    const profileRes = await fetch(`${API_BASE}/api/profile`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            displayName: displayName || (catName ? `${catName}'s Owner` : 'Owner'),
+                            catName: catName || 'My Cat',
+                            catSex: gender === 'female' ? 'female' : 'male',
+                            catLifeStage: lifeStage === 'kitten' ? 'kitten' : 'adult',
+                        }),
+                    });
+                    if (!profileRes.ok) {
+                        throw new Error('Failed to create primary profile');
+                    }
+                    setHasNoUserProfile(false);
+                }
+
+                if (!activeProfileId) {
+                    // No profile exists yet, create one via POST
+                    const res = await fetch(`${API_BASE}/api/diet/profiles`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(profileData),
+                    });
+                    if (res.ok) {
+                        const newProf = await res.json();
+                        setProfiles([newProf]);
+                        setActiveProfileId(newProf.id);
+                        localStorage.setItem('diet_active_profile_id', newProf.id);
+                        saveProfilesToStorage([newProf]);
+                        syncStatesToSetup(newProf);
+                    }
+                } else {
+                    // Profile exists, update it via PUT
+                    const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
+                        method: 'PUT',
+                        headers,
+                        body: JSON.stringify(profileData),
+                    });
+                    if (res.ok) {
+                        const updatedProf = await res.json();
+                        const updatedProfiles = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        setProfiles(updatedProfiles);
+                        saveProfilesToStorage(updatedProfiles);
+                        syncStatesToSetup(updatedProf);
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        const handleResetDietTracking = async () => {
+            setIsTracking(false); // Optimistic UI update
+
+            try {
+                const headers = await getAuthHeaders();
                 const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
                     method: 'PUT',
                     headers,
-                    body: JSON.stringify(profileData),
+                    body: JSON.stringify({ isTracking: false }),
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
@@ -371,289 +438,267 @@ export const useDietRecommender = () => {
                     saveProfilesToStorage(updatedProfiles);
                     syncStatesToSetup(updatedProf);
                 }
+            } catch (e) {
+                console.error(e);
             }
-        } catch (e) {
-            console.error(e);
-        }
-    };
+        };
 
-    const handleResetDietTracking = async () => {
-        setIsTracking(false); // Optimistic UI update
+        const addMeal = async (
+            mealId: string,
+            foodType: 'dry' | 'wet' | 'mixed',
+            amount: number,
+            unit: 'spoon' | 'cup',
+            timestamp?: string
+        ) => {
+            const kcal = calculateMealCalories(foodType, amount, unit);
 
-        try {
-            const headers = await getAuthHeaders();
-            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({ isTracking: false }),
+            // Optimistic UI update
+            const updatedProfilesLocal = profiles.map(p => {
+                if (p.id === activeProfileId) {
+                    const updatedMeals = p.loggedMeals.map(m => {
+                        if (m.id === mealId) {
+                            return {
+                                ...m,
+                                foodType,
+                                amount,
+                                unit,
+                                kcal,
+                                timestamp,
+                                status: 'logged' as const,
+                            };
+                        }
+                        return m;
+                    });
+                    return { ...p, loggedMeals: updatedMeals };
+                }
+                return p;
             });
-            if (res.ok) {
-                const updatedProf = await res.json();
-                const updatedProfiles = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                setProfiles(updatedProfiles);
-                saveProfilesToStorage(updatedProfiles);
-                syncStatesToSetup(updatedProf);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
+            setProfiles(updatedProfilesLocal);
 
-    const addMeal = async (
-        mealId: string,
-        foodType: 'dry' | 'wet' | 'mixed',
-        amount: number,
-        unit: 'spoon' | 'cup',
-        timestamp?: string
-    ) => {
-        const kcal = calculateMealCalories(foodType, amount, unit);
-        
-        // Optimistic UI update
-        const updatedProfilesLocal = profiles.map(p => {
-            if (p.id === activeProfileId) {
-                const updatedMeals = p.loggedMeals.map(m => {
-                    if (m.id === mealId) {
-                        return {
-                            ...m,
-                            foodType,
-                            amount,
-                            unit,
-                            kcal,
-                            timestamp,
-                            status: 'logged' as const,
-                        };
-                    }
-                    return m;
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({
+                        foodType,
+                        amount,
+                        unit,
+                        kcal,
+                        status: 'logged',
+                        timestamp,
+                    }),
                 });
-                return { ...p, loggedMeals: updatedMeals };
+                if (res.ok) {
+                    const updatedProf = await res.json();
+                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                    setProfiles(synced);
+                    saveProfilesToStorage(synced);
+                }
+            } catch (e) {
+                console.error(e);
             }
-            return p;
-        });
-        setProfiles(updatedProfilesLocal);
+        };
 
-        try {
-            const headers = await getAuthHeaders();
-            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({
-                    foodType,
-                    amount,
-                    unit,
-                    kcal,
-                    status: 'logged',
-                    timestamp,
-                }),
+        const skipMeal = async (mealId: string) => {
+            // Optimistic UI update
+            const updatedProfilesLocal = profiles.map(p => {
+                if (p.id === activeProfileId) {
+                    const updatedMeals = p.loggedMeals.map(m => {
+                        if (m.id === mealId) {
+                            return {
+                                ...m,
+                                status: 'skipped' as const,
+                                kcal: 0,
+                            };
+                        }
+                        return m;
+                    });
+                    return { ...p, loggedMeals: updatedMeals };
+                }
+                return p;
             });
-            if (res.ok) {
-                const updatedProf = await res.json();
-                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                setProfiles(synced);
-                saveProfilesToStorage(synced);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
+            setProfiles(updatedProfilesLocal);
 
-    const skipMeal = async (mealId: string) => {
-        // Optimistic UI update
-        const updatedProfilesLocal = profiles.map(p => {
-            if (p.id === activeProfileId) {
-                const updatedMeals = p.loggedMeals.map(m => {
-                    if (m.id === mealId) {
-                        return {
-                            ...m,
-                            status: 'skipped' as const,
-                            kcal: 0,
-                        };
-                    }
-                    return m;
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({
+                        status: 'skipped',
+                        kcal: 0,
+                    }),
                 });
-                return { ...p, loggedMeals: updatedMeals };
+                if (res.ok) {
+                    const updatedProf = await res.json();
+                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                    setProfiles(synced);
+                    saveProfilesToStorage(synced);
+                }
+            } catch (e) {
+                console.error(e);
             }
-            return p;
-        });
-        setProfiles(updatedProfilesLocal);
+        };
 
-        try {
-            const headers = await getAuthHeaders();
-            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({
-                    status: 'skipped',
-                    kcal: 0,
-                }),
+        const resetMealLog = async (mealId: string) => {
+            // Optimistic UI update
+            const updatedProfilesLocal = profiles.map(p => {
+                if (p.id === activeProfileId) {
+                    const updatedMeals = p.loggedMeals.map(m => {
+                        if (m.id === mealId) {
+                            return {
+                                ...m,
+                                status: 'pending' as const,
+                                kcal: 0,
+                                amount: undefined,
+                                unit: undefined,
+                                foodType: undefined,
+                                timestamp: undefined,
+                            };
+                        }
+                        return m;
+                    });
+                    return { ...p, loggedMeals: updatedMeals };
+                }
+                return p;
             });
-            if (res.ok) {
-                const updatedProf = await res.json();
-                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                setProfiles(synced);
-                saveProfilesToStorage(synced);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
+            setProfiles(updatedProfilesLocal);
 
-    const resetMealLog = async (mealId: string) => {
-        // Optimistic UI update
-        const updatedProfilesLocal = profiles.map(p => {
-            if (p.id === activeProfileId) {
-                const updatedMeals = p.loggedMeals.map(m => {
-                    if (m.id === mealId) {
-                        return {
-                            ...m,
-                            status: 'pending' as const,
-                            kcal: 0,
-                            amount: undefined,
-                            unit: undefined,
-                            foodType: undefined,
-                            timestamp: undefined,
-                        };
-                    }
-                    return m;
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({
+                        status: 'pending',
+                        kcal: 0,
+                        foodType: null,
+                        amount: null,
+                        unit: null,
+                        timestamp: null,
+                    }),
                 });
-                return { ...p, loggedMeals: updatedMeals };
+                if (res.ok) {
+                    const updatedProf = await res.json();
+                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                    setProfiles(synced);
+                    saveProfilesToStorage(synced);
+                }
+            } catch (e) {
+                console.error(e);
             }
-            return p;
-        });
-        setProfiles(updatedProfilesLocal);
+        };
 
-        try {
-            const headers = await getAuthHeaders();
-            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals/${mealId}`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({
-                    status: 'pending',
-                    kcal: 0,
-                    foodType: null,
-                    amount: null,
-                    unit: null,
-                    timestamp: null,
-                }),
+        const addWater = async (amount: number) => {
+            // Optimistic UI update
+            const updatedProfilesLocal = profiles.map(p => {
+                if (p.id === activeProfileId) {
+                    return {
+                        ...p,
+                        waterIntake: Math.max(0, p.waterIntake + amount),
+                    };
+                }
+                return p;
             });
-            if (res.ok) {
-                const updatedProf = await res.json();
-                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                setProfiles(synced);
-                saveProfilesToStorage(synced);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
+            setProfiles(updatedProfilesLocal);
 
-    const addWater = async (amount: number) => {
-        // Optimistic UI update
-        const updatedProfilesLocal = profiles.map(p => {
-            if (p.id === activeProfileId) {
-                return {
-                    ...p,
-                    waterIntake: Math.max(0, p.waterIntake + amount),
-                };
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/water`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({ amount }),
+                });
+                if (res.ok) {
+                    const updatedProf = await res.json();
+                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                    setProfiles(synced);
+                    saveProfilesToStorage(synced);
+                }
+            } catch (e) {
+                console.error(e);
             }
-            return p;
-        });
-        setProfiles(updatedProfilesLocal);
+        };
 
-        try {
-            const headers = await getAuthHeaders();
-            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/water`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({ amount }),
+        const resetWater = async () => {
+            // Optimistic UI update
+            const updatedProfilesLocal = profiles.map(p => {
+                if (p.id === activeProfileId) {
+                    return {
+                        ...p,
+                        waterIntake: 0,
+                    };
+                }
+                return p;
             });
-            if (res.ok) {
-                const updatedProf = await res.json();
-                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                setProfiles(synced);
-                saveProfilesToStorage(synced);
+            setProfiles(updatedProfilesLocal);
+
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/water`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify({ amount: 0 }),
+                });
+                if (res.ok) {
+                    const updatedProf = await res.json();
+                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                    setProfiles(synced);
+                    saveProfilesToStorage(synced);
+                }
+            } catch (e) {
+                console.error(e);
             }
-        } catch (e) {
-            console.error(e);
-        }
+        };
+
+        const toggleUnit = (toKg: boolean) => {
+            if (isKg === toKg) return;
+            setIsKg(toKg);
+            setWeight(prev => toKg ? parseFloat((prev / 2.205).toFixed(1)) : parseFloat((prev * 2.205).toFixed(1)));
+        };
+
+        const ageBracketInfo = getAgeBracketInfo(lifeStage, age);
+
+        return {
+            profiles,
+            activeProfileId,
+            activeProfile,
+            switchProfile,
+            createNewProfile,
+            deleteProfile,
+            catName,
+            setCatName,
+            gender,
+            setGender,
+            lifeStage,
+            setLifeStage,
+            age,
+            setAge,
+            weight,
+            setWeight,
+            isKg,
+            setIsKg,
+            foodPreference,
+            setFoodPreference,
+            isSpayedNeutered,
+            setIsSpayedNeutered,
+            isTracking,
+            setIsTracking,
+            activeLifeStage: lifeStage,
+            ageBracketInfo,
+            handleStartDietTracking,
+            handleResetDietTracking,
+            toggleUnit,
+            addMeal,
+            skipMeal,
+            resetMealLog,
+            addWater,
+            resetWater,
+            loggedMeals: activeProfile?.loggedMeals || [],
+            waterIntake: activeProfile?.waterIntake || 0,
+            hasNoUserProfile,
+            displayName,
+            setDisplayName,
+        };
     };
-
-    const resetWater = async () => {
-        // Optimistic UI update
-        const updatedProfilesLocal = profiles.map(p => {
-            if (p.id === activeProfileId) {
-                return {
-                    ...p,
-                    waterIntake: 0,
-                };
-            }
-            return p;
-        });
-        setProfiles(updatedProfilesLocal);
-
-        try {
-            const headers = await getAuthHeaders();
-            const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/water`, {
-                method: 'PUT',
-                headers,
-                body: JSON.stringify({ amount: 0 }),
-            });
-            if (res.ok) {
-                const updatedProf = await res.json();
-                const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                setProfiles(synced);
-                saveProfilesToStorage(synced);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    const toggleUnit = (toKg: boolean) => {
-        if (isKg === toKg) return;
-        setIsKg(toKg);
-        setWeight(prev => toKg ? parseFloat((prev / 2.205).toFixed(1)) : parseFloat((prev * 2.205).toFixed(1)));
-    };
-
-    const ageBracketInfo = getAgeBracketInfo(lifeStage, age);
-
-    return {
-        profiles,
-        activeProfileId,
-        activeProfile,
-        switchProfile,
-        createNewProfile,
-        catName,
-        setCatName,
-        gender,
-        setGender,
-        lifeStage,
-        setLifeStage,
-        age,
-        setAge,
-        weight,
-        setWeight,
-        isKg,
-        setIsKg,
-        foodPreference,
-        setFoodPreference,
-        isSpayedNeutered,
-        setIsSpayedNeutered,
-        isTracking,
-        setIsTracking,
-        activeLifeStage: lifeStage,
-        ageBracketInfo,
-        handleStartDietTracking,
-        handleResetDietTracking,
-        toggleUnit,
-        addMeal,
-        skipMeal,
-        resetMealLog,
-        addWater,
-        resetWater,
-        loggedMeals: activeProfile?.loggedMeals || [],
-        waterIntake: activeProfile?.waterIntake || 0,
-        hasNoUserProfile,
-        displayName,
-        setDisplayName,
-    };
-};

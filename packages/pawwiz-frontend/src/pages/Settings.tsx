@@ -10,10 +10,12 @@ export default function Settings() {
         profiles,
         switchProfile,
         createNewProfile,
+        deleteProfile,
     } = useDietRecommender();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showAddForm, setShowAddForm] = useState<boolean>(false);
+    const [catToDelete, setCatToDelete] = useState<{ id: string; name: string } | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; catId: string } | null>(null);
 
     useEffect(() => {
@@ -34,6 +36,17 @@ export default function Settings() {
     const [newCatIsKg, setNewCatIsKg] = useState<boolean>(true);
     const [newCatFoodPreference, setNewCatFoodPreference] = useState<'dry' | 'wet' | 'mixed'>('mixed');
     const [newCatIsSpayedNeutered, setNewCatIsSpayedNeutered] = useState<boolean>(true);
+
+    const clearAddCatForm = () => {
+        setNewCatName('');
+        setNewCatGender('male');
+        setNewCatLifeStage('adult');
+        setNewCatAge(3);
+        setNewCatWeight(4.5);
+        setNewCatIsKg(true);
+        setNewCatFoodPreference('mixed');
+        setNewCatIsSpayedNeutered(true);
+    };
 
     const handleNavigation = (item: string) => {
         if (item === 'calendar') {
@@ -137,16 +150,25 @@ export default function Settings() {
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        switchProfile(cat.id);
-                                                        navigate('/diet-recommender');
-                                                    }}
-                                                    className="bg-[#2ec4b6] hover:bg-[#39d3c5] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
-                                                >
-                                                    Select
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            switchProfile(cat.id);
+                                                            navigate('/diet-recommender');
+                                                        }}
+                                                        className="bg-[#2ec4b6] hover:bg-[#39d3c5] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
+                                                    >
+                                                        Select
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCatToDelete({ id: cat.id, name: cat.name })}
+                                                        className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -156,7 +178,10 @@ export default function Settings() {
                             {!showAddForm && (
                                 <button
                                     type="button"
-                                    onClick={() => setShowAddForm(true)}
+                                    onClick={() => {
+                                        clearAddCatForm();
+                                        setShowAddForm(true);
+                                    }}
                                     className="mt-6 w-full py-4 px-6 rounded-2xl bg-[#FFB870] hover:bg-[#ffc58a] text-slate-900 font-extrabold text-md border-none cursor-pointer transition-all duration-200 shadow-[0_4px_0_0_#1e293b] active:shadow-none active:translate-y-[4px]"
                                 >
                                     + Add Another Cat
@@ -395,6 +420,36 @@ export default function Settings() {
                     >
                         View
                     </button>
+                </div>
+            )}
+
+            {catToDelete && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white border-2 border-slate-900 rounded-[2rem] p-6 max-w-sm w-full text-center shadow-[8px_8px_0_0_rgba(15,23,42,1)]">
+                        <h3 className="text-xl font-black text-slate-900 uppercase mb-2">Delete Profile?</h3>
+                        <p className="text-slate-600 text-sm font-semibold mb-6">
+                            Are you sure you want to delete <span className="font-extrabold text-[#15AFB4]">{catToDelete.name}</span>? This action cannot be undone.
+                        </p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setCatToDelete(null)}
+                                className="flex-1 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 font-extrabold py-3 px-4 rounded-2xl text-center text-sm cursor-pointer transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    setIsLoading(true);
+                                    await deleteProfile(catToDelete.id);
+                                    setCatToDelete(null);
+                                    setIsLoading(false);
+                                }}
+                                className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-extrabold py-3 px-4 rounded-2xl text-center text-sm cursor-pointer transition-all border-none shadow-[0_4px_0_0_#991b1b] active:shadow-none active:translate-y-[4px]"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

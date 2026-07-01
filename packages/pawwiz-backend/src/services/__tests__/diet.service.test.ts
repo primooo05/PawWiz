@@ -63,10 +63,7 @@ describe('Diet Service', () => {
     const mockDietProfile = {
       id: 'diet-profile-id',
       profileId: 'profile-id-123',
-      name: 'Aki',
-      gender: 'male',
-      lifeStage: 'kitten',
-      age: 3,
+      catId: null,
       weight: 4.5,
       isKg: true,
       foodPreference: 'mixed',
@@ -75,6 +72,14 @@ describe('Diet Service', () => {
       waterIntake: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
+      profile: {
+        catName: 'Aki',
+        catSex: 'Male',
+        catLifeStage: 'Kitten',
+        catBreed: null,
+        catMarking: null,
+      },
+      cat: null,
       mealLogs: [
         {
           id: 'log-1',
@@ -129,9 +134,8 @@ describe('Diet Service', () => {
     expect(result[0]).toEqual({
       id: 'diet-profile-id',
       name: 'Aki',
-      gender: 'male',
-      lifeStage: 'kitten',
-      age: 3,
+      gender: 'Male',
+      lifeStage: 'Kitten',
       weight: 4.5,
       isKg: true,
       foodPreference: 'mixed',

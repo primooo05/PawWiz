@@ -48,6 +48,7 @@ interface OnboardingContextValue {
   sendOtp: (id: string) => Promise<{ cooldownSeconds: number } | null>;
   verifyOtp: (id: string, code: string) => Promise<boolean>;
   checkEmail: (email: string) => Promise<boolean>;
+  resetSession: () => void;
 
   // Navigation
   step: number;
@@ -115,6 +116,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         sendOtp: onboarding.sendOtp,
         verifyOtp: onboarding.verifyOtp,
         checkEmail: onboarding.checkEmail,
+        resetSession: onboarding.resetSession,
         step,
         setStep,
       }}

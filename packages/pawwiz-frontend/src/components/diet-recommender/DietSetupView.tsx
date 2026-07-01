@@ -166,7 +166,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                         </p>
                         <button
                             type="button"
-                            onClick={() => navigate('/onboarding')}
+                            onClick={() => navigate('/onboarding', { state: { redirectTo: '/diet-recommender' } })}
                             className="mt-2 text-xs font-extrabold text-[#2ec4b6] underline hover:text-[#28b2a5] cursor-pointer block"
                         >
                             Complete Full Onboarding →

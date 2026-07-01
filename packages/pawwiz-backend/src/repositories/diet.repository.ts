@@ -40,33 +40,59 @@ class DietRepository {
   async findManyByProfileId(profileId: string) {
     return prisma.dietProfile.findMany({
       where: { profileId },
-      include: { mealLogs: true },
-      orderBy: { createdAt: 'asc' },
+      include: {
+        profile: {
+          select: {
+            catName: true,
+            catSex: true,
+            catLifeStage: true,
+            catBreed: true,
+            catMarking: true,
+          }
+        },
+        cat: true,
+        mealLogs: true,
+      }
     });
   }
 
   async findById(id: string) {
     return prisma.dietProfile.findUnique({
       where: { id },
-      include: { mealLogs: true },
+      include: {
+        profile: true,
+        cat: true,
+        mealLogs: true,
+      },
     });
   }
 
   async findByIdAndProfileId(id: string, profileId: string) {
     return prisma.dietProfile.findFirst({
       where: { id, profileId },
-      include: { mealLogs: true },
+      include: {
+        profile: true,
+        cat: true,
+        mealLogs: true,
+      },
     });
   }
 
   async create(profileId: string, data: CreateDietProfileData) {
-    return prisma.dietProfile.create({
+    const cat = await prisma.cat.create({
       data: {
         profileId,
         name: data.name,
-        gender: data.gender,
+        sex: data.gender,
         lifeStage: data.lifeStage,
         age: data.age,
+      }
+    });
+
+    return prisma.dietProfile.create({
+      data: {
+        profileId,
+        catId: cat.id,
         weight: data.weight,
         isKg: data.isKg,
         foodPreference: data.foodPreference,
@@ -81,15 +107,42 @@ class DietRepository {
           ],
         },
       },
-      include: { mealLogs: true },
+      include: {
+        profile: true,
+        cat: true,
+        mealLogs: true,
+      },
     });
   }
 
   async update(id: string, data: UpdateDietProfileData) {
+    const { name, gender, lifeStage, age, ...dietData } = data;
+
+    const dietProfile = await prisma.dietProfile.findUnique({
+      where: { id },
+      select: { catId: true },
+    });
+
+    if (dietProfile?.catId && (name !== undefined || gender !== undefined || lifeStage !== undefined || age !== undefined)) {
+      await prisma.cat.update({
+        where: { id: dietProfile.catId },
+        data: {
+          name,
+          sex: gender,
+          lifeStage,
+          age,
+        },
+      });
+    }
+
     return prisma.dietProfile.update({
       where: { id },
-      data,
-      include: { mealLogs: true },
+      data: dietData,
+      include: {
+        profile: true,
+        cat: true,
+        mealLogs: true,
+      },
     });
   }
 

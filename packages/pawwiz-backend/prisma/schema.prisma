@@ -23,6 +23,7 @@ model Profile {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   dietProfiles   DietProfile[]
+  cats           Cat[]
 
   @@map("profiles")
 }
@@ -47,16 +48,15 @@ model OnboardingSession {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
+  cats            Cat[]
+
   @@map("onboarding_sessions")
 }
 
 model DietProfile {
   id              String   @id @default(cuid())
   profileId       String   @map("profile_id")
-  name            String
-  gender          String
-  lifeStage       String   @map("life_stage")
-  age             Int
+  catId           String?  @map("cat_id")
   weight          Float
   isKg            Boolean  @map("is_kg")
   foodPreference  String   @map("food_preference")
@@ -67,9 +67,30 @@ model DietProfile {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   profile    Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  cat        Cat?           @relation(fields: [catId], references: [id], onDelete: Cascade)
   mealLogs   DietMealLog[]
 
   @@map("diet_profiles")
+}
+
+model Cat {
+  id                  String   @id @default(cuid())
+  profileId           String?  @map("profile_id")
+  onboardingSessionId String?  @map("onboarding_session_id")
+  name                String
+  breed               String?
+  marking             String?
+  sex                 String
+  lifeStage           String   @map("life_stage")
+  age                 Int?
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  profile           Profile?           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  onboardingSession OnboardingSession? @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
+  dietProfiles      DietProfile[]
+
+  @@map("cats")
 }
 
 model DietMealLog {
@@ -88,6 +109,7 @@ model DietMealLog {
   dietProfile   DietProfile @relation(fields: [dietProfileId], references: [id], onDelete: Cascade)
 
   @@map("diet_meal_logs")
+  @@unique([dietProfileId, mealName])
 }
 
 model Plant {

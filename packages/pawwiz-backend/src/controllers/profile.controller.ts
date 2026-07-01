@@ -43,8 +43,9 @@ export const createProfile = withErrorHandling(async (req: Request, res: Respons
  */
 export const getProfile = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub;
+  const email = (req as any).user?.email;
 
-  const profile = await profileService.getProfileByUserId(supabaseUserId);
+  const profile = await profileService.getProfileByUserId(supabaseUserId, email);
 
   res.json({
     id: profile.id,

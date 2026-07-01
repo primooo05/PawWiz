@@ -8,6 +8,7 @@ import { assertDefined } from '../utils/guards.js';
 import { AppError } from '../utils/errors.js';
 import { otpService } from './otp.service.js';
 import { mailerService } from './mailer.service.js';
+import { prisma } from '../lib/prisma.js';
 import type { OnboardingSession } from '@prisma/client';
 import {
   onboardingStep2Schema,
@@ -85,6 +86,37 @@ class OnboardingService {
         catLifeStage: parsed.catLifeStage,
         step: Math.max(session.step, 7), // Unlock step 7
       };
+
+      // Upsert the cat to the Cats table to handle back-edits and multiple cats
+      const existingCat = await prisma.cat.findFirst({
+        where: {
+          onboardingSessionId: id,
+          name: session.catName!,
+        },
+      });
+
+      if (existingCat) {
+        await prisma.cat.update({
+          where: { id: existingCat.id },
+          data: {
+            breed: session.catBreed,
+            marking: session.catMarking,
+            sex: session.catSex!,
+            lifeStage: parsed.catLifeStage,
+          },
+        });
+      } else {
+        await prisma.cat.create({
+          data: {
+            onboardingSessionId: id,
+            name: session.catName!,
+            breed: session.catBreed,
+            marking: session.catMarking,
+            sex: session.catSex!,
+            lifeStage: parsed.catLifeStage,
+          },
+        });
+      }
     } else {
       throw AppError.badRequest('Invalid step for update');
     }

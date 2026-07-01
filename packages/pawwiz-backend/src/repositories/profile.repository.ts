@@ -20,6 +20,11 @@ export interface CreateProfileData {
 
 export interface UpdateProfileData {
   displayName?: string;
+  catName?: string;
+  catBreed?: string | null;
+  catMarking?: string | null;
+  catSex?: string;
+  catLifeStage?: string;
 }
 
 class ProfileRepository {

@@ -2,10 +2,6 @@
 CREATE TABLE "diet_profiles" (
     "id" TEXT NOT NULL,
     "profile_id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "gender" TEXT NOT NULL,
-    "life_stage" TEXT NOT NULL,
-    "age" INTEGER NOT NULL,
     "weight" DOUBLE PRECISION NOT NULL,
     "is_kg" BOOLEAN NOT NULL,
     "food_preference" TEXT NOT NULL,

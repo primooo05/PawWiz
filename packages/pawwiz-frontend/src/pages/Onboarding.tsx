@@ -72,6 +72,7 @@ function OnboardingView() {
     sendOtp,
     verifyOtp,
     checkEmail,
+    resetSession,
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
@@ -270,6 +271,8 @@ function OnboardingView() {
       setCatLifeStage('');
       setStep(5);
       setIsTransitioning(false);
+      if (zIndexTimeoutRef.current) clearTimeout(zIndexTimeoutRef.current);
+      zIndexTimeoutRef.current = setTimeout(() => setIsZIndexHigh(false), 800);
     }, 800);
   };
 
@@ -488,6 +491,7 @@ function OnboardingView() {
       // enabled — even though the user's email was already verified via OTP in
       // this flow. Recover by signing in immediately with the credentials they
       // just provided to obtain a live session.
+      const redirectTo = (location.state as any)?.redirectTo || '/pregnancy-tracker';
       let session = authData.session;
       if (!session) {
         // Guard: duplicate email surfaces here as identities: []
@@ -500,7 +504,7 @@ function OnboardingView() {
         });
         if (signInError || !signInData.session) {
           // Account is created and email is verified — just send them through.
-          navigate('/pregnancy-tracker', { state: { displayName: ownerName, catName } });
+          navigate(redirectTo, { state: { displayName: ownerName, catName } });
           return;
         }
         session = signInData.session;
@@ -526,10 +530,11 @@ function OnboardingView() {
         throw new Error(errorData.error || 'Failed to create profile');
       }
 
-      // Success — navigate to pregnancy tracker setup
+      // Success — navigate to pregnancy tracker setup or other module
+      resetSession();
       startTyping("Meow-velous! Your account is ready! Redirecting...", {
         onComplete: () => {
-          setTimeout(() => navigate('/pregnancy-tracker', { state: { displayName: ownerName, catName } }), 800);
+          setTimeout(() => navigate(redirectTo, { state: { displayName: ownerName, catName } }), 800);
         },
       });
     } catch (err: any) {

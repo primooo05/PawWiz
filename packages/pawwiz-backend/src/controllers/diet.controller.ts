@@ -10,7 +10,8 @@ import {
 
 export const getDietProfiles = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub;
-  const profiles = await dietService.getProfiles(supabaseUserId);
+  const email = (req as any).user?.email;
+  const profiles = await dietService.getProfiles(supabaseUserId, email);
   res.json(profiles);
 });
 

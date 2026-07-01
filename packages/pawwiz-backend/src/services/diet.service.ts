@@ -2,6 +2,7 @@ import { dietRepository } from '../repositories/diet.repository.js';
 import { profileRepository } from '../repositories/profile.repository.js';
 import { assertDefined } from '../utils/guards.js';
 import { AppError } from '../utils/errors.js';
+import { profileService } from './profile.service.js';
 
 function mapProfileToFrontend(profile: any) {
   const mealMap: Record<string, string> = {
@@ -26,10 +27,10 @@ function mapProfileToFrontend(profile: any) {
 
   return {
     id: profile.id,
-    name: profile.name,
-    gender: profile.gender,
-    lifeStage: profile.lifeStage,
-    age: profile.age,
+    name: profile.cat ? profile.cat.name : profile.profile.catName,
+    gender: profile.cat ? profile.cat.sex : profile.profile.catSex,
+    lifeStage: profile.cat ? profile.cat.lifeStage : profile.profile.catLifeStage,
+    age: profile.cat ? (profile.cat.age ?? undefined) : undefined,
     weight: profile.weight,
     isKg: profile.isKg,
     foodPreference: profile.foodPreference,
@@ -41,15 +42,13 @@ function mapProfileToFrontend(profile: any) {
 }
 
 class DietService {
-  private async getProfileIdOrThrow(supabaseUserId: string): Promise<string> {
-    const userProfile = await profileRepository.findBySupabaseUserId(supabaseUserId);
-    assertDefined(userProfile, 'User profile not found. Please complete onboarding first.');
+  private async getProfileIdOrThrow(supabaseUserId: string, email?: string): Promise<string> {
+    const userProfile = await profileService.getProfileByUserId(supabaseUserId, email);
     return userProfile.id;
   }
 
-  async getProfiles(supabaseUserId: string) {
-    const userProfile = await profileRepository.findBySupabaseUserId(supabaseUserId);
-    assertDefined(userProfile, 'User profile not found. Please complete onboarding first.');
+  async getProfiles(supabaseUserId: string, email?: string) {
+    const userProfile = await profileService.getProfileByUserId(supabaseUserId, email);
     const profileId = userProfile.id;
 
     const profiles = await dietRepository.findManyByProfileId(profileId);

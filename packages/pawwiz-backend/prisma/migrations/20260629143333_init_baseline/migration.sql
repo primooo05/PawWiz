@@ -41,4 +41,3 @@ CREATE TABLE "onboarding_sessions" (
 -- CreateIndex
 CREATE UNIQUE INDEX "profiles_supabase_user_id_key" ON "profiles"("supabase_user_id");
 
-
