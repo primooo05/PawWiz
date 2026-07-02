@@ -80,6 +80,7 @@ function OnboardingView() {
   // OTP state
   const [otpCode, setOtpCode] = useState('');
   const [otpCooldown, setOtpCooldown] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Transition state for the circular scale animation
   const zIndexTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,21 +92,6 @@ function OnboardingView() {
   // Ripple effect for "Already have an account" link
   const [rippleStyle, setRippleStyle] = useState<React.CSSProperties | null>(null);
   const [isClicked, setIsClicked] = useState(false);
-
-  const {
-    isStep2Dirty,
-    setIsStep2Dirty,
-    isStep3Dirty,
-    setIsStep3Dirty,
-    isStep4Dirty,
-    setIsStep4Dirty,
-    isStep5Dirty,
-    setIsStep5Dirty,
-    isStep6Dirty,
-    setIsStep6Dirty,
-    isInputFocused,
-  } = useOnboardingState({ step, isTyping, handleNextClick: () => handleNextClick() });
-
 
   // OTP cooldown countdown
   useEffect(() => {
@@ -299,7 +285,7 @@ function OnboardingView() {
   // --- Step submission with typewriter ---
 
   const handleNextClick = async () => {
-    if (isTyping) return;
+    if (isTyping || isSubmitting) return;
 
     if (step === 2) {
       // Fast-path: already completed and no changes
@@ -461,12 +447,16 @@ function OnboardingView() {
   };
 
   const handleAccountCreation = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
+      console.log('handleAccountCreation triggered:', { ownerEmail, password, sessionId });
       // Guard: password lives only in React state and is lost on page refresh.
       // If either field is empty here, the user must re-enter their password.
       if (!ownerEmail?.trim() || !password?.trim()) {
         showStaticBubble('Please re-enter your password — it was lost on refresh. Meow!');
         setTimeout(() => hideBubble(), 4000);
+        setIsSubmitting(false);
         return;
       }
 
@@ -525,7 +515,7 @@ function OnboardingView() {
       }
 
       // Success — navigate to pregnancy tracker setup or other module
-      resetSession();
+      localStorage.removeItem('pawwiz_onboarding_session_id');
       startTyping("Meow-velous! Your account is ready! Redirecting...", {
         onComplete: () => {
           setIsTransitioning(true);
@@ -536,9 +526,24 @@ function OnboardingView() {
     } catch (err: any) {
       showStaticBubble(err.message || "Something went wrong creating your account. Try again!");
       setTimeout(() => hideBubble(), 4000);
+      setIsSubmitting(false);
     }
   };
 
+
+  const {
+    isStep2Dirty,
+    setIsStep2Dirty,
+    isStep3Dirty,
+    setIsStep3Dirty,
+    isStep4Dirty,
+    setIsStep4Dirty,
+    isStep5Dirty,
+    setIsStep5Dirty,
+    isStep6Dirty,
+    setIsStep6Dirty,
+    isInputFocused,
+  } = useOnboardingState({ step, isTyping, handleNextClick });
 
   return (
     <div className="min-h-screen w-full bg-white bg-grid-pattern relative z-0 overflow-hidden flex flex-col justify-between items-center py-12 px-6">

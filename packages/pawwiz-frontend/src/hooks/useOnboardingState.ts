@@ -61,10 +61,7 @@ export function useOnboardingState({ step, isTyping, handleNextClick }: UseOnboa
       if (e.key !== 'Enter') return;
       if (step < 2 || step > 8) return;
 
-      const target = document.activeElement;
-      const isField = !!(target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'));
-
-      if (isTyping || isField) return;
+      if (isTyping) return;
 
       e.preventDefault();
       void handleNextClick();

@@ -47,6 +47,7 @@ model OnboardingSession {
   consumedAt      DateTime? @map("consumed_at")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
+  cats            Cat[]
 
   @@map("onboarding_sessions")
 }
@@ -83,8 +84,10 @@ model Cat {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  profile      Profile?      @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  dietProfiles DietProfile[]
+  profile             Profile?           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  dietProfiles        DietProfile[]
+  onboardingSessionId String?            @map("onboarding_session_id")
+  onboardingSession   OnboardingSession? @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
 
   @@map("cats")
 }

@@ -12,7 +12,7 @@ interface OnboardingGuardProps {
 }
 
 export function OnboardingGuard({ children }: OnboardingGuardProps) {
-  const { step, setStep, sessionId, sessionStep, fetchSession } = useOnboardingContext();
+  const { step, setStep, sessionId, sessionStep, fetchSession, ownerEmail } = useOnboardingContext();
 
   const [loadingGuard, setLoadingGuard] = useState(false);
   const [initialChecked, setInitialChecked] = useState(false);
@@ -21,6 +21,7 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
     let active = true;
 
     const runGuard = async () => {
+      console.log('runGuard triggered:', { step, sessionId, ownerEmail, sessionStep });
       // Step 1 always allowed (entry point)
       if (step === 1) {
         if (active) setInitialChecked(true);
@@ -29,10 +30,14 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
 
       // Steps 6–8 are client-side transitions only; session is already validated
       // by the time the user reaches step 5. No network round-trip needed and no
-      // spinner should ever appear for these steps.
+      // spinner should ever appear for these steps, unless we need to hydrate state on refresh.
       if (step >= 6) {
-        if (active) setInitialChecked(true);
-        return;
+        if (sessionId && !ownerEmail) {
+          // Hydrate the session state on page refresh
+        } else {
+          if (active) setInitialChecked(true);
+          return;
+        }
       }
 
       // No session → force back to step 1
@@ -88,7 +93,7 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
     return () => {
       active = false;
     };
-  }, [step, sessionId, fetchSession, initialChecked, sessionStep, setStep]);
+  }, [step, sessionId, fetchSession, initialChecked, sessionStep, setStep, ownerEmail]);
 
   // Show spinner only while fetching session data for steps 2–5.
   // Steps 6–8 short-circuit above and never reach this render gate.
