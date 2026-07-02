@@ -12,16 +12,46 @@ function mapProfileToFrontend(profile: any) {
     'Dinner': '3'
   };
 
-  const loggedMeals = (profile.mealLogs || []).map((m: any) => ({
-    id: mealMap[m.mealName] || m.id,
-    mealName: m.mealName,
-    foodType: m.foodType || undefined,
-    amount: m.amount !== null ? m.amount : undefined,
-    unit: m.unit || undefined,
-    kcal: m.kcal,
-    status: m.status,
-    timestamp: m.timestamp || undefined,
-  }));
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setUTCHours(23, 59, 59, 999);
+
+  // Filter logs to only include those created today in UTC
+  const todayLogs = (profile.mealLogs || []).filter((m: any) => {
+    const d = new Date(m.createdAt);
+    return d >= todayStart && d <= todayEnd;
+  });
+
+  // Construct loggedMeals, ensuring all 3 standard meals are present
+  const standardMeals = ['Breakfast', 'Lunch', 'Dinner'];
+  const loggedMeals = standardMeals.map(mealName => {
+    const existing = todayLogs.find((m: any) => m.mealName === mealName);
+    if (existing) {
+      return {
+        id: mealMap[mealName] || existing.id,
+        mealName: existing.mealName,
+        foodType: existing.foodType || undefined,
+        amount: existing.amount !== null ? existing.amount : undefined,
+        unit: existing.unit || undefined,
+        kcal: existing.kcal,
+        status: existing.status,
+        timestamp: existing.timestamp || undefined,
+        updatedAt: existing.updatedAt,
+      };
+    } else {
+      return {
+        id: mealMap[mealName],
+        mealName,
+        foodType: undefined,
+        amount: undefined,
+        unit: undefined,
+        kcal: 0,
+        status: 'pending',
+        timestamp: undefined,
+      };
+    }
+  });
 
   // Sort: Breakfast (1), Lunch (2), Dinner (3)
   loggedMeals.sort((a: any, b: any) => a.id.localeCompare(b.id));
@@ -40,6 +70,7 @@ function mapProfileToFrontend(profile: any) {
     waterIntake: profile.waterIntake,
     breed: profile.cat ? profile.cat.breed : profile.profile.catBreed,
     marking: profile.cat ? profile.cat.marking : profile.profile.catMarking,
+    updatedAt: profile.updatedAt,
     loggedMeals,
   };
 }

@@ -35,12 +35,12 @@ export const updateDietProfileSchema = z.object({
 });
 
 export const updateDietMealLogSchema = z.object({
-  foodType: z.enum(['dry', 'wet', 'mixed']).optional(),
-  amount: z.number().nonnegative().optional(),
-  unit: z.enum(['spoon', 'cup']).optional(),
+  foodType: z.enum(['dry', 'wet', 'mixed']).nullable().optional(),
+  amount: z.number().nonnegative().nullable().optional(),
+  unit: z.enum(['spoon', 'cup']).nullable().optional(),
   kcal: z.number().nonnegative().optional(),
   status: z.enum(['pending', 'logged', 'skipped']),
-  timestamp: z.string().optional(),
+  timestamp: z.string().nullable().optional(),
 });
 
 export const updateWaterIntakeSchema = z.object({

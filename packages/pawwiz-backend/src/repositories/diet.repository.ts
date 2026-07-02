@@ -161,13 +161,25 @@ class DietRepository {
   }
 
   async updateMealLog(dietProfileId: string, mealName: string, data: UpdateDietMealLogData) {
-    // Find the meal log ID first
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setUTCHours(23, 59, 59, 999);
+
+    // Find a meal log for today
     const mealLog = await prisma.dietMealLog.findFirst({
-      where: { dietProfileId, mealName },
+      where: { 
+        dietProfileId, 
+        mealName,
+        createdAt: {
+          gte: todayStart,
+          lte: todayEnd,
+        }
+      },
     });
 
     if (!mealLog) {
-      // If for some reason it doesn't exist, create it
+      // If none exists for today, create a new record
       return prisma.dietMealLog.create({
         data: {
           dietProfileId,

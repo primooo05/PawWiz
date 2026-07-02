@@ -288,7 +288,13 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
                     className="flex flex-col gap-8 w-full h-full"
                 >
-                    <WeeklyCalendar />
+                    <WeeklyCalendar successDays={React.useMemo(() => {
+                        try {
+                            return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
+                        } catch (e) {
+                            return [];
+                        }
+                    }, [activeProfileId, loggedMeals])} />
                     <FeedingGuideline ageBracketInfo={ageBracketInfo} />
                     <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} />
                 </motion.div>

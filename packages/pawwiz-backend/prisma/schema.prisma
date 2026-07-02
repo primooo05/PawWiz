@@ -105,7 +105,6 @@ model DietMealLog {
   dietProfile   DietProfile @relation(fields: [dietProfileId], references: [id], onDelete: Cascade)
 
   @@map("diet_meal_logs")
-  @@unique([dietProfileId, mealName])
 }
 
 model Plant {

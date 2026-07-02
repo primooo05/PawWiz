@@ -12,6 +12,7 @@ export interface MealLog {
     kcal: number;
     status: 'pending' | 'logged' | 'skipped';
     timestamp?: string;
+    updatedAt?: string;
 }
 
 export interface CatProfile {
@@ -30,6 +31,7 @@ export interface CatProfile {
     photoUrl?: string | null;
     breed?: string | null;
     marking?: string | null;
+    updatedAt?: string;
 }
 
 export interface AgeBracketDetails {
@@ -130,7 +132,35 @@ export const useDietRecommender = () => {
         return localStorage.getItem('diet_active_profile_id') || '';
     });
 
-    const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
+    const activeProfileRaw = profiles.find(p => p.id === activeProfileId) || profiles[0];
+
+    const sanitizeProfileMeals = (profile?: CatProfile): CatProfile | undefined => {
+        if (!profile) return undefined;
+        const todayStr = new Date().toLocaleDateString('sv-SE');
+        return {
+            ...profile,
+            loggedMeals: profile.loggedMeals.map(m => {
+                if (m.status !== 'pending' && m.updatedAt) {
+                    const mealDateStr = new Date(m.updatedAt).toLocaleDateString('sv-SE');
+                    if (mealDateStr !== todayStr) {
+                        return {
+                            ...m,
+                            status: 'pending',
+                            kcal: 0,
+                            foodType: undefined,
+                            amount: undefined,
+                            unit: undefined,
+                            timestamp: undefined,
+                        };
+                    }
+                }
+                return m;
+            }),
+            waterIntake: (profile.updatedAt && new Date(profile.updatedAt).toLocaleDateString('sv-SE') !== todayStr) ? 0 : profile.waterIntake
+        };
+    };
+
+    const activeProfile = sanitizeProfileMeals(activeProfileRaw);
 
     // Profile form states (synced to the current active profile)
     const [catName, setCatName] = useState<string>(activeProfile?.name || '');
@@ -468,7 +498,7 @@ export const useDietRecommender = () => {
             const kcal = calculateMealCalories(foodType, amount, unit);
 
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     const updatedMeals = p.loggedMeals.map(m => {
                         if (m.id === mealId) {
@@ -487,8 +517,7 @@ export const useDietRecommender = () => {
                     return { ...p, loggedMeals: updatedMeals };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -506,9 +535,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -517,7 +548,7 @@ export const useDietRecommender = () => {
 
         const skipMeal = async (mealId: string) => {
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     const updatedMeals = p.loggedMeals.map(m => {
                         if (m.id === mealId) {
@@ -532,8 +563,7 @@ export const useDietRecommender = () => {
                     return { ...p, loggedMeals: updatedMeals };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -547,9 +577,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -558,7 +590,7 @@ export const useDietRecommender = () => {
 
         const resetMealLog = async (mealId: string) => {
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     const updatedMeals = p.loggedMeals.map(m => {
                         if (m.id === mealId) {
@@ -577,8 +609,7 @@ export const useDietRecommender = () => {
                     return { ...p, loggedMeals: updatedMeals };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -596,9 +627,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -672,6 +705,74 @@ export const useDietRecommender = () => {
             setIsKg(toKg);
             setWeight(prev => toKg ? parseFloat((prev / 2.205).toFixed(1)) : parseFloat((prev * 2.205).toFixed(1)));
         };
+
+        // Daily Reset Logic
+        useEffect(() => {
+            if (!activeProfileId || !activeProfileRaw) return;
+
+            const checkDailyReset = async () => {
+                const todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+                const lastDateKey = `diet_last_date_${activeProfileId}`;
+                const successDaysKey = `diet_success_days_${activeProfileId}`;
+                const lastTrackedDate = localStorage.getItem(lastDateKey);
+
+                let needsReset = false;
+                let prevDayStr = lastTrackedDate;
+
+                if (lastTrackedDate && lastTrackedDate !== todayStr) {
+                    needsReset = true;
+                }
+
+                if (activeProfileRaw && activeProfileRaw.loggedMeals) {
+                    const loggedMealsWithDates = activeProfileRaw.loggedMeals.filter(m => m.updatedAt && (m.status === 'logged' || m.status === 'skipped'));
+                    if (loggedMealsWithDates.length > 0) {
+                        const latestMealDate = new Date(Math.max(...loggedMealsWithDates.map(m => new Date(m.updatedAt!).getTime())));
+                        const latestMealDateStr = latestMealDate.toLocaleDateString('sv-SE');
+                        if (latestMealDateStr !== todayStr) {
+                            needsReset = true;
+                            prevDayStr = latestMealDateStr;
+                        }
+                    }
+                }
+
+                if (needsReset && prevDayStr) {
+                    const meals = activeProfileRaw.loggedMeals || [];
+                    const allCompleted = meals.length > 0 && meals.every(m => m.status === 'logged' || m.status === 'skipped');
+
+                    if (allCompleted) {
+                        try {
+                            const successDays = JSON.parse(localStorage.getItem(successDaysKey) || '[]');
+                            if (!successDays.includes(prevDayStr)) {
+                                successDays.push(prevDayStr);
+                                localStorage.setItem(successDaysKey, JSON.stringify(successDays));
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse success days history', e);
+                        }
+                    }
+
+                    // Reset meals for new day
+                    for (const meal of meals) {
+                        if (meal.status !== 'pending') {
+                            await resetMealLog(meal.id);
+                        }
+                    }
+                    if (activeProfileRaw.waterIntake > 0) {
+                        await resetWater();
+                    }
+                }
+
+                // Only set the last checked date to today if data is clean or reset has occurred
+                if (!needsReset || (activeProfileRaw && activeProfileRaw.loggedMeals && activeProfileRaw.loggedMeals.every(m => m.status === 'pending'))) {
+                    localStorage.setItem(lastDateKey, todayStr);
+                }
+            };
+
+            checkDailyReset();
+
+            const interval = setInterval(checkDailyReset, 30000);
+            return () => clearInterval(interval);
+        }, [activeProfileId, activeProfileRaw?.loggedMeals, activeProfileRaw?.waterIntake]);
 
         const ageBracketInfo = getAgeBracketInfo(lifeStage, age);
 
