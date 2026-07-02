@@ -99,7 +99,7 @@ export const TimePickerModal: React.FC<TimePickerModalProps> = ({
     onClose,
     timeValue,
     onChange,
-    activeColor = '#2ec4b6',
+    activeColor = '#30c290',
     hoverColor = '#20a396',
     shadowColorClass = 'shadow-teal-500/20',
 }) => {

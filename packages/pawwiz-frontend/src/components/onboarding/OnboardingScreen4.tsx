@@ -145,7 +145,7 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
             value={catName}
             onChange={(e) => setCatName(e.target.value)}
             placeholder="Galaxy Destroyer 67"
-            className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+            className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
             disabled={isTyping || !active}
           />
         </div>
@@ -194,7 +194,7 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
               className={`flex-1 flex justify-center items-center gap-2 py-3 px-6 rounded-2xl border-2 font-extrabold text-sm md:text-base cursor-pointer transition-all duration-200 ${
                 catSex === 'Female'
                   ? 'bg-rose-50 border-rose-400 text-rose-500 shadow-[0_4px_0_0_#fda4af] translate-y-[2px]'
-                  : 'bg-white border-[#2ec4b6] text-[#2ec4b6] hover:bg-rose-50/30'
+                  : 'bg-white border-[#30c290] text-[#30c290] hover:bg-rose-50/30'
               }`}
             >
               <span className="text-lg text-rose-400">♀</span> Female
@@ -206,7 +206,7 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
               className={`flex-1 flex justify-center items-center gap-2 py-3 px-6 rounded-2xl border-2 font-extrabold text-sm md:text-base cursor-pointer transition-all duration-200 ${
                 catSex === 'Male'
                   ? 'bg-sky-50 border-sky-400 text-sky-500 shadow-[0_4px_0_0_#bae6fd] translate-y-[2px]'
-                  : 'bg-white border-[#2ec4b6] text-[#2ec4b6] hover:bg-sky-50/30'
+                  : 'bg-white border-[#30c290] text-[#30c290] hover:bg-sky-50/30'
               }`}
             >
               <span className="text-lg text-sky-400">♂</span> Male
@@ -246,7 +246,7 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
 
         {/* Progress Indicators */}
         <div className="flex gap-2.5 mt-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />

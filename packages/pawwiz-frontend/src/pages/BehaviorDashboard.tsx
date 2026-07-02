@@ -44,7 +44,7 @@ const BehaviorDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const behaviorColors: Record<string, string> = {
-    playful: '#2ec4b6',
+    playful: '#30c290',
     anxious: '#FFB870',
     aggressive: '#EF4444',
     affectionate: '#EC4899',
@@ -135,7 +135,7 @@ const BehaviorDashboard: React.FC = () => {
     return (
       <div className="h-screen w-full md:w-[1920px] md:mx-auto flex items-center justify-center bg-[#FAFAFA]">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-[#2ec4b6]/20 border-t-[#2ec4b6] animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 rounded-full border-4 border-[#30c290]/20 border-t-[#30c290] animate-spin mx-auto mb-4" />
           <p className="text-slate-600 font-semibold">Loading behavior insights...</p>
         </div>
       </div>
@@ -150,7 +150,7 @@ const BehaviorDashboard: React.FC = () => {
           <p className="text-slate-600 text-sm">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-[#2ec4b6] text-white rounded-lg font-semibold hover:bg-[#27a7a0]"
+            className="mt-4 px-4 py-2 bg-[#30c290] text-white rounded-lg font-semibold hover:bg-[#27a7a0]"
           >
             Retry
           </button>
@@ -265,8 +265,8 @@ const BehaviorDashboard: React.FC = () => {
                   onClick={() => setSelectedDate(day.date)}
                   className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
                     selectedDate === day.date
-                      ? 'bg-[#2ec4b6]/10 border-[#2ec4b6]'
-                      : 'bg-slate-50 border-slate-200 hover:border-[#2ec4b6]/50'
+                      ? 'bg-[#30c290]/10 border-[#30c290]'
+                      : 'bg-slate-50 border-slate-200 hover:border-[#30c290]/50'
                   }`}
                 >
                   <p className="text-xs font-black text-slate-500 uppercase mb-2">
@@ -386,7 +386,7 @@ const BehaviorDashboard: React.FC = () => {
             <p className="text-slate-600 mb-4">Start logging cat behaviors in the behavior chat to see patterns here</p>
             <button
               onClick={() => navigate('/behavior')}
-              className="px-6 py-3 bg-[#2ec4b6] text-white font-black rounded-xl hover:bg-[#27a7a0] transition-colors"
+              className="px-6 py-3 bg-[#30c290] text-white font-black rounded-xl hover:bg-[#27a7a0] transition-colors"
             >
               Go to Behavior Chat
             </button>

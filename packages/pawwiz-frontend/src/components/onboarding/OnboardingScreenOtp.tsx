@@ -74,7 +74,7 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
           value={otpCode}
           onChange={(e) => setOtpCode(e.target.value)}
           placeholder="Enter 6-digit code"
-          className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40 text-center text-2xl tracking-[0.3em]"
+          className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40 text-center text-2xl tracking-[0.3em]"
           disabled={isTyping || !active}
           aria-label="OTP verification code"
         />
@@ -85,7 +85,7 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
           className={`text-sm font-bold transition-colors ${
             cooldownRemaining > 0 || isTyping || !active
               ? 'text-slate-400 cursor-not-allowed opacity-60'
-              : 'text-[#2ec4b6] hover:text-[#1b9e91] cursor-pointer'
+              : 'text-[#30c290] hover:text-[#1b9e91] cursor-pointer'
           } bg-transparent border-none`}
           aria-label={cooldownRemaining > 0 ? `Resend code available in ${cooldownRemaining} seconds` : 'Resend code'}
         >
@@ -124,8 +124,8 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
 
         {/* Progress Indicators */}
         <div className="flex gap-2.5 mt-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />

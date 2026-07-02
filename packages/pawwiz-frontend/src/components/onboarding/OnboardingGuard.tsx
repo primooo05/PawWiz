@@ -103,7 +103,7 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
   if (loadingGuard || (step > 1 && step < 6 && !initialChecked) || isStepAhead) {
     return (
       <div className="min-h-screen w-full bg-white bg-grid-pattern flex flex-col justify-center items-center">
-        <div className="w-16 h-16 border-4 border-[#2ec4b6] border-t-transparent rounded-full animate-spin mb-4" />
+        <div className="w-16 h-16 border-4 border-[#30c290] border-t-transparent rounded-full animate-spin mb-4" />
         <p className="text-slate-600 font-extrabold text-lg tracking-wider animate-pulse">
           Syncing with Wiz...
         </p>

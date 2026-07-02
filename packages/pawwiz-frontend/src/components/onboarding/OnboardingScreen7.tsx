@@ -288,7 +288,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter Password"
-            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+            className="w-full px-5 py-3.5 pr-12 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
             disabled={isTyping || !active}
             autoComplete="new-password"
           />
@@ -310,7 +310,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Confirm Password"
-            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+            className="w-full px-5 py-3.5 pr-12 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
             disabled={isTyping || !active}
             autoComplete="new-password"
           />

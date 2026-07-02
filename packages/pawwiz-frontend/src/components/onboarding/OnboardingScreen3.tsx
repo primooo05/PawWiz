@@ -69,7 +69,7 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
               disabled={isTyping || !active}
               className={`w-full py-4 px-6 rounded-2xl text-white font-extrabold text-lg md:text-xl border-none cursor-pointer transition-all duration-200 ${isSelected
                   ? 'bg-[#1b9e91] shadow-[0_4px_0_0_#126b62]'
-                  : 'bg-[#2ec4b6] hover:bg-[#39d3c5] shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+                  : 'bg-[#30c290] hover:bg-[#39d3c5] shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
                 }`}
             >
               {option}
@@ -90,7 +90,7 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
               setCatsCount(''); // Clear button selection if typing custom
             }}
             placeholder="Specify e.g., 4"
-            className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+            className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
             disabled={isTyping || !active}
           />
         </div>
@@ -125,9 +125,9 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
 
         {/* Progress Indicators */}
         <div className="flex gap-2.5 mt-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
         </div>
       </div>

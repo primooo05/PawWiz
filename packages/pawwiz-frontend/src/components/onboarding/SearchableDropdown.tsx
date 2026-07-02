@@ -79,7 +79,7 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         onFocus={handleFocus}
         placeholder={placeholder}
         disabled={disabled || !active}
-        className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+        className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
       />
       
       {isOpen && (active || options.length > 0) && (

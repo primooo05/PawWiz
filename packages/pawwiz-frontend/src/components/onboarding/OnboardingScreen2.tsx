@@ -69,7 +69,7 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
           value={ownerName}
           onChange={(e) => setOwnerName(e.target.value)}
           placeholder="Your Name (e.g., Ayla)"
-          className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+          className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
           disabled={isTyping || !active}
         />
         <input
@@ -77,7 +77,7 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
           value={ownerEmail}
           onChange={(e) => setOwnerEmail(e.target.value)}
           placeholder="Your Email (e.g., ayla@example.com)"
-          className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
+          className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
           disabled={isTyping || !active}
           aria-invalid={showBubble}
           aria-describedby="email-error"
@@ -113,7 +113,7 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
 
         {/* Progress Indicators */}
         <div className="flex gap-2.5 mt-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />

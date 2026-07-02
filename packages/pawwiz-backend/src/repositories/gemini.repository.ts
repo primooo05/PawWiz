@@ -83,6 +83,22 @@ class GeminiClient {
 
     return response.text ?? null;
   }
+
+  /**
+   * Generate a plain-text conversational reply (no JSON schema).
+   * Used for follow-up questions where a natural language response is needed
+   * rather than a structured behavior decode.
+   */
+  async generateConversationalText(prompt: string): Promise<string | null> {
+    if (!this.ai) return null;
+
+    const response = await this.ai.models.generateContent({
+      model: TEXT_MODEL,
+      contents: prompt,
+    });
+
+    return response.text ?? null;
+  }
 }
 
 /** Singleton instance */

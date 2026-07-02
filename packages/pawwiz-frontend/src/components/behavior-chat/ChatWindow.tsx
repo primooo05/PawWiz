@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { ChatMessage } from '../../hooks/useBehaviorChat';
-import wizMascot from '../../assets/Wiz_mascot.png';
+import wizMascot from '../../assets/Chat_Behavior_Icon.svg';
 import { 
   SkeletonHeader, 
   SkeletonMessages 
@@ -160,18 +160,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Track typewriter display length per message ID
+  // Tracks how many characters have been revealed per message during typewriter animation.
   const [typewriterState, setTypewriterState] = useState<Record<string, number>>({});
+  // Persists IDs of messages whose typewriter animation has fully completed.
+  // Once in this set a message always renders statically — survives re-renders.
+  const completedMessageIds = useRef<Set<string>>(new Set());
+  // Track which message's chips have been clicked — disables all chips for that message
+  const [clickedChipMessageId, setClickedChipMessageId] = useState<string | null>(null);
+  // Snapshot the message IDs that were present on initial mount (loaded from server/history).
+  // These are pre-existing and should never typewrite.
+  const initialMessageIdsRef = useRef<Set<string>>(new Set(messages.map((m) => m.id)));
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isLoading]);
 
   const setDisplayedLength = useCallback((messageId: string, length: number) => {
-    setTypewriterState((prev) => ({
-      ...prev,
-      [messageId]: Math.min(length, messages.find((m) => m.id === messageId)?.text.length || 0),
-    }));
+    const fullLength = messages.find((m) => m.id === messageId)?.text.length || 0;
+    const clamped = Math.min(length, fullLength);
+    if (clamped >= fullLength) {
+      // Animation complete — mark as seen so it never re-animates
+      completedMessageIds.current.add(messageId);
+    }
+    setTypewriterState((prev) => ({ ...prev, [messageId]: clamped }));
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -269,12 +280,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <>
             {messages.map((msg) => {
           const isWiz = msg.speaker === 'wiz';
-          const displayedLen = typewriterState[msg.id] ?? msg.text.length;
-          const shouldTypewrite = isWiz && !msg.id.startsWith('welcome');
+          // Typewrite only when ALL three are true:
+          // 1. It's a Wiz message
+          // 2. It wasn't present when the component mounted (not history)
+          // 3. Its animation hasn't completed yet (not already seen this session)
+          const isNewMessage = !initialMessageIdsRef.current.has(msg.id);
+          const isCompleted = completedMessageIds.current.has(msg.id);
+          const shouldTypewrite = isWiz && isNewMessage && !isCompleted;
+          // New unseen messages start at 0; everything else renders at full length.
+          const displayedLen = shouldTypewrite
+            ? (typewriterState[msg.id] ?? 0)
+            : msg.text.length;
+          // Chips for this message are disabled once clicked or while loading
+          const chipsDisabled = isLoading || clickedChipMessageId === msg.id;
 
           return (
             <div key={msg.id}>
-            <div
+            <div  
               className={`flex items-end gap-2.5 animate-fadeInUp ${
                 msg.speaker === 'user' ? 'flex-row-reverse' : 'flex-row'
               }`}
@@ -327,17 +349,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 {msg.suggestedPrompts.map((suggestion, idx) => (
                   <button
                     key={idx}
-                    onClick={() => onSend(suggestion)}
-                    disabled={isLoading}
+                    onClick={() => {
+                      setClickedChipMessageId(msg.id);
+                      onSend(suggestion);
+                    }}
+                    disabled={chipsDisabled}
                     className={`px-4 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all border-2 cursor-pointer active:scale-95 ${
-                      isLoading
-                        ? 'opacity-50 pointer-events-none'
+                      chipsDisabled
+                        ? 'opacity-40 pointer-events-none bg-slate-100 border-slate-200 text-slate-400'
                         : 'bg-gradient-to-r from-[#2ec4b6]/10 to-[#FFB870]/10 border-[#2ec4b6]/40 text-slate-700 hover:bg-gradient-to-r hover:from-[#2ec4b6]/20 hover:to-[#FFB870]/20 hover:border-[#2ec4b6]/60 shadow-sm'
                     }`}
                   >
                     {suggestion}
                   </button>
                 ))}
+                {/* "Others" chip — focuses the input so the user can type freely */}
+                <button
+                  onClick={() => inputRef.current?.focus()}
+                  disabled={chipsDisabled}
+                  className={`px-4 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all border-2 cursor-pointer active:scale-95 ${
+                    chipsDisabled
+                      ? 'opacity-40 pointer-events-none bg-slate-100 border-slate-200 text-slate-400'
+                      : 'bg-slate-100 border-slate-300 text-slate-500 hover:bg-slate-200 hover:border-slate-400 shadow-sm'
+                  }`}
+                >
+                  ✏️ Others
+                </button>
               </div>
             )}
             </div>

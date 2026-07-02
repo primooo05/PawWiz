@@ -33,14 +33,14 @@ export default function PregnancyModal({ isOpen, onClose }: PregnancyModalProps)
               value={form.values.matingDate}
               onChange={(e) => form.handleChange('matingDate', e.target.value)}
               onBlur={() => form.handleBlur('matingDate')}
-              className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ec4b6]/40 font-semibold text-slate-800 ${form.errors.matingDate ? 'border-red-400' : 'border-slate-200'}`}
+              className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#30c290]/40 font-semibold text-slate-800 ${form.errors.matingDate ? 'border-red-400' : 'border-slate-200'}`}
             />
             {form.errors.matingDate && <p className="text-red-500 text-xs mt-1">{form.errors.matingDate}</p>}
           </div>
           <button
             type="submit"
             disabled={!form.isValid}
-            className="w-full bg-[#2ec4b6] hover:bg-[#259b90] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+            className="w-full bg-[#30c290] hover:bg-[#259b90] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
           >
             Compute Milestones
           </button>
@@ -50,7 +50,7 @@ export default function PregnancyModal({ isOpen, onClose }: PregnancyModalProps)
           <div className="mt-6 space-y-4 bg-slate-900 text-slate-100 p-5 rounded-2xl border border-slate-800/80 text-xs animate-fadeIn">
             <div className="flex justify-between border-b border-slate-800 pb-2">
               <span className="text-slate-400">Estimated Due Date:</span>
-              <span className="font-extrabold text-[#2ec4b6]">{gestationResult.dueDate}</span>
+              <span className="font-extrabold text-[#30c290]">{gestationResult.dueDate}</span>
             </div>
             <div className="flex justify-between border-b border-slate-800 pb-2">
               <span className="text-slate-400">Days Gested:</span>

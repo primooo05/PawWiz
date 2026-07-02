@@ -113,7 +113,7 @@ export default function Login() {
                 value={form.values.email}
                 onChange={(e) => form.handleChange('email', e.target.value)}
                 onBlur={() => form.handleBlur('email')}
-                className="w-full bg-[#2ec4b6] text-white placeholder-white/80 font-bold px-8 py-4 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
+                className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
               />
               <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${form.errors.email ? 'opacity-100' : 'opacity-0'}`}>
                 {form.errors.email || '\u00A0'}
@@ -135,7 +135,7 @@ export default function Login() {
                   onChange={(e) => form.handleChange('password', e.target.value)}
                   onBlur={() => form.handleBlur('password')}
                   autoComplete="current-password"
-                  className="w-full bg-[#2ec4b6] text-white placeholder-white/80 font-bold px-8 py-4 pr-14 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
+                  className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 pr-14 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
                 />
                 <button
                   type="button"

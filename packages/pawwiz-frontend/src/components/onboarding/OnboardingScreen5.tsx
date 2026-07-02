@@ -71,7 +71,7 @@ export const OnboardingScreen5: React.FC<OnboardingScreen5Props> = ({
                   disabled={isTyping || !active}
                   className={`flex-1 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${isSelected
                       ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
-                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+                      : 'bg-[#30c290] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
                     }`}
                 >
                   {opt.label}
@@ -90,7 +90,7 @@ export const OnboardingScreen5: React.FC<OnboardingScreen5Props> = ({
                   disabled={isTyping || !active}
                   className={`w-2/3 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${isSelected
                       ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
-                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+                      : 'bg-[#30c290] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
                     }`}
                 >
                   {opt.label}
@@ -131,7 +131,7 @@ export const OnboardingScreen5: React.FC<OnboardingScreen5Props> = ({
         {/* Progress Indicators */}
         <div className="flex gap-2.5 mt-2">
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2ec4b6]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#30c290]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
           <span className="w-2.5 h-2.5 rounded-full bg-[#e2e8f0]" />
         </div>

@@ -26,6 +26,8 @@ export function useBehaviorChat() {
   const [inputValue, setInputValue] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
   const msgIdCounter = useRef(1);
+  // Tracks the last user message text per session — used to detect duplicate sends.
+  const lastUserTextRef = useRef<string>('');
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) || sessions[0];
 
@@ -165,15 +167,58 @@ export function useBehaviorChat() {
     ],
   });
 
+  // Reset duplicate-send tracking when the user switches to a different session.
+  useEffect(() => {
+    lastUserTextRef.current = '';
+  }, [activeSessionId]);
+
   // ─── Send message ──────────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading || !activeSessionId) return;
 
+      const trimmed = text.trim();
+
+      // ── Duplicate-send guard ──────────────────────────────────────────────
+      // If the user sends the exact same message twice in a row within the same
+      // session, skip the API call and inject a local Wiz nudge instead.
+      if (trimmed === lastUserTextRef.current) {
+        const dupeUserMsg: ChatMessage = {
+          id: generateLocalId(),
+          speaker: 'user',
+          text: trimmed,
+          timestamp: new Date(),
+        };
+        const nudgeMsg: ChatMessage = {
+          id: generateLocalId(),
+          speaker: 'wiz',
+          text: "Looks like you sent that again! 🐾 I already shared what I know — is there something else about your cat's behavior you'd like to explore?",
+          timestamp: new Date(),
+          suggestedPrompts: [
+            "Tell me something different about what she's doing",
+            'My cat has another behavior I\'m curious about',
+          ],
+        };
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === activeSessionId
+              ? { ...s, messages: [...s.messages, dupeUserMsg, nudgeMsg] }
+              : s
+          )
+        );
+        setInputValue('');
+        saveMessageToServer(activeSessionId, 'user', trimmed);
+        saveMessageToServer(activeSessionId, 'wiz', nudgeMsg.text);
+        return;
+      }
+
+      // Record this send so the next identical message is caught above.
+      lastUserTextRef.current = trimmed;
+
       const userMsg: ChatMessage = {
         id: generateLocalId(),
         speaker: 'user',
-        text: text.trim(),
+        text: trimmed,
         timestamp: new Date(),
       };
 
@@ -184,7 +229,7 @@ export function useBehaviorChat() {
             ? {
                 ...s,
                 title: s.messages.filter((m) => m.speaker === 'user').length === 0
-                  ? text.trim().slice(0, 30) + (text.trim().length > 30 ? '…' : '')
+                  ? trimmed.slice(0, 40) + (trimmed.length > 40 ? '…' : '')
                   : s.title,
                 messages: [...s.messages, userMsg],
               }
@@ -196,19 +241,29 @@ export function useBehaviorChat() {
       setIsLoading(true);
 
       // Persist user message to server
-      saveMessageToServer(activeSessionId, 'user', text.trim());
+      saveMessageToServer(activeSessionId, 'user', trimmed);
 
       try {
         const headers = await getAuthHeaders();
-        const parsed = parseUserInput(text.trim());
+        const parsed = parseUserInput(trimmed);
+
+        // Build conversation history from the last 6 messages (3 exchanges) so
+        // the AI can answer follow-up questions in context. Excludes the welcome
+        // message and the current user message (not yet in the session list).
+        const currentSession = sessions.find((s) => s.id === activeSessionId);
+        const recentMessages = (currentSession?.messages ?? [])
+          .filter((m) => m.id !== 'welcome')
+          .slice(-6)
+          .map((m) => ({ role: m.speaker, content: m.text })) as Array<{ role: 'user' | 'wiz'; content: string }>;
 
         const response = await fetch(`${API_BASE}/api/gemini/behavior/decode`, {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            vocalDescription: parsed.vocal,
+            vocalDescription: parsed.vocalDescription,
             bodyLanguageSigns: parsed.bodySigns,
             context: parsed.context,
+            conversationHistory: recentMessages.length > 0 ? recentMessages : undefined,
           }),
         });
 
@@ -223,8 +278,17 @@ export function useBehaviorChat() {
           if (data.type === 'clarifying') {
             wizText = `${data.question}\n\n**Try one of these:**`;
             suggestedPrompts = data.suggestedPrompts;
-            // Don't include action plan for clarifying responses
-          } 
+          }
+          // Handle curiosity follow-up (structured-but-thin prompt)
+          else if (data.type === 'followup') {
+            wizText = data.question;
+            suggestedPrompts = data.suggestedPrompts;
+          }
+          // Handle plain-text conversational reply (follow-up questions, validation requests)
+          else if (data.type === 'conversational') {
+            wizText = data.text;
+            // No analysis card, no chips — just a direct answer
+          }
           // Handle full analysis response
           else if (data.type === 'analysis') {
             analysis = data.analysis;
@@ -273,7 +337,7 @@ export function useBehaviorChat() {
         setIsLoading(false);
       }
     },
-    [activeSessionId, isLoading]
+    [activeSessionId, isLoading, sessions]
   );
 
   // ─── Create new session ─────────────────────────────────────────────────────
@@ -342,8 +406,9 @@ export function useBehaviorChat() {
 }
 
 /**
- * Simple parser that extracts vocal descriptions, body signs, and context
- * from a free-form user message.
+ * Extracts vocal and body language hints from a free-form user message,
+ * but always preserves the full original text as the primary vocal description
+ * so the backend validator and AI receive complete context.
  */
 function parseUserInput(text: string) {
   const knownSigns = [
@@ -363,31 +428,13 @@ function parseUserInput(text: string) {
     'whiskers back',
   ];
 
-  const knownVocals = [
-    'hiss',
-    'hissing',
-    'meow',
-    'meowing',
-    'chirp',
-    'chirping',
-    'trill',
-    'trilling',
-    'purr',
-    'purring',
-    'growl',
-    'growling',
-    'yowl',
-    'yowling',
-    'chatter',
-    'chattering',
-  ];
-
   const lowerText = text.toLowerCase();
   const detectedSigns = knownSigns.filter((s) => lowerText.includes(s));
-  const detectedVocals = knownVocals.filter((v) => lowerText.includes(v));
 
   return {
-    vocal: detectedVocals.length > 0 ? detectedVocals.join(', ') : text.slice(0, 80),
+    // Always send the full user text — never reduce to a single extracted keyword.
+    // The backend validator uses word count and topic detection on the full sentence.
+    vocalDescription: text,
     bodySigns: detectedSigns.length > 0 ? detectedSigns : ['observing behavior'],
     context: text,
   };

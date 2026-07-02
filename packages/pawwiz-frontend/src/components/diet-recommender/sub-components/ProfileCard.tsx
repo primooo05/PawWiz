@@ -35,13 +35,13 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 <button
                     type="button"
                     onClick={onEditProfile}
-                    className="text-xs font-black text-[#2ec4b6] hover:text-[#20a396] cursor-pointer active:scale-95 transition-transform"
+                    className="text-xs font-black text-[#30c290] hover:text-[#20a396] cursor-pointer active:scale-95 transition-transform"
                 >
                     Edit Profile
                 </button>
             </div>
 
-            <div className="w-24 h-24 bg-teal-50 border-4 border-[#2ec4b6] rounded-full flex items-center justify-center overflow-hidden mb-4 shadow-[2px_2px_0_0_rgba(15,23,42,1)] text-[#2ec4b6]">
+            <div className="w-24 h-24 bg-teal-50 border-4 border-[#30c290] rounded-full flex items-center justify-center overflow-hidden mb-4 shadow-[2px_2px_0_0_rgba(15,23,42,1)] text-[#30c290]">
                 {photoUrl ? (
                     <img src={photoUrl} alt={catName} className="w-full h-full object-cover" />
                 ) : (
@@ -65,7 +65,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Life Stage</span>
                         <span className="text-xs font-black text-slate-800 capitalize mt-0.5">{activeLifeStage}</span>
                     </div>
-                    <span className="text-[10px] font-black text-[#2ec4b6] uppercase">
+                    <span className="text-[10px] font-black text-[#30c290] uppercase">
                         {age} {lifeStage === 'kitten' ? (age === 1 ? 'month' : 'months') : (age === 1 ? 'year' : 'years')} old
                     </span>
                 </div>

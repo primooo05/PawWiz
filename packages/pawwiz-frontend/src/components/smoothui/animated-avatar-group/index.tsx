@@ -100,7 +100,7 @@ const AnimatedAvatarGroup = ({
               className={cn(
                 "rounded-full object-cover border-2 transition-all duration-200",
                 avatar.isActive
-                  ? "border-[#2ec4b6] ring-4 ring-[#2ec4b6]/25 shadow-md scale-105"
+                  ? "border-[#30c290] ring-4 ring-[#30c290]/25 shadow-md scale-105"
                   : "border-slate-900"
               )}
               height={size}
@@ -129,9 +129,9 @@ const AnimatedAvatarGroup = ({
                     }
               }
               className={cn(
-                "rounded-full border-2 transition-all duration-200 bg-teal-50 flex items-center justify-center text-[#2ec4b6]",
+                "rounded-full border-2 transition-all duration-200 bg-teal-50 flex items-center justify-center text-[#30c290]",
                 avatar.isActive
-                  ? "border-[#2ec4b6] ring-4 ring-[#2ec4b6]/25 shadow-md scale-105"
+                  ? "border-[#30c290] ring-4 ring-[#30c290]/25 shadow-md scale-105"
                   : "border-slate-900"
               )}
               style={{
@@ -204,7 +204,7 @@ const AnimatedAvatarGroup = ({
                     className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-slate-900 border border-slate-800 text-white font-black text-[10px] tracking-wider uppercase rounded-xl shadow-xl whitespace-nowrap z-[1000] pointer-events-none"
                   >
                     {avatar.name}
-                    {avatar.isActive && <span className="text-[#2ec4b6] ml-1.5 font-bold">✓</span>}
+                    {avatar.isActive && <span className="text-[#30c290] ml-1.5 font-bold">✓</span>}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900" />
                   </motion.div>
                 )}

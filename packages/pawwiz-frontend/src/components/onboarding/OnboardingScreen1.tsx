@@ -44,8 +44,8 @@ export const OnboardingScreen1: React.FC<OnboardingScreen1Props> = ({
         <a
           href="/login"
           onClick={handleAlreadyHaveAccountClick}
-          className={`w-full max-w-[280px] bg-white hover:bg-slate-50 font-extrabold py-3.5 px-6 rounded-2xl text-center text-sm tracking-wider border-2 border-[#2ec4b6] shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer relative overflow-hidden block ${
-            isClicked ? 'text-white' : 'text-[#2ec4b6]'
+          className={`w-full max-w-[280px] bg-white hover:bg-slate-50 font-extrabold py-3.5 px-6 rounded-2xl text-center text-sm tracking-wider border-2 border-[#30c290] shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer relative overflow-hidden block ${
+            isClicked ? 'text-white' : 'text-[#30c290]'
           }`}
         >
           <span className="relative z-0 transition-colors duration-200">Already have an account</span>

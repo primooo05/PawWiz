@@ -113,7 +113,7 @@ export default function WizChatDemo() {
     <div className="relative w-full max-w-2xl mx-auto">
       {/* Ambient glows */}
       <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-[#e9c46a]/12 rounded-full filter blur-3xl pointer-events-none -z-10" />
-      <div className="absolute -left-12 -top-12 w-52 h-52 bg-[#2ec4b6]/10 rounded-full filter blur-3xl pointer-events-none -z-10" />
+      <div className="absolute -left-12 -top-12 w-52 h-52 bg-[#30c290]/10 rounded-full filter blur-3xl pointer-events-none -z-10" />
 
       {/* Card: rectangular modern card */}
       <div className="bg-white rounded-2xl border border-slate-200/70 shadow-[0_24px_64px_-8px_rgba(0,0,0,0.09)] flex flex-col overflow-hidden">
@@ -122,7 +122,7 @@ export default function WizChatDemo() {
         <div className="flex items-center gap-4 px-6 py-4.5 border-b border-slate-100 bg-white">
           {/* Wiz avatar */}
           <div className="relative flex-shrink-0">
-            <div className="w-11 h-11 rounded-full bg-[#2ec4b6] flex items-center justify-center shadow-sm">
+            <div className="w-11 h-11 rounded-full bg-[#30c290] flex items-center justify-center shadow-sm">
               <PawIcon className="w-6 h-6 text-white" />
             </div>
             {/* Online dot */}

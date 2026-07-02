@@ -128,7 +128,7 @@ export default function UserDashboardView() {
             </div>
             <div className="w-full bg-slate-200 h-3.5 rounded-full border-2 border-slate-900 overflow-hidden relative">
               <div
-                className="bg-[#2ec4b6] h-full rounded-full transition-all duration-300 border-r-2 border-slate-900"
+                className="bg-[#30c290] h-full rounded-full transition-all duration-300 border-r-2 border-slate-900"
                 style={{ width: `${pregnancy.progressPercentage}%` }}
               />
             </div>
@@ -185,7 +185,7 @@ export default function UserDashboardView() {
                 key={key}
                 className={`border border-slate-900/20 rounded-xl p-2.5 text-center transition-all ${
                   meal.status === 'logged'
-                    ? 'bg-[#2ec4b6]/20 border-[#2ec4b6] text-teal-950 font-bold'
+                    ? 'bg-[#30c290]/20 border-[#30c290] text-teal-950 font-bold'
                     : meal.status === 'skipped'
                     ? 'bg-slate-100 border-slate-300 text-slate-400 line-through'
                     : 'bg-white text-slate-500'
@@ -201,7 +201,7 @@ export default function UserDashboardView() {
 
           <button
             onClick={() => navigate('/diet-recommender')}
-            className="w-full bg-[#2ec4b6] hover:bg-[#3bd4c5] text-white font-black py-3 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer text-sm tracking-wider uppercase min-h-[44px]"
+            className="w-full bg-[#30c290] hover:bg-[#3bd4c5] text-white font-black py-3 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer text-sm tracking-wider uppercase min-h-[44px]"
           >
             Manage Diet & Water
           </button>

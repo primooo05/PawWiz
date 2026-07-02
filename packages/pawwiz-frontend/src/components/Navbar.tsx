@@ -141,7 +141,7 @@ export default function Navbar() {
           <div ref={navContainerRef} className="hidden md:flex items-center space-x-8 relative py-1">
             {/* Sliding indicator line */}
             <div
-              className="absolute bottom-[-10px] h-[3px] bg-[#2ec4b6] rounded-full transition-all duration-300 ease-out"
+              className="absolute bottom-[-10px] h-[3px] bg-[#30c290] rounded-full transition-all duration-300 ease-out"
               style={{
                 left: indicatorStyle.left,
                 width: indicatorStyle.width,
@@ -157,7 +157,7 @@ export default function Navbar() {
                   key={link.href}
                   href={isHome ? link.href : `/${link.href}`}
                   data-section={sectionId}
-                  className={`text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${isActive ? 'text-[#2ec4b6]' : 'text-slate-500 hover:text-slate-900'
+                  className={`text-xs font-bold uppercase tracking-wider transition-colors duration-200 ${isActive ? 'text-[#30c290]' : 'text-slate-500 hover:text-slate-900'
                     }`}
                   onClick={(e) => {
                     e.preventDefault();
@@ -237,7 +237,7 @@ export default function Navbar() {
                     }
                   }}
                   className={`text-xs font-bold uppercase tracking-wider px-3 py-3 rounded-lg transition-all ${activeSection === link.href.replace('#', '')
-                      ? 'text-[#2ec4b6] bg-slate-50'
+                      ? 'text-[#30c290] bg-slate-50'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   style={{
@@ -259,9 +259,9 @@ export default function Navbar() {
 
       {/* Decorative Circles expanding on click */}
       <div className={`fixed inset-0 pointer-events-none z-[9999] overflow-hidden transition-opacity duration-300 ${isTransitioning ? 'opacity-100' : 'opacity-0'}`}>
-        <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#2ec4b6] rounded-full absolute -top-16 -left-16 transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
-        <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#2ec4b6] rounded-full absolute -top-8 -right-8 transition-transform duration-[2000ms] ease-in-out origin-top-right ${isTransitioning ? 'scale-[12]' : 'scale-0'}`} />
-        <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#2ec4b6] rounded-full absolute -bottom-24 -right-24 transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+        <div className={`w-64 h-64 md:w-80 md:h-80 bg-[#30c290] rounded-full absolute -top-16 -left-16 transition-transform duration-[2000ms] ease-in-out origin-top-left ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
+        <div className={`w-24 h-24 md:w-32 md:h-32 bg-[#30c290] rounded-full absolute -top-8 -right-8 transition-transform duration-[2000ms] ease-in-out origin-top-right ${isTransitioning ? 'scale-[12]' : 'scale-0'}`} />
+        <div className={`w-72 h-72 md:w-96 md:h-96 bg-[#30c290] rounded-full absolute -bottom-24 -right-24 transition-transform duration-[2000ms] ease-in-out origin-bottom-right ${isTransitioning ? 'scale-[8]' : 'scale-0'}`} />
       </div>
     </>
   );

@@ -60,7 +60,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #2ec4b6;
+  background-color: #30c290;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-button {
@@ -124,7 +124,7 @@ body {
 .ripple-span {
   position: absolute;
   border-radius: 50%;
-  background-color: #2ec4b6;
+  background-color: #30c290;
   pointer-events: none;
   transform: translate(-50%, -50%);
   animation: ripple 600ms ease-out;

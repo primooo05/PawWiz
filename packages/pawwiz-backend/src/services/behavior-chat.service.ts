@@ -10,6 +10,7 @@ import { behaviorChatRepository } from '../repositories/behavior-chat.repository
 import { createBehaviorLog } from '../repositories/behavior-log.repository.js';
 import type { ChatWithMessages, CreateMessageData } from '../repositories/behavior-chat.repository.js';
 import { extractBehaviors } from '../utils/behavior-extractor.js';
+import { extractTitle } from '../utils/keyword-extractor.js';
 import { AppError } from '../utils/errors.js';
 import { logger } from '../utils/winston.js';
 
@@ -105,12 +106,13 @@ class BehaviorChatService {
       });
     }
 
-    // Auto-update title from first user message
+    // Auto-update title from first user message using deterministic RAKE
+    // keyword extraction — no LLM round-trip, no external dependency.
     const chat = await behaviorChatRepository.findById(data.chatId);
     if (chat && data.speaker === 'user') {
       const userMessages = chat.messages.filter((m: { speaker: string }) => m.speaker === 'user');
       if (userMessages.length === 1) {
-        const newTitle = data.text.slice(0, 30) + (data.text.length > 30 ? '…' : '');
+        const newTitle = extractTitle(data.text);
         await behaviorChatRepository.updateTitle(data.chatId, newTitle);
       }
     }

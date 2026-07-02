@@ -117,7 +117,7 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
           background: transparent;
         }
         .scrollbar-custom::-webkit-scrollbar-thumb {
-          background: #2ec4b6;
+          background: #30c290;
           border-radius: 8px;
         }
         .scrollbar-custom::-webkit-scrollbar-thumb:hover {
@@ -129,14 +129,14 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
         
         /* Firefox scrollbar */
         .scrollbar-custom {
-          scrollbar-color: #2ec4b6 transparent;
+          scrollbar-color: #30c290 transparent;
           scrollbar-width: thin;
         }
       `}</style>
       {/* Cat Profile Card */}
       <div className="bg-white rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0_0_rgba(15,23,42,1)] p-5 flex flex-col items-center">
         {/* Avatar */}
-        <div className="w-16 h-16 bg-teal-50 border-3 border-[#2ec4b6] rounded-full flex items-center justify-center overflow-hidden mb-3 shadow-sm text-[#2ec4b6]">
+        <div className="w-16 h-16 bg-teal-50 border-3 border-[#30c290] rounded-full flex items-center justify-center overflow-hidden mb-3 shadow-sm text-[#30c290]">
           {profile?.photoUrl ? (
             <img src={profile.photoUrl} alt={profile.name} className="w-full h-full object-cover" />
           ) : (
@@ -155,7 +155,7 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
           </>
         ) : profile ? (
           <>
-            <span className="bg-[#2ec4b6] text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider mb-3">
+            <span className="bg-[#30c290] text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider mb-3">
               {profile.name}
             </span>
 
@@ -214,7 +214,7 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-slate-500">Analyses</span>
-              <span className="text-xs font-black text-[#2ec4b6] bg-[#2ec4b6]/10 px-2 py-0.5 rounded-md">
+              <span className="text-xs font-black text-[#30c290] bg-[#30c290]/10 px-2 py-0.5 rounded-md">
                 {analysisCount}
               </span>
             </div>
@@ -229,29 +229,28 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
       </div>
 
       {/* Quick Tips */}
-      <div className="bg-gradient-to-br from-[#2ec4b6]/5 to-[#2ec4b6]/10 rounded-2xl border-2 border-[#2ec4b6]/30 p-4">
-        <h3 className="text-[10px] font-black text-[#2ec4b6] uppercase tracking-wider mb-2">
-          💡 Quick Tips
+      <div className="bg-gradient-to-br from-[#30c290]/5 to-[#30c290]/10 rounded-2xl border-2 border-[#30c290]/30 p-4">
+        <h3 className="text-[10px] font-black text-[#30c290] uppercase tracking-wider mb-2">
         </h3>
         <ul className="space-y-1.5 text-[10px] text-slate-600 font-medium">
           <li className="flex items-start gap-1.5">
-            <span className="text-[#2ec4b6]">•</span>
+            <span className="text-[#30c290]">•</span>
             Mention specific sounds: hiss, chirp, trill
           </li>
           <li className="flex items-start gap-1.5">
-            <span className="text-[#2ec4b6]">•</span>
+            <span className="text-[#30c290]">•</span>
             Describe body posture: tail, ears, eyes
           </li>
           <li className="flex items-start gap-1.5">
-            <span className="text-[#2ec4b6]">•</span>
+            <span className="text-[#30c290]">•</span>
             Add context: time of day, triggers
           </li>
         </ul>
       </div>
 
       {/* Divider */}
-      <div className="border-t border-[#2ec4b6]/20 pt-3">
-        <h3 className="text-[10px] font-black text-[#2ec4b6] uppercase tracking-wider mb-2">
+      <div className="border-t border-[#30c290]/20 pt-3">
+        <h3 className="text-[10px] font-black text-[#30c290] uppercase tracking-wider mb-2">
           ✏️ Try this example
         </h3>
         <button
@@ -262,18 +261,18 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
               `Every night around 2 AM, ${catName ?? 'my cat'} suddenly sprints around the house, makes a loud trill, and her tail is fully puffed. It lasts about 10 minutes then she's completely calm. What's happening?`
             )
           }
-          className={`w-full text-left bg-white/60 hover:bg-white border border-[#2ec4b6]/20 hover:border-[#2ec4b6]/60 rounded-xl px-3 py-2.5 transition-all group cursor-pointer ${
+          className={`w-full text-left bg-white/60 hover:bg-white border border-[#30c290]/20 hover:border-[#30c290]/60 rounded-xl px-3 py-2.5 transition-all group cursor-pointer ${
             isLoading ? 'opacity-50 pointer-events-none' : ''
           }`}
         >
           <p className="text-[10px] text-slate-500 leading-relaxed italic group-hover:text-slate-700 transition-colors">
             "Every night around 2 AM,{' '}
-            <span className="font-semibold not-italic text-[#2ec4b6]">
+            <span className="font-semibold not-italic text-[#30c290]">
               {catName ?? 'my cat'}
             </span>{' '}
             suddenly sprints around the house, makes a loud trill, and her tail is fully puffed. It lasts about 10 minutes then she's completely calm. What's happening?"
           </p>
-          <p className="text-[10px] text-[#2ec4b6] font-bold mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <p className="text-[10px] text-[#30c290] font-bold mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
             Click to use this example →
           </p>
         </button>

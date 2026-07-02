@@ -79,6 +79,9 @@ export interface BehaviorDecodeRequest {
   vocalDescription: string;
   bodyLanguageSigns: string[]; // e.g., "tail twitching", "pupils dilated", "ears back"
   context: string; // e.g., "approaching food", "after play", "petting tail"
+  /** Recent conversation turns passed for context-aware follow-up handling.
+   *  Each entry is a { role, content } pair (max 6 turns = 3 exchanges). */
+  conversationHistory?: Array<{ role: 'user' | 'wiz'; content: string }>;
 }
 
 export interface BehaviorDecodeResponse {
@@ -88,4 +91,10 @@ export interface BehaviorDecodeResponse {
   catState: "Happy/Relaxed" | "Anxious/Stressed" | "Playful" | "Aggressive/Defensive" | "Overstimulated" | "Sick/In Pain" | "Unknown";
   confidenceScore: number;
   actionPlan: string[];
+}
+
+/** Plain-text conversational reply — no structured analysis, just a direct answer. */
+export interface ConversationalReply {
+  type: 'conversational';
+  text: string;
 }

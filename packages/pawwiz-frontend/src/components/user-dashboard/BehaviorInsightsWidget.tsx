@@ -108,7 +108,7 @@ const BehaviorInsightsWidget: React.FC<BehaviorInsightsWidgetProps> = ({ onViewM
       {/* View More Button */}
       <button
         onClick={onViewMore}
-        className="w-full bg-[#2ec4b6] hover:bg-[#3bd4c5] text-white font-black py-2.5 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer text-xs tracking-wider uppercase"
+        className="w-full bg-[#30c290] hover:bg-[#3bd4c5] text-white font-black py-2.5 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer text-xs tracking-wider uppercase"
       >
         View Full Report
       </button>

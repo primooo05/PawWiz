@@ -45,7 +45,7 @@ export default function BehaviorModal({ isOpen, onClose, apiBase }: BehaviorModa
               value={form.values.vocal}
               onChange={(e) => form.handleChange('vocal', e.target.value)}
               onBlur={() => form.handleBlur('vocal')}
-              className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#2ec4b6]/40 font-semibold text-slate-800 placeholder-slate-400 ${form.errors.vocal ? 'border-red-400' : 'border-slate-200'}`}
+              className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#30c290]/40 font-semibold text-slate-800 placeholder-slate-400 ${form.errors.vocal ? 'border-red-400' : 'border-slate-200'}`}
             />
             {form.errors.vocal && <p className="text-red-500 text-xs mt-1">{form.errors.vocal}</p>}
           </div>
@@ -58,7 +58,7 @@ export default function BehaviorModal({ isOpen, onClose, apiBase }: BehaviorModa
               value={form.values.context}
               onChange={(e) => form.handleChange('context', e.target.value)}
               onBlur={() => form.handleBlur('context')}
-              className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#2ec4b6]/40 font-semibold text-slate-800 placeholder-slate-400 ${form.errors.context ? 'border-red-400' : 'border-slate-200'}`}
+              className={`w-full bg-slate-50 border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#30c290]/40 font-semibold text-slate-800 placeholder-slate-400 ${form.errors.context ? 'border-red-400' : 'border-slate-200'}`}
             />
             {form.errors.context && <p className="text-red-500 text-xs mt-1">{form.errors.context}</p>}
           </div>
@@ -73,7 +73,7 @@ export default function BehaviorModal({ isOpen, onClose, apiBase }: BehaviorModa
                   onClick={() => toggleBodySign(sign)}
                   className={`text-[9px] font-black py-1.5 px-3 rounded-lg border transition-all cursor-pointer ${
                     form.values.bodySigns.includes(sign)
-                      ? 'bg-[#2ec4b6]/10 border-[#2ec4b6] text-[#2ec4b6] shadow-sm'
+                      ? 'bg-[#30c290]/10 border-[#30c290] text-[#30c290] shadow-sm'
                       : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100'
                   }`}
                 >
@@ -88,7 +88,7 @@ export default function BehaviorModal({ isOpen, onClose, apiBase }: BehaviorModa
             type="button"
             onClick={handleDecodeBehavior}
             disabled={decodeLoading || !form.isValid}
-            className="w-full bg-[#2ec4b6] hover:bg-[#259b90] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-extrabold py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer mt-1"
+            className="w-full bg-[#30c290] hover:bg-[#259b90] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-extrabold py-2.5 rounded-xl text-[10px] uppercase tracking-wider transition-colors shadow-sm cursor-pointer mt-1"
           >
             {decodeLoading ? 'Decoding...' : '🔑 Decode Behavior'}
           </button>

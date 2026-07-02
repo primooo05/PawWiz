@@ -32,6 +32,12 @@ export const behaviorSchema = z.object({
   vocalDescription: z.string().min(1),
   bodyLanguageSigns: z.array(z.string()).nonempty(),
   context: z.string().min(1),
+  conversationHistory: z.array(
+    z.object({
+      role: z.enum(['user', 'wiz']),
+      content: z.string(),
+    })
+  ).max(6).optional(),
 });
 
 // Toxicity search endpoint — POST /api/toxicity/search

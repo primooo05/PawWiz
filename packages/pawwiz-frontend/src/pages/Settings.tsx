@@ -61,14 +61,14 @@ function CatAvatarTrigger({
                 onClick={triggerUpload}
                 disabled={uploading}
                 aria-label={`Upload photo for ${catName}`}
-                className="w-14 h-14 rounded-full border-3 border-[#2ec4b6] bg-teal-50 flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:border-[#FFB870] focus:outline-none focus:ring-2 focus:ring-[#2ec4b6] focus:ring-offset-2 disabled:opacity-50"
+                className="w-14 h-14 rounded-full border-3 border-[#30c290] bg-teal-50 flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:border-[#FFB870] focus:outline-none focus:ring-2 focus:ring-[#30c290] focus:ring-offset-2 disabled:opacity-50"
             >
                 {uploading ? (
                     <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
                 ) : photoUrl ? (
                     <img src={photoUrl} alt={catName} className="w-full h-full object-cover" />
                 ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#2ec4b6]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#30c290]">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
                 )}
@@ -330,7 +330,7 @@ export default function Settings() {
                                                             switchProfile(cat.id);
                                                             navigate('/diet-recommender');
                                                         }}
-                                                        className="bg-[#2ec4b6] hover:bg-[#39d3c5] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
+                                                        className="bg-[#30c290] hover:bg-[#39d3c5] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
                                                     >
                                                         Select
                                                     </button>
@@ -412,14 +412,14 @@ export default function Settings() {
                                     <button
                                         type="button"
                                         onClick={() => setNewCatGender('male')}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'male' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'male' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
                                         Male
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setNewCatGender('female')}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'female' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'female' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
                                         Female
                                     </button>
@@ -437,7 +437,7 @@ export default function Settings() {
                                         onClick={() => {
                                             setNewCatLifeStage('kitten');
                                         }}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'kitten' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'kitten' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
                                         Kitten
                                     </button>
@@ -446,7 +446,7 @@ export default function Settings() {
                                         onClick={() => {
                                             setNewCatLifeStage('adult');
                                         }}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'adult' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'adult' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
                                         Adult
                                     </button>
@@ -455,7 +455,7 @@ export default function Settings() {
                                         onClick={() => {
                                             setNewCatLifeStage('senior');
                                         }}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'senior' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'senior' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
                                         Senior
                                     </button>
@@ -550,7 +550,7 @@ export default function Settings() {
                                         navigate('/diet-recommender', { state: { askSetupFor: toast.catId } });
                                     }, 800);
                                 }}
-                                className="bg-[#2ec4b6] hover:bg-[#39d3c5] text-white font-extrabold px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer whitespace-nowrap"
+                                className="bg-[#30c290] hover:bg-[#39d3c5] text-white font-extrabold px-3 py-1.5 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer whitespace-nowrap"
                             >
                                 View
                             </button>
