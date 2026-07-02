@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CircleWrapper } from '../components/CircleWrapper';
+import Navbar from '../components/Navbar';
 import { useLogin } from '../hooks/useLogin';
 import catsLogin from '../assets/Cats_Login.svg';
 
@@ -9,17 +10,25 @@ export default function Login() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Transition state for the circular scale animation
+  const [isTransitioning, setIsTransitioning] = useState(
+    !!(location.state as { animateIn?: boolean })?.animateIn
+  );
+  const [isZIndexHigh, setIsZIndexHigh] = useState(
+    !!(location.state as { animateIn?: boolean })?.animateIn
+  );
+
   const {
     form,
     isSubmitting,
     serverError,
     handleLogin,
-  } = useLogin();
-
-  // Transition state for the circular scale animation
-  const [isTransitioning, setIsTransitioning] = useState(
-    !!(location.state as { animateIn?: boolean })?.animateIn
-  );
+  } = useLogin({
+    onSuccess: () => {
+      setIsTransitioning(true);
+      setIsZIndexHigh(true);
+    },
+  });
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -31,19 +40,29 @@ export default function Login() {
   // Clear animateIn state on mount
   useEffect(() => {
     if ((location.state as { animateIn?: boolean })?.animateIn) {
-      const timer = setTimeout(() => setIsTransitioning(false), 100);
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        setTimeout(() => setIsZIndexHigh(false), 800);
+      }, 100);
       return () => clearTimeout(timer);
     }
   }, [location.state]);
 
   return (
     <div className="min-h-dvh w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center pt-20 sm:pt-24 lg:pt-28 pb-10 sm:pb-12 px-4 sm:px-6">
+      <Navbar />
 
       {/* Decorative Circles */}
-      <CircleWrapper isTransitioning={isTransitioning} />
+      <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
 
       {/* Main content wrapper */}
-      <div className={`relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-between gap-8 lg:gap-12 ${isTransitioning ? 'z-0' : 'z-10'} my-auto`}>
+      <div className={`relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-between gap-8 lg:gap-12 transition-opacity duration-300 ${
+        isTransitioning
+          ? 'z-0 invisible opacity-0'
+          : isZIndexHigh
+            ? 'z-0 opacity-0'
+            : 'z-10 opacity-100'
+      } my-auto`}>
 
         {/* Left side: branding text (desktop) + text visible on mobile above the form */}
         <div className="flex flex-col items-start justify-between w-full lg:w-1/2 max-w-lg mx-auto lg:mx-0 relative">
@@ -81,16 +100,6 @@ export default function Login() {
           )}
 
           <form onSubmit={handleLogin} noValidate className="flex flex-col gap-6">
-            <input
-              type="text"
-              name="honeypot"
-              value={form.values.honeypot}
-              onChange={(e) => form.handleChange('honeypot', e.target.value)}
-              style={{ display: 'none' }}
-              tabIndex={-1}
-              autoComplete="off"
-            />
-
             {/* Email Field */}
             <div className="flex flex-col text-left">
               <label htmlFor="email" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
@@ -156,6 +165,16 @@ export default function Login() {
                 {form.errors.password || '\u00A0'}
               </p>
             </div>
+
+            <input
+              type="text"
+              name="honeypot"
+              value={form.values.honeypot}
+              onChange={(e) => form.handleChange('honeypot', e.target.value)}
+              style={{ position: 'absolute', opacity: 0, zIndex: -1, width: 0, height: 0, pointerEvents: 'none' }}
+              tabIndex={-1}
+              autoComplete="new-password"
+            />
 
             <button
               type="submit"

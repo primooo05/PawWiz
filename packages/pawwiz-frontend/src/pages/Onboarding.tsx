@@ -219,7 +219,7 @@ function OnboardingView() {
 
     await new Promise((resolve) => setTimeout(resolve, 450));
     { setIsTransitioning(true); setIsZIndexHigh(true); }
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     navigate('/login', { state: { animateIn: true } });
   };
@@ -237,7 +237,7 @@ function OnboardingView() {
 
   const handleReturnToHome = () => {
     { setIsTransitioning(true); setIsZIndexHigh(true); }
-    setTimeout(() => navigate('/', { state: { animateOut: true } }), 800);
+    setTimeout(() => navigate('/', { state: { animateOut: true } }), 2000);
   };
 
   const handleAddOtherBabies = () => {
@@ -484,7 +484,7 @@ function OnboardingView() {
       // enabled — even though the user's email was already verified via OTP in
       // this flow. Recover by signing in immediately with the credentials they
       // just provided to obtain a live session.
-      const redirectTo = (location.state as any)?.redirectTo || '/pregnancy-tracker';
+      const redirectTo = (location.state as any)?.redirectTo || '/dashboard';
       let session = authData.session;
       if (!session) {
         // Guard: duplicate email surfaces here as identities: []
@@ -528,7 +528,9 @@ function OnboardingView() {
       resetSession();
       startTyping("Meow-velous! Your account is ready! Redirecting...", {
         onComplete: () => {
-          setTimeout(() => navigate(redirectTo, { state: { displayName: ownerName, catName } }), 800);
+          setIsTransitioning(true);
+          setIsZIndexHigh(true);
+          setTimeout(() => navigate(redirectTo, { state: { displayName: ownerName, catName, animateIn: true } }), 2000);
         },
       });
     } catch (err: any) {

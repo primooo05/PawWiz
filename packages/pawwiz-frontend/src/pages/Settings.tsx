@@ -48,17 +48,17 @@ export default function Settings() {
         setNewCatIsSpayedNeutered(true);
     };
 
-    const handleNavigation = (item: string) => {
+        const handleNavigation = (item: string) => {
         if (item === 'calendar') {
-            navigate('/pregnancy-tracker');
+        navigate('/pregnancy-tracker');
         } else if (item === 'dashboard') {
-            navigate('/');
+        navigate('/dashboard');
         } else if (item === 'diet-reco') {
-            navigate('/diet-recommender');
+        navigate('/diet-recommender');
         } else if (item === 'settings') {
-            navigate('/settings');
+        navigate('/settings');
         } else if (item === 'plant') {
-            navigate('/');
+        navigate('/');
         }
     };
 

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useFormValidation } from './useFormValidation';
 import { loginSchema } from '../schemas/auth';
 
-export function useLogin() {
+export function useLogin(config?: { onSuccess?: () => void }) {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -19,6 +19,9 @@ export function useLogin() {
     
     // Honeypot check — silent fail, no console output to avoid leaking bot detection
     if (form.values.honeypot) {
+      if (import.meta.env.DEV) {
+        console.warn('[PawWiz] Honeypot field triggered. Value:', form.values.honeypot);
+      }
       return;
     }
 
@@ -43,7 +46,11 @@ export function useLogin() {
       }
 
       if (data.user) {
-        navigate('/diet-recommender');
+        if (config?.onSuccess) {
+          config.onSuccess();
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+        navigate('/dashboard', { state: { animateIn: true } });
       }
     } catch (err: any) {
       setServerError(err.message || 'An error occurred during login');

@@ -1,11 +1,11 @@
 import React from 'react';
 import dietRecoIcon from '../assets/diet-reco.png';
-import plantIcon from '../assets/plant-checker.png';
+import catBehaviorIcon from '../assets/cat-behavior.png'
 import dashboardIcon from '../assets/dashboard.png';
 import calendarIcon from '../assets/calendar.png';
 import settingsIcon from '../assets/settings.png';
 
-export type BottomNavItemKey = 'diet-reco' | 'plant' | 'dashboard' | 'calendar' | 'settings';
+export type BottomNavItemKey = 'diet-reco' | 'behavior' | 'dashboard' | 'calendar' | 'settings';
 
 export interface BottomNavProps {
     activeItem?: BottomNavItemKey;
@@ -19,7 +19,7 @@ const NAV_ITEMS: Array<{
     icon: string;
 }> = [
         { key: 'diet-reco', label: 'Diet', icon: dietRecoIcon },
-        { key: 'plant', label: 'Plant', icon: plantIcon },
+        { key: 'behavior', label: 'Cat Behavior', icon: catBehaviorIcon },
         { key: 'dashboard', label: 'Dashboard', icon: dashboardIcon },
         { key: 'calendar', label: 'Calendar', icon: calendarIcon },
         { key: 'settings', label: 'Settings', icon: settingsIcon },
