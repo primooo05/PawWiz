@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getFelineFeedingGuideDetails } from '../../hooks/useDietRecommender';
 import type { AgeBracketDetails, MealLog, CatProfile } from '../../hooks/useDietRecommender';
 import ConfirmationDialog from '../modals/ConfirmationDialog';
 import { useNavigate } from 'react-router-dom';
@@ -85,12 +86,13 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 
     // Nutrition formulas (weight normalized to kg)
     const weightInKg = isKg ? weight : weight * 0.45359237;
-    const rer = Math.round(70 * Math.pow(weightInKg, 0.75));
-    const factor = activeLifeStage === 'kitten' ? 2.5 : isSpayedNeutered ? 1.2 : 1.4;
-    const dailyCalories = Math.round(rer * factor);
+    const feedingGuide = getFelineFeedingGuideDetails(activeLifeStage, weightInKg, foodPreference);
+    const dailyCalories = feedingGuide.dailyCalories;
 
-    // Water target (approx. 50ml per kg)
-    const waterTarget = Math.round(weightInKg * 50);
+    // Water target (kitten: approx. 70ml per kg; adult/senior: approx. 50ml per kg)
+    const waterTarget = activeLifeStage === 'kitten'
+        ? Math.round(weightInKg * 70)
+        : Math.round(weightInKg * 50);
 
     const totalLoggedCalories = loggedMeals.reduce((sum, m) => sum + m.kcal, 0);
     const remainingCalories = Math.max(0, dailyCalories - totalLoggedCalories);
@@ -278,6 +280,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                         onEditMeal={handleEditMealClick}
                         onUndoSkip={(mealId) => resetMealLog(mealId)}
                         lifeStage={lifeStage}
+                        catName={catName}
                     />
                 </motion.div>
 
@@ -301,7 +304,12 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                         const dbDays = currentProfile?.successDays || [];
                         return Array.from(new Set([...localDays, ...dbDays]));
                     }, [activeProfileId, profiles, loggedMeals])} />
-                    <FeedingGuideline ageBracketInfo={ageBracketInfo} />
+                    <FeedingGuideline
+                        lifeStage={activeLifeStage}
+                        weight={weight}
+                        isKg={isKg}
+                        foodPreference={foodPreference}
+                    />
                     <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
                 </motion.div>
             </div>

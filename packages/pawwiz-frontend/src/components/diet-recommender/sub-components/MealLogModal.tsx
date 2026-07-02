@@ -155,50 +155,19 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Switch Button (Cup or Spoon) */}
-                        <div>
-                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Unit</label>
-                            <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-full justify-between">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setModalUnit('cup');
-                                        setModalAmount(prev => Math.min(4, Math.max(0.25, prev / 3)));
-                                    }}
-                                    className={`flex-1 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${
-                                        modalUnit === 'cup' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                    }`}
-                                >
-                                    Cup
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setModalUnit('spoon');
-                                        setModalAmount(prev => Math.min(10, Math.max(1, Math.round(prev * 3))));
-                                    }}
-                                    className={`flex-1 py-2 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${
-                                        modalUnit === 'spoon' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-850'
-                                    }`}
-                                >
-                                    Spoon
-                                </button>
-                            </div>
-                        </div>
-
                         {/* Measurement Size */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
                                 <span>Measurement:</span>
                                 <span className="font-extrabold text-[#2ec4b6] uppercase">
-                                    {modalAmount} {modalUnit === 'spoon' ? (modalAmount === 1 ? 'spoon' : 'spoons') : (modalAmount === 1 ? 'cup' : 'cups')}
+                                    {modalAmount.toFixed(2)} {modalAmount === 1 ? 'spoon' : 'spoons'}
                                 </span>
                             </div>
                             <input
                                 type="range"
-                                min={modalUnit === 'spoon' ? "1" : "0.25"}
-                                max={modalUnit === 'spoon' ? "10" : "4"}
-                                step={modalUnit === 'spoon' ? "1" : "0.25"}
+                                min="0.25"
+                                max="10"
+                                step="0.25"
                                 value={modalAmount}
                                 onChange={(e) => setModalAmount(parseFloat(e.target.value))}
                                 className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"

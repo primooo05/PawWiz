@@ -11,6 +11,7 @@ interface MealsTrackerProps {
     onAddMeal: () => void;
     onUndoSkip: (mealId: string) => void;
     lifeStage?: string;
+    catName?: string;
 }
 
 export const MealsTracker: React.FC<MealsTrackerProps> = ({
@@ -23,6 +24,7 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
     onAddMeal,
     onUndoSkip,
     lifeStage,
+    catName = 'Your cat',
 }) => {
     const [localWater, setLocalWater] = useState(waterIntake);
 
@@ -119,6 +121,12 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
 
             {/* Slim Water Intake Row */}
             <div className="mt-4 flex flex-col gap-4">
+                {localWater >= waterTarget && (
+                    <div className="bg-[#40C48E]/10 border border-[#40C48E] text-[#1b5c3e] rounded-2xl p-3 text-xs font-black text-center flex items-center justify-center gap-2 animate-fadeIn">
+                        All filled up! {catName} is perfectly taken care of, thanks to you.
+                    </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-black text-slate-800 uppercase tracking-wider">Water Intake:</span>
@@ -179,16 +187,24 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
                 </div>
 
                 {/* Water Intake Tips & Guidelines */}
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3.5 text-[11px] text-slate-600 space-y-1.5 mt-1">
-                    <p className="font-extrabold text-blue-900 uppercase tracking-wide text-[9px]">Hydration Guidelines</p>
-                    <p className="leading-relaxed">
-                        💡 <strong className="text-slate-850">Tip:</strong> Measuring the water in a cup first before putting it on a bowl is more accurate.
-                    </p>
-                    <p className="leading-relaxed">
-                        📝 <strong className="text-slate-850">Note:</strong> {lifeStage?.toLowerCase() === 'kitten' 
-                            ? 'A growing kitten needs approximately 60 to 80 ml of water per kilogram of body weight daily.' 
-                            : 'An adult cat needs approximately 50 ml of water per kilogram of body weight daily.'}
-                    </p>
+                <div className="border border-blue-100 rounded-2xl p-4 bg-blue-50/30 text-xs text-slate-700 space-y-3 mt-1">
+                    <p className="font-extrabold text-blue-905 uppercase tracking-wider text-[9px] mb-1">Hydration Guidelines</p>
+                    
+                    <div className="flex items-start gap-2.5">
+                        <span className="text-sm mt-0.5">💡</span>
+                        <p className="leading-relaxed font-bold text-slate-700">
+                            <strong className="text-blue-900 font-black">Tip:</strong> Measuring the water in a cup first before putting it on a bowl is more accurate.
+                        </p>
+                    </div>
+                    
+                    <div className="flex items-start gap-2.5">
+                        <span className="text-sm mt-0.5">📝</span>
+                        <p className="leading-relaxed font-bold text-slate-700">
+                            <strong className="text-blue-900 font-black">Note:</strong> {lifeStage?.toLowerCase() === 'kitten' 
+                                ? 'A growing kitten needs approximately 60 to 80 ml of water per kilogram of body weight daily.' 
+                                : 'An adult cat needs approximately 50 ml of water per kilogram of body weight daily.'}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

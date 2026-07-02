@@ -100,19 +100,17 @@ export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult' | 'senior', age:
 export const calculateMealCalories = (
     foodType: 'dry' | 'wet' | 'mixed',
     amount: number,
-    unit: 'spoon' | 'cup'
+    unit?: 'spoon' | 'cup'
 ): number => {
     if (foodType === 'dry') {
-        const grams = unit === 'cup' ? amount * 120 : amount * 15;
-        return Math.round(grams * 3.8);
+        return Math.round(amount * 25);
     } else if (foodType === 'wet') {
-        const grams = unit === 'cup' ? amount * 240 : amount * 15;
-        return Math.round(grams * 0.85);
+        return Math.round(amount * 15);
     } else {
         // Mixed: 50% dry, 50% wet
-        const dryGrams = unit === 'cup' ? (amount * 120) / 2 : (amount * 15) / 2;
-        const wetGrams = unit === 'cup' ? (amount * 240) / 2 : (amount * 15) / 2;
-        return Math.round(dryGrams * 3.8 + wetGrams * 0.85);
+        const dryAmount = amount / 2;
+        const wetAmount = amount / 2;
+        return Math.round(dryAmount * 25 + wetAmount * 15);
     }
 };
 
@@ -831,3 +829,171 @@ export const useDietRecommender = () => {
             setDisplayName,
         };
     };
+
+export interface FeedingGuideDetails {
+    condition: string;
+    dailySpoons: string;
+    portionPerMeal: string;
+    frequency: string;
+    dailyCalories: number;
+}
+
+export const getFelineFeedingGuideDetails = (
+    lifeStage: 'kitten' | 'adult' | 'senior',
+    weightInKg: number,
+    foodPreference: 'dry' | 'wet' | 'mixed'
+): FeedingGuideDetails => {
+    let condition = 'Average / Ideal';
+    let dailySpoons = '';
+    let portionPerMeal = '';
+    let frequency = '';
+    let dailyCalories = 0;
+
+    if (lifeStage === 'kitten') {
+        frequency = '4 Meals Per Day';
+        if (weightInKg < 1.0) {
+            condition = 'Lightweight / Small';
+            if (foodPreference === 'wet') {
+                dailySpoons = '7 wet spoons';
+                portionPerMeal = '1.75 spoons wet';
+                dailyCalories = 7 * 15;
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '4 dry spoons';
+                portionPerMeal = '1.00 spoon dry';
+                dailyCalories = 4 * 25;
+            } else {
+                dailySpoons = '3 wet + 2 dry spoons';
+                portionPerMeal = '0.75 spoon wet + 0.50 spoon dry';
+                dailyCalories = (3 * 15) + (2 * 25);
+            }
+        } else if (weightInKg <= 3.0) {
+            condition = 'Average / Ideal';
+            if (foodPreference === 'wet') {
+                dailySpoons = '15 wet spoons';
+                portionPerMeal = '3.75 spoons wet';
+                dailyCalories = 15 * 15;
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '9 dry spoons';
+                portionPerMeal = '2.25 spoons dry';
+                dailyCalories = 9 * 25;
+            } else {
+                dailySpoons = '6 wet + 5 dry spoons';
+                portionPerMeal = '1.50 spoons wet + 1.25 spoons dry';
+                dailyCalories = (6 * 15) + (5 * 25);
+            }
+        } else {
+            condition = 'Overweight / Large';
+            if (foodPreference === 'wet') {
+                dailySpoons = '23 wet spoons';
+                portionPerMeal = '5.75 spoons wet';
+                dailyCalories = 23 * 15;
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '14 dry spoons';
+                portionPerMeal = '3.50 spoons dry';
+                dailyCalories = 14 * 25;
+            } else {
+                dailySpoons = '8 wet + 9 dry spoons';
+                portionPerMeal = '2.00 spoons wet + 2.25 spoons dry';
+                dailyCalories = (8 * 15) + (9 * 25);
+            }
+        }
+    } else if (lifeStage === 'adult') {
+        frequency = '2 Meals Per Day';
+        if (weightInKg < 3.5) {
+            condition = 'Lightweight / Thin';
+            if (foodPreference === 'wet') {
+                dailySpoons = '12 wet spoons';
+                portionPerMeal = '6.00 spoons wet';
+                dailyCalories = 12 * 15;
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '7 dry spoons';
+                portionPerMeal = '3.50 spoons dry';
+                dailyCalories = 7 * 25;
+            } else {
+                dailySpoons = '4 wet + 5 dry spoons';
+                portionPerMeal = '2.00 spoons wet + 2.50 spoons dry';
+                dailyCalories = (4 * 15) + (5 * 25);
+            }
+        } else if (weightInKg <= 5.0) {
+            condition = 'Average / Ideal';
+            if (foodPreference === 'wet') {
+                dailySpoons = '15 wet spoons';
+                portionPerMeal = '7.50 spoons wet';
+                dailyCalories = 15 * 15;
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '9 dry spoons';
+                portionPerMeal = '4.50 spoons dry';
+                dailyCalories = 9 * 25;
+            } else {
+                dailySpoons = '4 wet + 7 dry spoons';
+                portionPerMeal = '2.00 spoons wet + 3.50 spoons dry';
+                dailyCalories = (4 * 15) + (7 * 25);
+            }
+        } else {
+            condition = 'Overweight / Obese';
+            if (foodPreference === 'wet') {
+                dailySpoons = '11 wet spoons';
+                portionPerMeal = '5.50 spoons wet';
+                dailyCalories = 11 * 15;
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '7 dry spoons';
+                portionPerMeal = '3.50 spoons dry';
+                dailyCalories = 7 * 25;
+            } else {
+                dailySpoons = '4 wet + 4 dry spoons';
+                portionPerMeal = '2.00 spoons wet + 2.00 spoons dry';
+                dailyCalories = (4 * 15) + (4 * 25);
+            }
+        }
+    } else { // senior
+        frequency = '3 Meals Per Day';
+        if (weightInKg < 3.5) {
+            condition = 'Lightweight / Thin';
+            if (foodPreference === 'wet') {
+                dailySpoons = '15 wet spoons';
+                portionPerMeal = '5.00 spoons wet';
+                dailyCalories = 15 * 15;
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '9 dry spoons';
+                portionPerMeal = '3.00 spoons dry';
+                dailyCalories = 9 * 25;
+            } else {
+                dailySpoons = '6 wet + 6 dry spoons';
+                portionPerMeal = '2.00 spoons wet + 2.00 spoons dry';
+                dailyCalories = (6 * 15) + (6 * 25);
+            }
+        } else if (weightInKg <= 5.0) {
+            condition = 'Average / Ideal';
+            if (foodPreference === 'wet') {
+                dailySpoons = '13 wet spoons';
+                portionPerMeal = '4.30 spoons wet';
+                dailyCalories = Math.round(13 * 15);
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '8 dry spoons';
+                portionPerMeal = '2.60 spoons dry';
+                dailyCalories = 8 * 25;
+            } else {
+                dailySpoons = '4 wet + 6 dry spoons';
+                portionPerMeal = '1.30 spoons wet + 2.00 spoons dry';
+                dailyCalories = (4 * 15) + (6 * 25);
+            }
+        } else {
+            condition = 'Overweight / Obese';
+            if (foodPreference === 'wet') {
+                dailySpoons = '11 wet spoons';
+                portionPerMeal = '3.60 spoons wet';
+                dailyCalories = Math.round(11 * 15);
+            } else if (foodPreference === 'dry') {
+                dailySpoons = '6 dry spoons';
+                portionPerMeal = '2.00 spoons dry';
+                dailyCalories = 6 * 25;
+            } else {
+                dailySpoons = '4 wet + 4 dry spoons';
+                portionPerMeal = '1.30 spoons wet + 1.30 spoons dry';
+                dailyCalories = (4 * 15) + (4 * 25);
+            }
+        }
+    }
+
+    return { condition, dailySpoons, portionPerMeal, frequency, dailyCalories };
+};

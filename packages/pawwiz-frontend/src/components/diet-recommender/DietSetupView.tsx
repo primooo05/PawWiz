@@ -305,6 +305,43 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                         onChange={(e) => setWeight(parseFloat(e.target.value))}
                         className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
                     />
+                    
+                    {/* Weight Assessment Preview */}
+                    <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl animate-fadeIn mt-3">
+                        <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider">Weight Assessment Preview</span>
+                        <p className="text-sm font-black text-teal-900 mt-1">
+                            {lifeStage.charAt(0).toUpperCase() + lifeStage.slice(1)}: {(() => {
+                                const weightInKg = isKg ? weight : weight * 0.45359237;
+                                if (lifeStage === 'kitten') {
+                                    if (weightInKg < 1.0) return 'Lightweight / Small';
+                                    if (weightInKg <= 3.0) return 'Average / Ideal';
+                                    return 'Overweight / Large';
+                                } else {
+                                    if (weightInKg < 3.5) return 'Lightweight / Thin';
+                                    if (weightInKg <= 5.0) return 'Average / Ideal';
+                                    return 'Overweight / Obese';
+                                }
+                            })()}
+                        </p>
+                        <p className="text-[10px] text-teal-700 font-medium mt-1 leading-relaxed">
+                            {(() => {
+                                const weightInKg = isKg ? weight : weight * 0.45359237;
+                                if (lifeStage === 'kitten') {
+                                    if (weightInKg < 1.0) return 'Under 1.0 kg (2.2 lbs) — Often under 2 months old; never restrict calories.';
+                                    if (weightInKg <= 3.0) return '1.0 – 3.0 kg (2.2 – 6.6 lbs) — Standard growing kitten range.';
+                                    return 'Over 3.0 kg (6.6 lbs) — Large breed (e.g., Maine Coon) or older kitten.';
+                                } else if (lifeStage === 'adult') {
+                                    if (weightInKg < 3.5) return 'Under 3.5 kg (7.7 lbs) — Ribs easily felt; needs a slight calorie increase.';
+                                    if (weightInKg <= 5.0) return '3.5 – 5.0 kg (7.7 – 11.0 lbs) — Well-proportioned; visible waist behind the ribs.';
+                                    return 'Over 5.0 kg (11.0 lbs) — No visible waist; fat pad on belly covers ribs.';
+                                } else {
+                                    if (weightInKg < 3.5) return 'Under 3.5 kg (7.7 lbs) — High risk for muscle wasting; needs calorie boost.';
+                                    if (weightInKg <= 5.0) return '3.5 – 5.0 kg (7.7 – 11.0 lbs) — Well-proportioned; visible waist behind the ribs.';
+                                    return 'Over 5.0 kg (11.0 lbs) — No visible waist; fat pad on belly covers ribs.';
+                                }
+                            })()}
+                        </p>
+                    </div>
                 </div>                 {/* 4. Life Stage Selection */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
