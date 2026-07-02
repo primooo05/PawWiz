@@ -92,6 +92,7 @@ function mapProfileToFrontend(profile: any) {
     waterIntake: profile.waterIntake,
     breed: profile.cat ? profile.cat.breed : profile.profile.catBreed,
     marking: profile.cat ? profile.cat.marking : profile.profile.catMarking,
+    photoUrl: profile.cat?.photoUrl || null,
     updatedAt: profile.updatedAt,
     successDays,
     loggedMeals,
@@ -170,6 +171,21 @@ class DietService {
     let newWaterIntake = data.reset ? 0 : Math.max(0, existing.waterIntake + data.amount);
 
     const updated = await dietRepository.update(profileId, { waterIntake: newWaterIntake });
+    return mapProfileToFrontend(updated);
+  }
+
+  async updateAvatar(supabaseUserId: string, profileId: string, photoUrl: string) {
+    const userProfileId = await this.getProfileIdOrThrow(supabaseUserId);
+    const existing = await dietRepository.findByIdAndProfileId(profileId, userProfileId);
+    if (!existing) throw AppError.notFound('Diet profile not found');
+    if (!existing.catId) throw AppError.badRequest('Profile has no associated cat');
+
+    await prisma.cat.update({
+      where: { id: existing.catId },
+      data: { photoUrl } as any,
+    });
+
+    const updated = await dietRepository.findById(profileId);
     return mapProfileToFrontend(updated);
   }
 }

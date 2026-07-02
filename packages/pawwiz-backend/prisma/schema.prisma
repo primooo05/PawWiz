@@ -81,6 +81,7 @@ model Cat {
   sex       String
   lifeStage String   @map("life_stage")
   age       Int?
+  photoUrl  String?  @map("photo_url")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -138,7 +139,8 @@ model BehaviorChat {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  messages BehaviorMessage[]
+  messages       BehaviorMessage[]
+  behaviorLogs   BehaviorLog[]
 
   @@index([supabaseUserId])
   @@map("behavior_chats")
@@ -156,4 +158,28 @@ model BehaviorMessage {
 
   @@index([chatId])
   @@map("behavior_messages")
+}
+
+model BehaviorLog {
+  id             String   @id @default(cuid())
+  chatId         String   @map("chat_id")
+  supabaseUserId String   @map("supabase_user_id")
+  catId          String?  @map("cat_id")
+  behaviorType   String   @map("behavior_type")   // 'playful', 'anxious', 'aggressive', 'lethargic', 'affectionate', etc.
+  intensity      String                           // 'mild', 'moderate', 'severe'
+  description    String                           // e.g. "Cat sprinting around house at 2 AM"
+  context        String?                          // e.g. "night time", "after meal"
+  extractedFrom  String   @map("extracted_from")  // description of the user message it came from
+  confidence     Float    @default(0.5)           // 0-1 scale: how confident we are about this behavior classification
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  chat BehaviorChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([supabaseUserId])
+  @@index([chatId])
+  @@index([catId])
+  @@index([behaviorType])
+  @@index([createdAt])
+  @@map("behavior_logs")
 }

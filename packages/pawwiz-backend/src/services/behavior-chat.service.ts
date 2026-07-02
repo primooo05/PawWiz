@@ -2,11 +2,14 @@
  * Service Layer — Behavior Chat
  * Orchestrates chat session CRUD and message persistence.
  * Delegates data access to BehaviorChatRepository.
+ * Extracts and logs behavior patterns from conversations.
  * Singleton Pattern — exported as a single instance.
  */
 
 import { behaviorChatRepository } from '../repositories/behavior-chat.repository.js';
+import { createBehaviorLog } from '../repositories/behavior-log.repository.js';
 import type { ChatWithMessages, CreateMessageData } from '../repositories/behavior-chat.repository.js';
+import { extractBehaviors } from '../utils/behavior-extractor.js';
 import { AppError } from '../utils/errors.js';
 import { logger } from '../utils/winston.js';
 
@@ -49,7 +52,7 @@ class BehaviorChatService {
     return behaviorChatRepository.findById(chat.id);
   }
 
-  /** Add a message to a chat (with ownership check) */
+  /** Add a message to a chat (with ownership check & behavior extraction) */
   async addMessage(supabaseUserId: string, data: CreateMessageData) {
     const belongs = await behaviorChatRepository.belongsToUser(data.chatId, supabaseUserId);
     if (!belongs) {
@@ -57,6 +60,50 @@ class BehaviorChatService {
     }
 
     const message = await behaviorChatRepository.addMessage(data);
+
+    // Extract and log behaviors from user messages
+    if (data.speaker === 'user') {
+      // Non-blocking behavior extraction — errors don't fail message creation
+      setImmediate(async () => {
+        try {
+          const extractedBehaviors = extractBehaviors(data.text);
+          
+          for (const behavior of extractedBehaviors) {
+            try {
+              await createBehaviorLog({
+                chatId: data.chatId,
+                supabaseUserId,
+                behaviorType: behavior.type,
+                intensity: behavior.intensity,
+                description: behavior.description,
+                context: behavior.context,
+                extractedFrom: data.text,
+                confidence: behavior.confidence,
+              });
+            } catch (logError) {
+              logger.warn('[BehaviorChat] Failed to create behavior log', {
+                error: (logError as Error).message,
+                behaviorType: behavior.type,
+              });
+            }
+          }
+
+          if (extractedBehaviors.length > 0) {
+            logger.debug('[BehaviorChat] Extracted behaviors', {
+              supabaseUserId,
+              chatId: data.chatId,
+              count: extractedBehaviors.length,
+              types: extractedBehaviors.map(b => b.type),
+            });
+          }
+        } catch (error) {
+          logger.error('[BehaviorChat] Error extracting behaviors', { 
+            error: (error as Error).message,
+            stack: (error as Error).stack,
+          });
+        }
+      });
+    }
 
     // Auto-update title from first user message
     const chat = await behaviorChatRepository.findById(data.chatId);

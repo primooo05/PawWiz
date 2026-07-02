@@ -82,7 +82,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
 
           {/* Chat list */}
-          <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1 [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/30 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-button]:hidden">
+          <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1 scrollbar-sidebar">
             {isLoading ? (
               <SkeletonSidebar />
             ) : (
@@ -143,6 +143,32 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </div>
         </div>
       </aside>
+      
+      {/* Scrollbar styles for sidebar */}
+      <style>{`
+        .scrollbar-sidebar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .scrollbar-sidebar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-sidebar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 9999px;
+        }
+        .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.5);
+        }
+        .scrollbar-sidebar::-webkit-scrollbar-button {
+          display: none;
+        }
+        
+        /* Firefox scrollbar */
+        .scrollbar-sidebar {
+          scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+          scrollbar-width: thin;
+        }
+      `}</style>
     </>
   );
 };

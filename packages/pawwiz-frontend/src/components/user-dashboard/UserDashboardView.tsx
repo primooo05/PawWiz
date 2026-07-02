@@ -5,6 +5,7 @@ import { usePregnancyTracker } from '../../hooks/usePregnancyTracker';
 import { useDietRecommender } from '../../hooks/useDietRecommender';
 import { useBehaviorDecoder } from '../../hooks/useBehaviorDecoder';
 import BottomNav from '../BottomNav';
+import BehaviorInsightsWidget from './BehaviorInsightsWidget';
 import { CircleWrapper } from '../CircleWrapper';
 
 export default function UserDashboardView() {
@@ -205,6 +206,9 @@ export default function UserDashboardView() {
             Manage Diet & Water
           </button>
         </div>
+
+        {/* Behavior Insights Widget */}
+        <BehaviorInsightsWidget onViewMore={() => navigate('/behavior-insights')} />
 
         {/* Behavior Explainer Widget */}
         <div className="bg-[#FFF5F5] border-2 border-slate-900 rounded-2xl p-5 shadow-[4px_4px_0_0_#0f172a] flex flex-col gap-3">

@@ -17,7 +17,7 @@ declare global {
   }
 }
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseUrl = process.env.SUPABASE_URL || '';
 
 const client = supabaseUrl
   ? jwksClient({
@@ -45,7 +45,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 
     if (alg === 'ES256') {
       if (!client) {
-        throw new Error('JWKS client is not initialized (VITE_SUPABASE_URL is missing)');
+        throw new Error('JWKS client is not initialized (SUPABASE_URL is missing)');
       }
       const kid = decodedHeader?.header?.kid;
       if (!kid) {

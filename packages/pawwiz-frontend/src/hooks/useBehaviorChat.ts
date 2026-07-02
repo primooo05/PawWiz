@@ -9,6 +9,7 @@ export interface ChatMessage {
   text: string;
   timestamp: Date;
   analysis?: BehaviorDecodeResponse;
+  suggestedPrompts?: string[];
 }
 
 export interface ChatSession {
@@ -213,11 +214,26 @@ export function useBehaviorChat() {
 
         let wizText: string;
         let analysis: BehaviorDecodeResponse | undefined;
+        let suggestedPrompts: string[] = [];
 
         if (response.ok) {
-          const data: BehaviorDecodeResponse = await response.json();
-          analysis = data;
-          wizText = formatAnalysisResponse(data);
+          const data = await response.json();
+          
+          // Handle clarifying response (vague prompt)
+          if (data.type === 'clarifying') {
+            wizText = `${data.question}\n\n**Try one of these:**`;
+            suggestedPrompts = data.suggestedPrompts;
+            // Don't include action plan for clarifying responses
+          } 
+          // Handle full analysis response
+          else if (data.type === 'analysis') {
+            analysis = data.analysis;
+            wizText = formatAnalysisResponse(data.analysis);
+          } else {
+            // Fallback for older response format
+            analysis = data;
+            wizText = formatAnalysisResponse(data);
+          }
         } else {
           wizText =
             "I couldn't fully analyze that right now. Could you describe the behavior in more detail? Try mentioning specific sounds (hissing, chirping, meowing) and body language (tail position, ear position, pupils).";
@@ -229,6 +245,7 @@ export function useBehaviorChat() {
           text: wizText,
           timestamp: new Date(),
           analysis,
+          suggestedPrompts,
         };
 
         setSessions((prev) =>

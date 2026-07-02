@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDietRecommender } from '../hooks/useDietRecommender';
+import { useCatAvatarUpload } from '../hooks/useCatAvatarUpload';
 import BottomNav from '../components/BottomNav';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import LoadingScreen from '../components/LoadingScreen';
 import { SearchableDropdown } from '../components/onboarding/SearchableDropdown';
 import { AnimatePresence, motion } from 'motion/react';
@@ -21,6 +23,84 @@ const markingOptions = [
     'Harlequin'
 ];
 
+function CatAvatarTrigger({
+    catProfileId,
+    photoUrl,
+    catName,
+    onUploadSuccess,
+}: {
+    catProfileId: string;
+    photoUrl?: string | null;
+    catName: string;
+    onUploadSuccess: (url: string) => void;
+}) {
+    const [supabaseUserId, setSupabaseUserId] = useState<string>('');
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user?.id) {
+                setSupabaseUserId(session.user.id);
+            }
+        });
+    }, []);
+
+    const { uploading, error, inputRef, triggerUpload, handleFileChange } = useCatAvatarUpload(
+        catProfileId,
+        catProfileId, // catId matches profileId in the DB linkage
+        supabaseUserId,
+        (url) => {
+            // Update state with new photo URL without page reload
+            onUploadSuccess(url);
+        }
+    );
+
+    return (
+        <div className="relative group shrink-0">
+            <button
+                type="button"
+                onClick={triggerUpload}
+                disabled={uploading}
+                aria-label={`Upload photo for ${catName}`}
+                className="w-14 h-14 rounded-full border-3 border-[#2ec4b6] bg-teal-50 flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:border-[#FFB870] focus:outline-none focus:ring-2 focus:ring-[#2ec4b6] focus:ring-offset-2 disabled:opacity-50"
+            >
+                {uploading ? (
+                    <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                ) : photoUrl ? (
+                    <img src={photoUrl} alt={catName} className="w-full h-full object-cover" />
+                ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#2ec4b6]">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                )}
+            </button>
+            {/* Camera overlay on hover */}
+            {!uploading && (
+                <div className="absolute inset-0 rounded-full bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                        <circle cx="12" cy="13" r="3" />
+                    </svg>
+                </div>
+            )}
+            {/* Hidden file input */}
+            <input
+                ref={inputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                className="hidden"
+                aria-hidden="true"
+            />
+            {/* Error tooltip */}
+            {error && (
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md whitespace-nowrap z-10">
+                    {error}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function Settings() {
     const navigate = useNavigate();
     const {
@@ -34,6 +114,7 @@ export default function Settings() {
     const [showAddForm, setShowAddForm] = useState<boolean>(false);
     const [catToDelete, setCatToDelete] = useState<{ id: string; name: string } | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; catId: string } | null>(null);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
 
     useEffect(() => {
         if (toast && toast.show) {
@@ -128,6 +209,20 @@ export default function Settings() {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            await supabase.auth.signOut();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutConfirm(false);
+        handleLogout();
+    };
+
     const handleAddCatSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newCatName.trim()) return;
@@ -193,21 +288,39 @@ export default function Settings() {
 
                                         return (
                                             <div key={cat.id} className="py-4 flex justify-between items-center first:pt-0 last:pb-0">
-                                                <div>
-                                                    <h3 className="font-extrabold text-lg text-slate-900">{cat.name}</h3>
-                                                    <div className="flex flex-wrap gap-2 mt-1">
-                                                        <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-[#15AFB4] font-black text-[10px] uppercase rounded-md">
-                                                            {cat.gender}
-                                                        </span>
-                                                        <span className="px-2 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 font-black text-[10px] uppercase rounded-md">
-                                                            {cat.lifeStage} ({ageText})
-                                                        </span>
-                                                        <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 font-black text-[10px] uppercase rounded-md">
-                                                            {weightText}
-                                                        </span>
-                                                        <span className="px-2 py-0.5 bg-purple-50 border border-purple-200 text-purple-700 font-black text-[10px] uppercase rounded-md">
-                                                            {cat.foodPreference} preference
-                                                        </span>
+                                                <div className="flex items-center gap-4">
+                                                    {/* Avatar with upload trigger */}
+                                                    <CatAvatarTrigger
+                                                        catProfileId={cat.id}
+                                                        photoUrl={cat.photoUrl}
+                                                        catName={cat.name}
+                                                        onUploadSuccess={(url) => {
+                                                            // Update local state with new photo URL
+                                                            const updated = profiles.map(p =>
+                                                                p.id === cat.id ? { ...p, photoUrl: url } : p
+                                                            );
+                                                            // Update localStorage to persist across reloads
+                                                            localStorage.setItem('diet_profiles', JSON.stringify(updated));
+                                                            // Force component re-render by updating cat's photoUrl
+                                                            switchProfile(cat.id);
+                                                        }}
+                                                    />
+                                                    <div>
+                                                        <h3 className="font-extrabold text-lg text-slate-900">{cat.name}</h3>
+                                                        <div className="flex flex-wrap gap-2 mt-1">
+                                                            <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-[#15AFB4] font-black text-[10px] uppercase rounded-md">
+                                                                {cat.gender}
+                                                            </span>
+                                                            <span className="px-2 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 font-black text-[10px] uppercase rounded-md">
+                                                                {cat.lifeStage} ({ageText})
+                                                            </span>
+                                                            <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 font-black text-[10px] uppercase rounded-md">
+                                                                {weightText}
+                                                            </span>
+                                                            <span className="px-2 py-0.5 bg-purple-50 border border-purple-200 text-purple-700 font-black text-[10px] uppercase rounded-md">
+                                                                {cat.foodPreference} preference
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -395,6 +508,21 @@ export default function Settings() {
                         </form>
                     </div>
                 )}
+
+                {/* Account Section */}
+                <div className="mt-12 border-t-2 border-slate-200 pt-12">
+                    <div className="bg-rose-50 border-2 border-rose-200 rounded-[2rem] p-8">
+                        <h2 className="text-xl font-black mb-2 uppercase tracking-tight text-slate-900">Account</h2>
+                        <p className="text-sm text-slate-600 mb-6">Manage your account settings and preferences</p>
+                        
+                        <button
+                            onClick={() => setShowLogoutConfirm(true)}
+                            className="w-full md:w-auto px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-extrabold uppercase tracking-wider rounded-xl border-none shadow-[0_4px_0_0_#b91c1c] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer"
+                        >
+                            🚪 Logout
+                        </button>
+                    </div>
+                </div>
             </main>
 
             {/* Bottom Nav */}
@@ -464,6 +592,59 @@ export default function Settings() {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.6, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.6, y: 20 }}
+                        transition={{
+                            type: 'spring',
+                            damping: 15,
+                            stiffness: 300,
+                            mass: 1,
+                        }}
+                        className="bg-white border-2 border-slate-900 rounded-[2rem] p-6 max-w-sm w-full text-center shadow-[8px_8px_0_0_rgba(15,23,42,1)]"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{
+                                type: 'spring',
+                                damping: 12,
+                                stiffness: 200,
+                                delay: 0.1,
+                            }}
+                            className="text-4xl mb-3"
+                        >
+                            🚪
+                        </motion.div>
+                        <h3 className="text-xl font-black text-slate-900 uppercase mb-2">Logout?</h3>
+                        <p className="text-slate-600 text-sm font-semibold mb-6">
+                            Are you sure you want to logout? You'll need to log back in to access your cats.
+                        </p>
+                        <div className="flex gap-4">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setShowLogoutConfirm(false)}
+                                className="flex-1 bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 font-extrabold py-3 px-4 rounded-2xl text-center text-sm cursor-pointer transition-all"
+                            >
+                                Cancel
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={confirmLogout}
+                                className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-extrabold py-3 px-4 rounded-2xl text-center text-sm cursor-pointer transition-all border-none shadow-[0_4px_0_0_#991b1b] active:shadow-none active:translate-y-[4px]"
+                            >
+                                Logout
+                            </motion.button>
+                        </div>
+                    </motion.div>
                 </div>
             )}
 

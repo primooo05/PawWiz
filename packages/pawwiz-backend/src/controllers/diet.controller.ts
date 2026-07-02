@@ -6,7 +6,9 @@ import {
   updateDietProfileSchema,
   updateDietMealLogSchema,
   updateWaterIntakeSchema,
+  updateAvatarSchema,
 } from '../schemas/diet.schemas.js';
+import { prisma } from '../lib/prisma.js';
 
 export const getDietProfiles = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub;
@@ -55,4 +57,145 @@ export const updateWaterIntake = withErrorHandling(async (req: Request, res: Res
     reset: parsed.amount === 0, // Reset when 0
   });
   res.json(profile);
+});
+
+export const updateAvatar = withErrorHandling(async (req: Request, res: Response) => {
+  const supabaseUserId = (req as any).user?.sub;
+  const id = req.params.id as string;
+  const parsed = updateAvatarSchema.parse(req.body);
+  const profile = await dietService.updateAvatar(supabaseUserId, id, parsed.photoUrl);
+  res.json(profile);
+});
+
+/**
+ * Handle file upload via multipart FormData
+ * Receives file from frontend, uploads to Supabase Storage (private bucket),
+ * and updates the database with the public signed URL.
+ */
+export const uploadAvatarFile = withErrorHandling(async (req: Request, res: Response) => {
+  const supabaseUserId = (req as any).user?.sub;
+  const profileId = req.params.id as string;
+
+  // Check that file was uploaded
+  const file = (req as any).file;
+  if (!file) {
+    console.debug('[uploadAvatarFile] No file in request');
+    res.status(400).json({ message: 'No file uploaded' });
+    return;
+  }
+
+  console.debug('[uploadAvatarFile] File received:', {
+    supabaseUserId,
+    profileId,
+    fileName: file.originalname,
+    fileSize: file.size,
+    mimeType: file.mimetype,
+  });
+
+  try {
+    // Verify profile ownership by checking if this diet profile belongs to the authenticated user
+    const dietProfile = await prisma.dietProfile.findFirst({
+      where: {
+        id: profileId,
+        profile: { supabaseUserId },
+      },
+      include: { profile: true },
+    });
+
+    if (!dietProfile) {
+      console.debug('[uploadAvatarFile] Profile not found or not owned by user:', {
+        supabaseUserId,
+        profileId,
+      });
+      res.status(403).json({ message: 'Profile not found or unauthorized' });
+      return;
+    }
+
+    // Generate unique file path
+    const ext = file.originalname.split('.').pop() || 'jpg';
+    const filePath = `${supabaseUserId}/${profileId}/${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+
+    console.debug('[uploadAvatarFile] Uploading to Supabase:', { filePath });
+
+    // Import Supabase dynamically to avoid circular dependencies
+    const { createClient } = await import('@supabase/supabase-js');
+    // Support both naming conventions: backend uses SUPABASE_URL, but fallback to VITE_SUPABASE_URL if available
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+    console.debug('[uploadAvatarFile] Supabase config check:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      url: supabaseUrl ? '✓' : '✗ Missing SUPABASE_URL or VITE_SUPABASE_URL',
+      key: supabaseServiceKey ? '✓' : '✗ Missing SUPABASE_SERVICE_ROLE_KEY',
+    });
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('[uploadAvatarFile] Missing Supabase config:', {
+        SUPABASE_URL: process.env.SUPABASE_URL ? '✓' : '✗',
+        VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ? '✓' : '✗',
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓' : '✗',
+        allEnvKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE')).sort(),
+      });
+      res.status(500).json({ message: 'Storage service unavailable' });
+      return;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Upload file to private bucket
+    const { error: uploadError, data: uploadData } = await supabase.storage
+      .from('cat_profile')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('[uploadAvatarFile] Upload error:', {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        name: uploadError.name,
+        fullError: uploadError,
+      });
+      res.status(500).json({ 
+        message: 'Failed to upload file',
+        error: uploadError.message,
+      });
+      return;
+    }
+
+    console.debug('[uploadAvatarFile] Upload successful:', uploadData);
+
+    console.debug('[uploadAvatarFile] File uploaded, generating signed URL');
+
+    // Generate signed URL (valid for 1 year)
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('cat_profile')
+      .createSignedUrl(filePath, 365 * 24 * 60 * 60); // 1 year
+
+    if (signedUrlError || !signedUrlData?.signedUrl) {
+      console.error('[uploadAvatarFile] Signed URL error:', signedUrlError);
+      res.status(500).json({ message: 'Failed to generate URL' });
+      return;
+    }
+
+    const publicUrl = signedUrlData.signedUrl;
+
+    console.debug('[uploadAvatarFile] Updating database:', { publicUrl });
+
+    // Update database with signed URL
+    if (dietProfile?.catId) {
+      await prisma.cat.update({
+        where: { id: dietProfile.catId },
+        data: { photoUrl: publicUrl } as any,
+      });
+    }
+
+    res.json({ photoUrl: publicUrl });
+  } catch (error) {
+    console.error('[uploadAvatarFile] Unexpected error:', error);
+    res.status(500).json({ message: 'Upload failed' });
+  }
 });

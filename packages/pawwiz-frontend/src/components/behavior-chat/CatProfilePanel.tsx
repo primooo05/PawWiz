@@ -108,7 +108,31 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
   const analysisCount = activeSession?.messages.filter((m) => m.analysis).length ?? 0;
 
   return (
-    <aside className="hidden lg:flex w-[280px] xl:w-[300px] flex-shrink-0 flex-col gap-3">
+    <aside className="hidden lg:flex w-[280px] xl:w-[300px] flex-shrink-0 flex-col gap-3 overflow-hidden">
+      <style>{`
+        .scrollbar-custom::-webkit-scrollbar {
+          width: 6px;
+        }
+        .scrollbar-custom::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+          background: #2ec4b6;
+          border-radius: 8px;
+        }
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+          background: #27a7a0;
+        }
+        .scrollbar-custom::-webkit-scrollbar-button {
+          display: none;
+        }
+        
+        /* Firefox scrollbar */
+        .scrollbar-custom {
+          scrollbar-color: #2ec4b6 transparent;
+          scrollbar-width: thin;
+        }
+      `}</style>
       {/* Cat Profile Card */}
       <div className="bg-white rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0_0_rgba(15,23,42,1)] p-5 flex flex-col items-center">
         {/* Avatar */}
@@ -259,7 +283,7 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
       <button
         onClick={() => setShowDeleteConfirm(true)}
         disabled={isLoading}
-        className={`mt-auto w-full py-2.5 rounded-xl bg-red-50 border-2 border-red-200 text-red-500 text-xs font-black uppercase tracking-wider hover:bg-red-100 hover:border-red-300 transition-all cursor-pointer active:scale-[0.98] ${
+        className={`mt-6 w-full py-2.5 rounded-xl bg-red-50 border-2 border-red-200 text-red-500 text-xs font-black uppercase tracking-wider hover:bg-red-100 hover:border-red-300 transition-all cursor-pointer active:scale-[0.98] ${
           isLoading ? 'opacity-50 pointer-events-none' : ''
         }`}
       >

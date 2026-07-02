@@ -9,6 +9,7 @@ import CatPregnancyTracker from './components/pregnancy-tracker/PregnancyTracker
 import CatHeatTracker from './components/heat-tracker/CatHeatTracker';
 import DietRecommender from './components/diet-recommender/DietRecommender';
 import BehaviorChat from './components/behavior-chat/BehaviorChat';
+import BehaviorDashboard from './pages/BehaviorDashboard';
 import UserDashboardView from './components/user-dashboard/UserDashboardView';
 
 export function Router() {
@@ -22,6 +23,7 @@ export function Router() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/diet-recommender" element={<DietRecommender />} />
         <Route path="/behavior" element={<BehaviorChat />} />
+        <Route path="/behavior-insights" element={<BehaviorDashboard />} />
         <Route path="/dashboard" element={<UserDashboardView />} />
         <Route path="*" element={<NotFound />} />
       </Route>

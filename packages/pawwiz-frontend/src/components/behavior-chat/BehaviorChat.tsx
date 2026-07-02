@@ -40,9 +40,9 @@ export const BehaviorChat: React.FC = () => {
   const isInitialLoading = !isInitialized || !activeSession;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
+    <div className="h-screen bg-[#FAFAFA] font-sans text-slate-800 flex flex-col overflow-hidden md:overflow-y-auto">
       {/* Main 3-panel layout */}
-      <div className="flex flex-1 w-full max-w-[1600px] mx-auto px-2 sm:px-4 py-4 gap-3 min-h-[calc(100vh-120px)]">
+      <div className="flex flex-1 w-full md:w-[1620px] md:mx-auto px-2 sm:px-4 py-12 gap-3 min-h-0 pb-10 md:pb-26">
         {/* Left Panel: Chat Sidebar */}
         <ChatSidebar
           sessions={sessions}
@@ -76,7 +76,7 @@ export const BehaviorChat: React.FC = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
+      <div className="fixed bottom-3 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
         <BottomNav
           activeItem="behavior"
           onItemClick={handleNavigation}

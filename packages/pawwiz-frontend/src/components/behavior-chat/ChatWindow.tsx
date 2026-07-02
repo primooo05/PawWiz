@@ -1,6 +1,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { ChatMessage } from '../../hooks/useBehaviorChat';
 import wizMascot from '../../assets/Wiz_mascot.png';
+import { 
+  SkeletonHeader, 
+  SkeletonMessages 
+} from '../skeletons/SkeletonLoader';
 
 interface ChatWindowProps {
   messages: ChatMessage[];
@@ -119,55 +123,6 @@ const TypewriterBubble: React.FC<TypewriterBubbleProps> = ({
   );
 };
 
-// ─── Skeleton Components ─────────────────────────────────────────────────────
-const SkeletonLine: React.FC<{ width?: string; className?: string }> = ({ 
-  width = 'w-full', 
-  className = '' 
-}) => (
-  <div className={`h-3 bg-slate-200/60 rounded animate-pulse ${width} ${className}`} />
-);
-
-const SkeletonBubble: React.FC = () => (
-  <div className="flex items-end gap-2.5 animate-fadeInUp">
-    <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
-    <div className="max-w-[78%] px-4 py-3 rounded-2xl rounded-bl-sm bg-white border border-slate-200/80 shadow-sm">
-      <div className="h-2 bg-slate-200/60 rounded animate-pulse w-12 mb-1.5" />
-      <SkeletonLine width="w-48" className="mb-1" />
-      <SkeletonLine width="w-36" className="mb-1" />
-      <SkeletonLine width="w-40" />
-    </div>
-  </div>
-);
-
-const SkeletonMessages: React.FC = () => (
-  <div className="space-y-4">
-    <SkeletonBubble />
-    <SkeletonBubble />
-    <div className="flex items-end gap-2.5 animate-fadeInUp flex-row-reverse">
-      <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
-      <div className="max-w-[78%] px-4 py-3 rounded-2xl rounded-br-sm bg-slate-200 animate-pulse">
-        <SkeletonLine width="w-32" className="bg-slate-300/60" />
-      </div>
-    </div>
-    <SkeletonBubble />
-  </div>
-);
-
-const SkeletonHeader: React.FC = () => (
-  <div className="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b-2 border-slate-200 bg-slate-100">
-    <div className="w-8 h-8 rounded-lg bg-slate-200 animate-pulse md:hidden" />
-    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
-    <div className="flex-1 min-w-0">
-      <div className="h-3 bg-slate-200 rounded animate-pulse w-16 mb-1.5" />
-      <div className="h-2.5 bg-slate-200 rounded animate-pulse w-32" />
-    </div>
-    <div className="hidden sm:flex items-center gap-1.5 bg-slate-200 rounded-lg px-2.5 py-1.5 animate-pulse">
-      <div className="w-3.5 h-3.5 rounded bg-slate-300" />
-      <div className="w-10 h-2 bg-slate-300 rounded" />
-    </div>
-  </div>
-);
-
 // ─── Thinking dots: bouncing animation before response streams ─────────────────
 const ThinkingDots: React.FC = () => (
   <div className="flex items-end gap-2.5 animate-fadeInUp">
@@ -219,7 +174,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }));
   }, [messages]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (inputValue.trim()) {
       onSend(inputValue);
@@ -229,17 +184,41 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSubmit(e as any);
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 bg-white rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0_0_rgba(15,23,42,1)] overflow-hidden">
-      {/* Inline keyframes for thinking dots */}
+    <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-white rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0_0_rgba(15,23,42,1)] overflow-hidden">
+      {/* Inline keyframes and custom scrollbar styles */}
       <style>{`
         @keyframes thinkingBounce {
           0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
           30% { transform: translateY(-4px); opacity: 1; }
+        }
+        
+        /* Custom scrollbar styling */
+        .scrollbar-custom::-webkit-scrollbar {
+          width: 6px;
+        }
+        .scrollbar-custom::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scrollbar-custom::-webkit-scrollbar-thumb {
+          background: #2ec4b6;
+          border-radius: 8px;
+        }
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+          background: #27a7a0;
+        }
+        .scrollbar-custom::-webkit-scrollbar-button {
+          display: none;
+        }
+        
+        /* Firefox scrollbar */
+        .scrollbar-custom {
+          scrollbar-color: #2ec4b6 transparent;
+          scrollbar-width: thin;
         }
       `}</style>
 
@@ -283,7 +262,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4 bg-slate-50/40 [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#2ec4b6] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-button]:hidden">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4 bg-slate-50/40 scrollbar-custom">
         {isInitialLoading ? (
           <SkeletonMessages />
         ) : (
@@ -294,8 +273,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           const shouldTypewrite = isWiz && !msg.id.startsWith('welcome');
 
           return (
+            <div key={msg.id}>
             <div
-              key={msg.id}
               className={`flex items-end gap-2.5 animate-fadeInUp ${
                 msg.speaker === 'user' ? 'flex-row-reverse' : 'flex-row'
               }`}
@@ -341,6 +320,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Suggestion Chips - rendered below the message */}
+            {msg.suggestedPrompts && msg.suggestedPrompts.length > 0 && (
+              <div className="flex flex-wrap gap-2 ml-10 mt-3 animate-fadeInUp">
+                {msg.suggestedPrompts.map((suggestion, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => onSend(suggestion)}
+                    disabled={isLoading}
+                    className={`px-4 py-2.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all border-2 cursor-pointer active:scale-95 ${
+                      isLoading
+                        ? 'opacity-50 pointer-events-none'
+                        : 'bg-gradient-to-r from-[#2ec4b6]/10 to-[#FFB870]/10 border-[#2ec4b6]/40 text-slate-700 hover:bg-gradient-to-r hover:from-[#2ec4b6]/20 hover:to-[#FFB870]/20 hover:border-[#2ec4b6]/60 shadow-sm'
+                    }`}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+            </div>
           );
         })}
 
@@ -355,7 +355,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Input Bar */}
       <form
         onSubmit={handleSubmit}
-        className="px-4 sm:px-6 py-3.5 border-t-2 border-slate-200 bg-white"
+        className="px-4 sm:px-6 py-3.5 pb-6 md:pb-4 border-t-2 border-slate-200 bg-white"
       >
         <div className="flex items-center gap-3 bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-2.5 focus-within:border-[#2ec4b6] focus-within:ring-2 focus-within:ring-[#2ec4b6]/20 transition-all">
           {/* Input */}

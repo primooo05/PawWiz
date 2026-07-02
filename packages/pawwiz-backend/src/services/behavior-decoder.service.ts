@@ -2,13 +2,14 @@
  * Service Layer — Behavior Decoder
  * Interprets cat vocalizations and body language via AI.
  * 3-tier failover: Groq (Llama 3.3) → Gemini → Heuristic fallback.
- * Same prompt + schema sent to both AI providers — no context lost on failover.
+ * Validates prompts for clarity and asks clarifying questions if needed.
  * Singleton Pattern — exported as a single instance.
  */
 
 import { Type } from '@google/genai';
 import { groqClient } from '../repositories/groq.repository.js';
 import { geminiClient } from '../repositories/gemini.repository.js';
+import { validatePrompt, checkInappropriate } from '../utils/prompt-validator.js';
 import { logger } from '../utils/winston.js';
 import type { BehaviorDecodeRequest, BehaviorDecodeResponse } from '../types/shared.js';
 
@@ -76,12 +77,57 @@ const BEHAVIOR_JSON_SCHEMA = {
   ],
 };
 
+export interface ClarifyingResponse {
+  type: 'clarifying';
+  question: string;
+  suggestedPrompts: string[];
+}
+
+export interface BehaviorAnalysis {
+  type: 'analysis';
+  analysis: BehaviorDecodeResponse;
+}
+
+export type DecoderResponse = ClarifyingResponse | BehaviorAnalysis;
+
 class BehaviorDecoderService {
   /**
-   * Decode cat behavior from vocal and body language descriptions.
+   * Validate and decode cat behavior from vocal and body language descriptions.
+   * First validates prompt clarity, then proceeds with analysis.
    * Failover chain: Groq → Gemini → Heuristic
    */
-  async decode(request: BehaviorDecodeRequest): Promise<BehaviorDecodeResponse> {
+  async decode(request: BehaviorDecodeRequest): Promise<DecoderResponse> {
+    // Check for inappropriate content
+    const inappropriate = checkInappropriate(request.vocalDescription);
+    if (inappropriate.isInappropriate) {
+      logger.warn('[BehaviorDecoder] Inappropriate prompt detected', { reason: inappropriate.reason });
+      return {
+        type: 'clarifying',
+        question: inappropriate.reason,
+        suggestedPrompts: [
+          'My cat is meowing loudly',
+          'My cat is playing with toys',
+          'My cat seems restless today',
+        ],
+      };
+    }
+
+    // Validate prompt clarity
+    const validation = validatePrompt(request.vocalDescription);
+    if (validation.isVague) {
+      logger.info('[BehaviorDecoder] Vague prompt detected', {
+        reason: validation.reason,
+        question: validation.clarifyingQuestion,
+      });
+
+      return {
+        type: 'clarifying',
+        question: validation.clarifyingQuestion,
+        suggestedPrompts: validation.suggestedPrompts,
+      };
+    }
+
+    // Prompt is clear — proceed with analysis
     const prompt = this.buildPrompt(request);
 
     logger.info('[BehaviorDecoder] Decode request received', {
@@ -100,7 +146,7 @@ class BehaviorDecoderService {
             catState: result.catState,
             confidenceScore: result.confidenceScore,
           });
-          return result;
+          return { type: 'analysis', analysis: result };
         }
         logger.warn('[BehaviorDecoder] Groq returned null — advancing to Gemini');
       } catch (error) {
@@ -122,7 +168,7 @@ class BehaviorDecoderService {
           catState: result.catState,
           confidenceScore: result.confidenceScore,
         });
-        return result;
+        return { type: 'analysis', analysis: result };
       } catch (error) {
         logger.error('[BehaviorDecoder] Gemini failed (Tier 2) — falling back to heuristic', {
           error: (error as Error).message,
@@ -135,7 +181,7 @@ class BehaviorDecoderService {
 
     // Tier 3: Deterministic heuristic fallback
     logger.warn('[BehaviorDecoder] All AI providers failed — using heuristic fallback (Tier 3)');
-    return this.generateFallbackResponse(request);
+    return { type: 'analysis', analysis: this.generateFallbackResponse(request) };
   }
 
   /**

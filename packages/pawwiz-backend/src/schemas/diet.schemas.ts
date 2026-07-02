@@ -46,3 +46,7 @@ export const updateDietMealLogSchema = z.object({
 export const updateWaterIntakeSchema = z.object({
   amount: z.number(), // This can be positive to add water or negative/zero (e.g. for reset)
 });
+
+export const updateAvatarSchema = z.object({
+  photoUrl: z.string().url('Must be a valid URL').max(2048, 'URL too long'),
+});

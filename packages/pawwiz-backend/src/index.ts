@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
 import { connectDatabase, disconnectDatabase } from './lib/prisma.js';
 import { registerRoutes } from './routes/index.js';
 import { optimizeDiet, decodeBehavior } from './services/gemini.js';
@@ -17,12 +18,31 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
+// Configure multer for in-memory file uploads (max 5MB)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG and PNG images are allowed'));
+    }
+  },
+});
+
+// Make upload middleware available globally
+(app as any).upload = upload;
+
 // Security Middleware Pipeline
 app.use(helmetMiddleware);
 app.use(corsMiddleware);
 
 // JSON body parser with 10mb limit. Throws 413 if exceeded (handled by express internally).
 app.use(express.json({ limit: '10mb' }));
+
+// Multipart form-data parser (for file uploads)
+app.use(express.raw({ type: 'application/octet-stream', limit: '5mb' }));
 
 // Mutation constraints
 app.use(contentTypeMiddleware);
