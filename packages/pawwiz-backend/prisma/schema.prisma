@@ -130,3 +130,30 @@ model Plant {
   @@index([commonName])
   @@map("plants")
 }
+
+model BehaviorChat {
+  id             String   @id @default(cuid())
+  supabaseUserId String   @map("supabase_user_id")
+  title          String   @default("New Chat")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  messages BehaviorMessage[]
+
+  @@index([supabaseUserId])
+  @@map("behavior_chats")
+}
+
+model BehaviorMessage {
+  id        String   @id @default(cuid())
+  chatId    String   @map("chat_id")
+  speaker   String                        // 'wiz' | 'user'
+  text      String
+  analysis  Json?                          // BehaviorDecodeResponse JSON when speaker is 'wiz'
+  createdAt DateTime @default(now()) @map("created_at")
+
+  chat BehaviorChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@map("behavior_messages")
+}

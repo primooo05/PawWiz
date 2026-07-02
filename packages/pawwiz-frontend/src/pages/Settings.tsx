@@ -119,6 +119,8 @@ export default function Settings() {
         navigate('/dashboard');
         } else if (item === 'diet-reco') {
         navigate('/diet-recommender');
+        } else if (item === 'behavior') {
+        navigate('/behavior');
         } else if (item === 'settings') {
         navigate('/settings');
         } else if (item === 'plant') {
