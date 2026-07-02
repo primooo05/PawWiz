@@ -277,6 +277,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                         onAddMeal={handleAddMealClick}
                         onEditMeal={handleEditMealClick}
                         onUndoSkip={(mealId) => resetMealLog(mealId)}
+                        lifeStage={lifeStage}
                     />
                 </motion.div>
 
@@ -289,14 +290,19 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     className="flex flex-col gap-8 w-full h-full"
                 >
                     <WeeklyCalendar successDays={React.useMemo(() => {
-                        try {
-                            return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
-                        } catch (e) {
-                            return [];
-                        }
-                    }, [activeProfileId, loggedMeals])} />
+                        const localDays = (() => {
+                            try {
+                                return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
+                            } catch (e) {
+                                return [];
+                            }
+                        })();
+                        const currentProfile = profiles.find(p => p.id === activeProfileId);
+                        const dbDays = currentProfile?.successDays || [];
+                        return Array.from(new Set([...localDays, ...dbDays]));
+                    }, [activeProfileId, profiles, loggedMeals])} />
                     <FeedingGuideline ageBracketInfo={ageBracketInfo} />
-                    <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} />
+                    <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
                 </motion.div>
             </div>
 

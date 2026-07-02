@@ -56,6 +56,28 @@ function mapProfileToFrontend(profile: any) {
   // Sort: Breakfast (1), Lunch (2), Dinner (3)
   loggedMeals.sort((a: any, b: any) => a.id.localeCompare(b.id));
 
+  // Compute successDays based on database records
+  const logsByDate: Record<string, any[]> = {};
+  (profile.mealLogs || []).forEach((m: any) => {
+    const dateStr = new Date(m.createdAt).toLocaleDateString('sv-SE'); // YYYY-MM-DD
+    if (!logsByDate[dateStr]) {
+      logsByDate[dateStr] = [];
+    }
+    logsByDate[dateStr].push(m);
+  });
+
+  const successDays: string[] = [];
+  Object.entries(logsByDate).forEach(([dateStr, logs]) => {
+    const standardMeals = ['Breakfast', 'Lunch', 'Dinner'];
+    const completedMeals = logs.filter((m: any) => m.status === 'logged' || m.status === 'skipped');
+    const hasAllThree = standardMeals.every(mealName => 
+      completedMeals.some((m: any) => m.mealName === mealName)
+    );
+    if (hasAllThree) {
+      successDays.push(dateStr);
+    }
+  });
+
   return {
     id: profile.id,
     name: profile.cat ? profile.cat.name : profile.profile.catName,
@@ -71,6 +93,7 @@ function mapProfileToFrontend(profile: any) {
     breed: profile.cat ? profile.cat.breed : profile.profile.catBreed,
     marking: profile.cat ? profile.cat.marking : profile.profile.catMarking,
     updatedAt: profile.updatedAt,
+    successDays,
     loggedMeals,
   };
 }

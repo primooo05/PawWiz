@@ -32,6 +32,7 @@ export interface CatProfile {
     breed?: string | null;
     marking?: string | null;
     updatedAt?: string;
+    successDays?: string[];
 }
 
 export interface AgeBracketDetails {
@@ -137,6 +138,10 @@ export const useDietRecommender = () => {
     const sanitizeProfileMeals = (profile?: CatProfile): CatProfile | undefined => {
         if (!profile) return undefined;
         const todayStr = new Date().toLocaleDateString('sv-SE');
+        const waterDateKey = `diet_water_date_${profile.id}`;
+        const lastWaterDate = localStorage.getItem(waterDateKey);
+        const isWaterToday = lastWaterDate === todayStr;
+
         return {
             ...profile,
             loggedMeals: profile.loggedMeals.map(m => {
@@ -156,7 +161,7 @@ export const useDietRecommender = () => {
                 }
                 return m;
             }),
-            waterIntake: (profile.updatedAt && new Date(profile.updatedAt).toLocaleDateString('sv-SE') !== todayStr) ? 0 : profile.waterIntake
+            waterIntake: isWaterToday ? profile.waterIntake : 0
         };
     };
 
@@ -639,8 +644,11 @@ export const useDietRecommender = () => {
         };
 
         const addWater = async (amount: number) => {
+            const todayStr = new Date().toLocaleDateString('sv-SE');
+            localStorage.setItem(`diet_water_date_${activeProfileId}`, todayStr);
+
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     return {
                         ...p,
@@ -648,8 +656,7 @@ export const useDietRecommender = () => {
                     };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -660,9 +667,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? { ...updatedProf, waterIntake: updatedProf.waterIntake } : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -670,8 +679,11 @@ export const useDietRecommender = () => {
         };
 
         const resetWater = async () => {
+            const todayStr = new Date().toLocaleDateString('sv-SE');
+            localStorage.setItem(`diet_water_date_${activeProfileId}`, todayStr);
+
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     return {
                         ...p,
@@ -679,8 +691,7 @@ export const useDietRecommender = () => {
                     };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -691,9 +702,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? { ...updatedProf, waterIntake: 0 } : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
