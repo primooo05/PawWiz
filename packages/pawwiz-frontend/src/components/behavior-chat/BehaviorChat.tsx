@@ -36,25 +36,8 @@ export const BehaviorChat: React.FC = () => {
     setInputValue(exampleText);
   };
 
-  // Show loading state while sessions are being fetched from backend
-  if (!isInitialized || !activeSession) {
-    return (
-      <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#2ec4b6] flex items-center justify-center animate-pulse">
-            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="6.5" cy="11.5" r="2" />
-              <circle cx="10" cy="7.5" r="2" />
-              <circle cx="14" cy="7.5" r="2" />
-              <circle cx="17.5" cy="11.5" r="2" />
-              <path d="M7.5 17c0-2.2 2-4 4.5-4s4.5 1.8 4.5 4c0 1.5-1.5 2.5-4.5 2.5s-4.5-1-4.5-2.5z" />
-            </svg>
-          </div>
-          <p className="text-xs font-black text-slate-400 uppercase tracking-wider">Loading chats...</p>
-        </div>
-      </div>
-    );
-  }
+  // Show skeleton while sessions are being fetched from backend
+  const isInitialLoading = !isInitialized || !activeSession;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
@@ -69,16 +52,18 @@ export const BehaviorChat: React.FC = () => {
           onDeleteSession={deleteSession}
           isOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          isLoading={isInitialLoading}
         />
 
         {/* Center Panel: Chat Window */}
         <ChatWindow
-          messages={activeSession.messages}
+          messages={activeSession?.messages ?? []}
           isLoading={isLoading}
           inputValue={inputValue}
           onInputChange={setInputValue}
           onSend={sendMessage}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          isInitialLoading={isInitialLoading}
         />
 
         {/* Right Panel: Cat Profile + Actions */}

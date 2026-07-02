@@ -5,7 +5,7 @@ import { API_BASE } from '../../lib/config.js';
 import type { ChatSession } from '../../hooks/useBehaviorChat';
 
 interface CatProfilePanelProps {
-  activeSession: ChatSession;
+  activeSession: ChatSession | null | undefined;
   onDeleteChat: () => void;
   onExampleClick: (text: string) => void;
   catName?: string;
@@ -30,6 +30,8 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
 }) => {
   const [profile, setProfile] = useState<CatProfileData | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const isLoading = !activeSession;
 
   useEffect(() => {
     let active = true;
@@ -102,8 +104,8 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
     return () => { active = false; };
   }, []);
 
-  const messageCount = activeSession.messages.filter((m) => m.speaker === 'user').length;
-  const analysisCount = activeSession.messages.filter((m) => m.analysis).length;
+  const messageCount = activeSession?.messages.filter((m) => m.speaker === 'user').length ?? 0;
+  const analysisCount = activeSession?.messages.filter((m) => m.analysis).length ?? 0;
 
   return (
     <aside className="hidden lg:flex w-[280px] xl:w-[300px] flex-shrink-0 flex-col gap-3">
@@ -119,7 +121,15 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
         </div>
 
         {/* Name badge */}
-        {profile ? (
+        {isLoading ? (
+          <>
+            <div className="h-5 w-20 bg-slate-200 rounded-full animate-pulse mb-3" />
+            <div className="flex flex-wrap justify-center gap-1.5 w-full">
+              <div className="h-5 w-12 bg-slate-200 rounded-lg animate-pulse" />
+              <div className="h-5 w-10 bg-slate-200 rounded-lg animate-pulse" />
+            </div>
+          </>
+        ) : profile ? (
           <>
             <span className="bg-[#2ec4b6] text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider mb-3">
               {profile.name}
@@ -155,26 +165,43 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
           Session Info
         </h3>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">Messages</span>
-            <span className="text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
-              {messageCount}
-            </span>
+        {isLoading ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Messages</span>
+              <div className="h-4 w-8 bg-slate-200 rounded-md animate-pulse" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Analyses</span>
+              <div className="h-4 w-8 bg-slate-200 rounded-md animate-pulse" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Started</span>
+              <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">Analyses</span>
-            <span className="text-xs font-black text-[#2ec4b6] bg-[#2ec4b6]/10 px-2 py-0.5 rounded-md">
-              {analysisCount}
-            </span>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Messages</span>
+              <span className="text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+                {messageCount}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Analyses</span>
+              <span className="text-xs font-black text-[#2ec4b6] bg-[#2ec4b6]/10 px-2 py-0.5 rounded-md">
+                {analysisCount}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">Started</span>
+              <span className="text-[10px] font-bold text-slate-600">
+                {activeSession?.createdAt?.toLocaleDateString() ?? '-'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-500">Started</span>
-            <span className="text-[10px] font-bold text-slate-600">
-              {activeSession.createdAt.toLocaleDateString()}
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Quick Tips */}
@@ -205,12 +232,15 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
         </h3>
         <button
           type="button"
+          disabled={isLoading}
           onClick={() =>
             onExampleClick(
               `Every night around 2 AM, ${catName ?? 'my cat'} suddenly sprints around the house, makes a loud trill, and her tail is fully puffed. It lasts about 10 minutes then she's completely calm. What's happening?`
             )
           }
-          className="w-full text-left bg-white/60 hover:bg-white border border-[#2ec4b6]/20 hover:border-[#2ec4b6]/60 rounded-xl px-3 py-2.5 transition-all group cursor-pointer"
+          className={`w-full text-left bg-white/60 hover:bg-white border border-[#2ec4b6]/20 hover:border-[#2ec4b6]/60 rounded-xl px-3 py-2.5 transition-all group cursor-pointer ${
+            isLoading ? 'opacity-50 pointer-events-none' : ''
+          }`}
         >
           <p className="text-[10px] text-slate-500 leading-relaxed italic group-hover:text-slate-700 transition-colors">
             "Every night around 2 AM,{' '}
@@ -228,7 +258,10 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
       {/* Delete Chat */}
       <button
         onClick={() => setShowDeleteConfirm(true)}
-        className="mt-auto w-full py-2.5 rounded-xl bg-red-50 border-2 border-red-200 text-red-500 text-xs font-black uppercase tracking-wider hover:bg-red-100 hover:border-red-300 transition-all cursor-pointer active:scale-[0.98]"
+        disabled={isLoading}
+        className={`mt-auto w-full py-2.5 rounded-xl bg-red-50 border-2 border-red-200 text-red-500 text-xs font-black uppercase tracking-wider hover:bg-red-100 hover:border-red-300 transition-all cursor-pointer active:scale-[0.98] ${
+          isLoading ? 'opacity-50 pointer-events-none' : ''
+        }`}
       >
         Delete Chat
       </button>

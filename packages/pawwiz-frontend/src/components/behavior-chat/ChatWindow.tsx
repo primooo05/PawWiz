@@ -9,6 +9,7 @@ interface ChatWindowProps {
   onInputChange: (value: string) => void;
   onSend: (text: string) => void;
   onToggleSidebar: () => void;
+  isInitialLoading?: boolean;
 }
 
 const PawIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
@@ -118,6 +119,55 @@ const TypewriterBubble: React.FC<TypewriterBubbleProps> = ({
   );
 };
 
+// ─── Skeleton Components ─────────────────────────────────────────────────────
+const SkeletonLine: React.FC<{ width?: string; className?: string }> = ({ 
+  width = 'w-full', 
+  className = '' 
+}) => (
+  <div className={`h-3 bg-slate-200/60 rounded animate-pulse ${width} ${className}`} />
+);
+
+const SkeletonBubble: React.FC = () => (
+  <div className="flex items-end gap-2.5 animate-fadeInUp">
+    <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
+    <div className="max-w-[78%] px-4 py-3 rounded-2xl rounded-bl-sm bg-white border border-slate-200/80 shadow-sm">
+      <div className="h-2 bg-slate-200/60 rounded animate-pulse w-12 mb-1.5" />
+      <SkeletonLine width="w-48" className="mb-1" />
+      <SkeletonLine width="w-36" className="mb-1" />
+      <SkeletonLine width="w-40" />
+    </div>
+  </div>
+);
+
+const SkeletonMessages: React.FC = () => (
+  <div className="space-y-4">
+    <SkeletonBubble />
+    <SkeletonBubble />
+    <div className="flex items-end gap-2.5 animate-fadeInUp flex-row-reverse">
+      <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
+      <div className="max-w-[78%] px-4 py-3 rounded-2xl rounded-br-sm bg-slate-200 animate-pulse">
+        <SkeletonLine width="w-32" className="bg-slate-300/60" />
+      </div>
+    </div>
+    <SkeletonBubble />
+  </div>
+);
+
+const SkeletonHeader: React.FC = () => (
+  <div className="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b-2 border-slate-200 bg-slate-100">
+    <div className="w-8 h-8 rounded-lg bg-slate-200 animate-pulse md:hidden" />
+    <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
+    <div className="flex-1 min-w-0">
+      <div className="h-3 bg-slate-200 rounded animate-pulse w-16 mb-1.5" />
+      <div className="h-2.5 bg-slate-200 rounded animate-pulse w-32" />
+    </div>
+    <div className="hidden sm:flex items-center gap-1.5 bg-slate-200 rounded-lg px-2.5 py-1.5 animate-pulse">
+      <div className="w-3.5 h-3.5 rounded bg-slate-300" />
+      <div className="w-10 h-2 bg-slate-300 rounded" />
+    </div>
+  </div>
+);
+
 // ─── Thinking dots: bouncing animation before response streams ─────────────────
 const ThinkingDots: React.FC = () => (
   <div className="flex items-end gap-2.5 animate-fadeInUp">
@@ -151,6 +201,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onInputChange,
   onSend,
   onToggleSidebar,
+  isInitialLoading = false,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -193,43 +244,51 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       `}</style>
 
       {/* Chat Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b-2 border-slate-900 bg-gradient-to-r from-[#15AFB4] to-[#1bc5c5]">
-        {/* Hamburger for mobile */}
-        <button
-          onClick={onToggleSidebar}
-          className="md:hidden w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-white cursor-pointer"
-          aria-label="Toggle chat sidebar"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
-        </button>
+      {isInitialLoading ? (
+        <SkeletonHeader />
+      ) : (
+        <div className="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b-2 border-slate-900 bg-gradient-to-r from-[#15AFB4] to-[#1bc5c5]">
+          {/* Hamburger for mobile */}
+          <button
+            onClick={onToggleSidebar}
+            className="md:hidden w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-white cursor-pointer"
+            aria-label="Toggle chat sidebar"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
 
-        {/* Wiz avatar */}
-        <div className="relative flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm overflow-hidden border-2 border-white/50">
-            <img src={wizMascot} alt="Wiz" className="w-8 h-8 object-contain" />
+          {/* Wiz avatar */}
+          <div className="relative flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm overflow-hidden border-2 border-white/50">
+              <img src={wizMascot} alt="Wiz" className="w-8 h-8 object-contain" />
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#15AFB4]" />
           </div>
-          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#15AFB4]" />
-        </div>
 
-        <div className="flex-1 min-w-0 text-left">
-          <p className="text-sm font-black text-white tracking-tight leading-none">Wiz</p>
-          <p className="text-[10px] text-white/80 font-bold mt-0.5">
-            Behavior Specialist · PawWiz AI
-          </p>
-        </div>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-black text-white tracking-tight leading-none">Wiz</p>
+            <p className="text-[10px] text-white/80 font-bold mt-0.5">
+              Behavior Specialist · PawWiz AI
+            </p>
+          </div>
 
-        {/* Status badge */}
-        <div className="hidden sm:flex items-center gap-1.5 bg-slate-900 text-[#2ec4b6] border border-[#2ec4b6]/30 rounded-lg px-2.5 py-1.5 shadow-[0_0_12px_rgba(46,196,182,0.15)]">
-          <PawIcon className="w-3.5 h-3.5" />
-          <span className="text-[9px] font-black tracking-wider uppercase">ONLINE</span>
+          {/* Status badge */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-slate-900 text-[#2ec4b6] border border-[#2ec4b6]/30 rounded-lg px-2.5 py-1.5 shadow-[0_0_12px_rgba(46,196,182,0.15)]">
+            <PawIcon className="w-3.5 h-3.5" />
+            <span className="text-[9px] font-black tracking-wider uppercase">ONLINE</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4 bg-slate-50/40 [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-[#2ec4b6] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-button]:hidden">
-        {messages.map((msg) => {
+        {isInitialLoading ? (
+          <SkeletonMessages />
+        ) : (
+          <>
+            {messages.map((msg) => {
           const isWiz = msg.speaker === 'wiz';
           const displayedLen = typewriterState[msg.id] ?? msg.text.length;
           const shouldTypewrite = isWiz && !msg.id.startsWith('welcome');
@@ -285,10 +344,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           );
         })}
 
-        {/* Thinking indicator (shown while waiting for API) */}
-        {isLoading && <ThinkingDots />}
+          {/* Thinking indicator (shown while waiting for API) */}
+          {isLoading && <ThinkingDots />}
 
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </>
+        )}
       </div>
 
       {/* Input Bar */}
