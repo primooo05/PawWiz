@@ -68,6 +68,7 @@ function plantToCacheRecord(plant: Plant): CacheRecord {
     source: plant.source as CacheRecord['source'],
     mediaUrl: plant.mediaUrl ?? null,
     perenualId: plant.perenualId ?? null,
+    physicalDescription: plant.physicalDescription ?? null,
     cachedAt: plant.cachedAt ?? null,
     lastVerifiedAt: plant.lastVerifiedAt,
   };
@@ -100,6 +101,7 @@ function cacheRecordToScanResult(
     lowConfidenceWarning,
     dataSource: record.source,
     mediaUrl: record.mediaUrl,
+    physicalDescription: record.physicalDescription,
   };
 }
 

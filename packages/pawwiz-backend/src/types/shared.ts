@@ -37,6 +37,7 @@ export interface ToxicityScanResult {
   lowConfidenceWarning: boolean;            // true when identificationConfidence < 0.6
   dataSource: 'aspca' | 'perenual_cache' | 'fallback';
   mediaUrl?: string | null;                 // only populated when perenual_id is known
+  physicalDescription?: string | null;      // Wikipedia-sourced extract, only populated for DB-backed hits
 }
 
 export interface CacheRecord {
@@ -49,6 +50,7 @@ export interface CacheRecord {
   source: 'aspca' | 'perenual_cache';
   mediaUrl: string | null;
   perenualId: string | null;
+  physicalDescription: string | null;
   cachedAt: Date | null;
   lastVerifiedAt: Date;
 }

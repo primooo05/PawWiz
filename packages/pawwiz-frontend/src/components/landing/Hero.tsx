@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { usePlantScan } from '../../hooks/usePlantScan';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
-import TallGrass from './effects/TallGrass';
 import WindFlow from './effects/WindFlow';
 import CatHero01 from '../../assets/Cat_Hero01.svg';
 
@@ -180,6 +179,9 @@ export default function Hero({ apiBase }: HeroProps) {
                           {scanResult.scientificName && (
                             <p className="text-[11px] text-white/50 font-mono italic truncate">{scanResult.scientificName}</p>
                           )}
+                          {scanResult.physicalDescription && (
+                            <p className="text-[11px] text-white/70 leading-snug mt-1 line-clamp-2">{scanResult.physicalDescription}</p>
+                          )}
                         </div>
                         {scanResult.toxicityStatus === 'TOXIC' && scanResult.severity && (
                           <span className="shrink-0 text-[10px] font-bold text-rose-300 bg-rose-900/60 px-2 py-0.5 rounded-md border border-rose-700/40">
@@ -213,7 +215,6 @@ export default function Hero({ apiBase }: HeroProps) {
 
         </div>
       </div>
-      <TallGrass />
     </section>
   );
 }
