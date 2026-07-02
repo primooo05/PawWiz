@@ -83,18 +83,21 @@ class ProfileService {
 
     const profile = await profileRepository.create(data);
 
-    // 5. Link all cats from onboarding session to the new profile and create default diet profiles
+    // 5. Create onboarding cat and its default diet profile
     if (onboardingSessionId) {
-      await prisma.cat.updateMany({
-        where: { onboardingSessionId },
-        data: { profileId: profile.id },  
-      });
+      const session = await onboardingRepository.findById(onboardingSessionId);
+      if (session) {
+        const cat = await prisma.cat.create({
+          data: {
+            profileId: profile.id,
+            name: session.catName!,
+            breed: session.catBreed,
+            marking: session.catMarking,
+            sex: session.catSex!,
+            lifeStage: session.catLifeStage!,
+          },
+        });
 
-      const onboardingCats = await prisma.cat.findMany({
-        where: { profileId: profile.id },
-      });
-
-      for (const cat of onboardingCats) {
         await prisma.dietProfile.create({
           data: {
             profileId: profile.id,

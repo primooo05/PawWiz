@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
 interface WeeklyCalendarProps {
-    // Extensible if parent wants to track selected active dates
+    successDays?: string[];
 }
 
-export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = () => {
+export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ successDays = [] }) => {
     const [weekOffset, setWeekOffset] = useState<number>(0);
 
     // Helper to get days of current week
@@ -24,7 +24,19 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = () => {
     };
 
     const currentWeekDays = getDaysOfCurrentWeek();
-    const calendarMonthLabel = currentWeekDays[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    
+    const getDisplayedMonthLabel = () => {
+        const today = new Date();
+        const todayInWeek = currentWeekDays.find(d => 
+            d.getDate() === today.getDate() &&
+            d.getMonth() === today.getMonth() &&
+            d.getFullYear() === today.getFullYear()
+        );
+        const referenceDay = todayInWeek || currentWeekDays[3];
+        return referenceDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    };
+
+    const calendarMonthLabel = getDisplayedMonthLabel();
 
     const isToday = (date: Date) => {
         const today = new Date();
@@ -63,12 +75,15 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = () => {
                         <span key={idx} className="font-black text-slate-900 text-xs">{dayName}</span>
                     ))}
                 </div>
- 
+
                 <div className="grid grid-cols-7 py-5 px-4 text-center bg-white">
                     {currentWeekDays.map((day, idx) => {
                         const active = isToday(day);
+                        const dayStr = day.toLocaleDateString('sv-SE'); // YYYY-MM-DD
+                        const isSuccess = successDays.includes(dayStr);
+
                         return (
-                            <div key={idx} className="flex flex-col items-center justify-center">
+                            <div key={idx} className="flex flex-col items-center justify-center relative pb-3">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
                                     active
                                         ? 'bg-[#ffea30] border-2 border-slate-900 text-slate-955 shadow-[1.5px_1.5px_0_0_rgba(15,23,42,1)]'
@@ -76,6 +91,12 @@ export const WeeklyCalendar: React.FC<WeeklyCalendarProps> = () => {
                                 }`}>
                                     {day.getDate()}
                                 </div>
+                                {isSuccess && (
+                                    <span 
+                                        className="absolute bottom-0 w-2.5 h-2.5 rounded-full bg-[#40C48E] border-2 border-slate-900 shadow-[1px_1px_0_rgba(15,23,42,1)]" 
+                                        title="All meals logged!" 
+                                    />
+                                )}
                             </div>
                         );
                     })}

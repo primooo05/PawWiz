@@ -8,8 +8,8 @@ interface ProfileCardProps {
     isKg: boolean;
     foodPreference: 'dry' | 'wet' | 'mixed';
     isSpayedNeutered: boolean;
-    activeLifeStage: 'kitten' | 'adult';
-    lifeStage: 'kitten' | 'adult';
+    activeLifeStage: 'kitten' | 'adult' | 'senior';
+    lifeStage: 'kitten' | 'adult' | 'senior';
     age: number;
     onEditProfile: () => void;
     photoUrl?: string | null;
@@ -49,11 +49,11 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 )}
             </div>
 
-            <div className="flex gap-2 mb-6">
-                <span className="px-3.5 py-1 bg-white border-2 border-slate-900 rounded-full text-[10px] font-black text-slate-800 uppercase tracking-wider">
+            <div className="flex items-center border border-slate-200 rounded-2xl overflow-hidden mb-6">
+                <span className="px-5 py-1.5 bg-white text-slate-900 text-xs font-black uppercase tracking-wider border-r border-slate-200 min-w-[65px] text-center">
                     {catName}
                 </span>
-                <span className="px-3.5 py-1 bg-[#2ec4b6] border-2 border-slate-900 rounded-full text-[10px] font-black text-white uppercase tracking-wider">
+                <span className={`px-5 py-1.5 ${gender === 'female' ? 'bg-[#ff9ebb]' : 'bg-[#5ce1e6]'} text-slate-900 text-xs font-black uppercase tracking-wider min-w-[65px] text-center`}>
                     {gender}
                 </span>
             </div>

@@ -86,37 +86,6 @@ class OnboardingService {
         catLifeStage: parsed.catLifeStage,
         step: Math.max(session.step, 7), // Unlock step 7
       };
-
-      // Upsert the cat to the Cats table to handle back-edits and multiple cats
-      const existingCat = await prisma.cat.findFirst({
-        where: {
-          onboardingSessionId: id,
-          name: session.catName!,
-        },
-      });
-
-      if (existingCat) {
-        await prisma.cat.update({
-          where: { id: existingCat.id },
-          data: {
-            breed: session.catBreed,
-            marking: session.catMarking,
-            sex: session.catSex!,
-            lifeStage: parsed.catLifeStage,
-          },
-        });
-      } else {
-        await prisma.cat.create({
-          data: {
-            onboardingSessionId: id,
-            name: session.catName!,
-            breed: session.catBreed,
-            marking: session.catMarking,
-            sex: session.catSex!,
-            lifeStage: parsed.catLifeStage,
-          },
-        });
-      }
     } else {
       throw AppError.badRequest('Invalid step for update');
     }

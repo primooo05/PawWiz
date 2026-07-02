@@ -4,10 +4,12 @@ import DietSetupView from './DietSetupView';
 import DietDashboardView from './DietDashboardView';
 import { useDietRecommender } from '../../hooks/useDietRecommender';
 import BottomNav from '../BottomNav';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import ConfirmationDialog from '../modals/ConfirmationDialog';
 
 export const DietRecommender: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const {
         profiles,
         activeProfileId,
@@ -50,6 +52,7 @@ export const DietRecommender: React.FC = () => {
     const [loadingTarget, setLoadingTarget] = useState<'dashboard' | 'setup' | null>(null);
     const [showSetup, setShowSetup] = useState<boolean>(true);
     const [hasCheckedInitialState, setHasCheckedInitialState] = useState<boolean>(false);
+    const [newCatToSetup, setNewCatToSetup] = useState<any>(null);
 
     useEffect(() => {
         if (!hasCheckedInitialState) {
@@ -62,6 +65,34 @@ export const DietRecommender: React.FC = () => {
             }
         }
     }, [profiles, isTracking, hasNoUserProfile, hasCheckedInitialState]);
+
+    useEffect(() => {
+        if (location.state?.askSetupFor && profiles.length > 0) {
+            const targetProfile = profiles.find(p => p.id === location.state.askSetupFor);
+            if (targetProfile && !targetProfile.isTracking) {
+                setNewCatToSetup(targetProfile);
+            }
+            // Clear location state to prevent repeating popups on back navigation
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state, profiles]);
+
+    const handleSwitchProfile = (id: string) => {
+        const targetProfile = profiles.find(p => p.id === id);
+        if (targetProfile && !targetProfile.isTracking) {
+            setNewCatToSetup(targetProfile);
+        } else {
+            switchProfile(id);
+        }
+    };
+
+    const handleConfirmSetup = () => {
+        if (newCatToSetup) {
+            switchProfile(newCatToSetup.id);
+            setShowSetup(true);
+            setNewCatToSetup(null);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -127,7 +158,7 @@ export const DietRecommender: React.FC = () => {
                         onSubmit={handleSubmit}
                         profiles={profiles}
                         activeProfileId={activeProfileId}
-                        switchProfile={switchProfile}
+                        switchProfile={handleSwitchProfile}
                         hasNoUserProfile={hasNoUserProfile}
                         displayName={displayName}
                         setDisplayName={setDisplayName}
@@ -148,7 +179,7 @@ export const DietRecommender: React.FC = () => {
                         gender={gender}
                         profiles={profiles}
                         activeProfileId={activeProfileId}
-                        switchProfile={switchProfile}
+                        switchProfile={handleSwitchProfile}
                         createNewProfile={createNewProfile}
                         loggedMeals={loggedMeals}
                         waterIntake={waterIntake}
@@ -157,6 +188,7 @@ export const DietRecommender: React.FC = () => {
                         resetMealLog={resetMealLog}
                         addWater={addWater}
                         resetWater={resetWater}
+                        displayName={displayName}
                     />
                 )}
             </main>
@@ -172,6 +204,25 @@ export const DietRecommender: React.FC = () => {
                     catName={catName}
                     message={loadingTarget === 'setup' ? `Resetting ${catName || "cat"}'s tracker...` : undefined}
                     onComplete={handleLoadingComplete}
+                />
+            )}
+
+            {newCatToSetup && (
+                <ConfirmationDialog
+                    isOpen={!!newCatToSetup}
+                    title="Set Up Diet Profile?"
+                    message={`Would you like to set up the diet profile for ${newCatToSetup.name} now?`}
+                    confirmText="Set Up Now"
+                    cancelText="Later"
+                    onConfirm={handleConfirmSetup}
+                    onCancel={() => {
+                        setNewCatToSetup(null);
+                        const configuredProfile = profiles.find(p => p.isTracking);
+                        if (configuredProfile) {
+                            switchProfile(configuredProfile.id);
+                            setShowSetup(false);
+                        }
+                    }}
                 />
             )}
         </div>

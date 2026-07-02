@@ -20,8 +20,8 @@ interface DietDashboardViewProps {
     isKg: boolean;
     foodPreference: 'dry' | 'wet' | 'mixed';
     isSpayedNeutered: boolean;
-    activeLifeStage: 'kitten' | 'adult';
-    lifeStage: 'kitten' | 'adult';
+    activeLifeStage: 'kitten' | 'adult' | 'senior';
+    lifeStage: 'kitten' | 'adult' | 'senior';
     age: number;
     ageBracketInfo: AgeBracketDetails;
     onReset: () => void;
@@ -37,6 +37,7 @@ interface DietDashboardViewProps {
     resetWater: () => void;
     loggedMeals: MealLog[];
     waterIntake: number;
+    displayName?: string;
 }
 
 export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
@@ -62,6 +63,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     resetWater,
     loggedMeals,
     waterIntake,
+    displayName,
 }) => {
     const navigate = useNavigate();
     const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
@@ -175,23 +177,52 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     const possessivePronoun = gender === 'male' ? 'his' : 'her';
     const subjectPronoun = gender === 'male' ? 'He' : 'She';
 
-    const avatarDataList = profiles.map((p) => ({
+    const avatarDataList = profiles.map(p => ({
         id: p.id,
         name: p.name,
         src: p.photoUrl || undefined,
         alt: p.name,
-        isActive: p.id === activeProfileId
+        isActive: p.id === activeProfileId,
+        isNew: !p.isTracking
     }));
 
     const activePhotoUrl = profiles.find(p => p.id === activeProfileId)?.photoUrl;
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        const owner = displayName || "Parent";
+        if (hour >= 5 && hour < 11) {
+            return {
+                title: `Good morning, ${owner}!`,
+                subtitle: `Ready for breakfast time with ${catName}?`
+            };
+        } else if (hour >= 11 && hour < 17) {
+            return {
+                title: `Hi ${owner}!`,
+                subtitle: `How is ${catName}'s day going so far?`
+            };
+        } else if (hour >= 17 && hour < 22) {
+            return {
+                title: `Good evening, ${owner}.`,
+                subtitle: `Time to wrap up ${catName}'s meals for today!`
+            };
+        } else {
+            return {
+                title: `Hello, ${owner}!`,
+                subtitle: `Checking in on ${catName}'s health tonight.`
+            };
+        }
+    };
+
+    const greeting = getGreeting();
 
     return (
         <div className="flex flex-col gap-8 w-full flex-grow text-slate-800">
             {/* Header Greeting Row */}
             <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">Good morning, Ayla</h1>
-                    <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">Track now {catName}'s meal for today</p>
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">{greeting.title}</h1>
+                    <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">{greeting.subtitle}</p>
                 </div>
 
                 {/* Profile Switcher via AnimatedAvatarGroup */}
@@ -246,6 +277,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                         onAddMeal={handleAddMealClick}
                         onEditMeal={handleEditMealClick}
                         onUndoSkip={(mealId) => resetMealLog(mealId)}
+                        lifeStage={lifeStage}
                     />
                 </motion.div>
 
@@ -257,9 +289,20 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
                     className="flex flex-col gap-8 w-full h-full"
                 >
-                    <WeeklyCalendar />
+                    <WeeklyCalendar successDays={React.useMemo(() => {
+                        const localDays = (() => {
+                            try {
+                                return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
+                            } catch (e) {
+                                return [];
+                            }
+                        })();
+                        const currentProfile = profiles.find(p => p.id === activeProfileId);
+                        const dbDays = currentProfile?.successDays || [];
+                        return Array.from(new Set([...localDays, ...dbDays]));
+                    }, [activeProfileId, profiles, loggedMeals])} />
                     <FeedingGuideline ageBracketInfo={ageBracketInfo} />
-                    <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} />
+                    <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
                 </motion.div>
             </div>
 

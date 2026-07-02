@@ -48,8 +48,6 @@ model OnboardingSession {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  cats            Cat[]
-
   @@map("onboarding_sessions")
 }
 
@@ -74,21 +72,19 @@ model DietProfile {
 }
 
 model Cat {
-  id                  String   @id @default(cuid())
-  profileId           String?  @map("profile_id")
-  onboardingSessionId String?  @map("onboarding_session_id")
-  name                String
-  breed               String?
-  marking             String?
-  sex                 String
-  lifeStage           String   @map("life_stage")
-  age                 Int?
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  profileId String?  @map("profile_id")
+  name      String
+  breed     String?
+  marking   String?
+  sex       String
+  lifeStage String   @map("life_stage")
+  age       Int?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  profile           Profile?           @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  onboardingSession OnboardingSession? @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
-  dietProfiles      DietProfile[]
+  profile      Profile?      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  dietProfiles DietProfile[]
 
   @@map("cats")
 }
@@ -109,7 +105,6 @@ model DietMealLog {
   dietProfile   DietProfile @relation(fields: [dietProfileId], references: [id], onDelete: Cascade)
 
   @@map("diet_meal_logs")
-  @@unique([dietProfileId, mealName])
 }
 
 model Plant {

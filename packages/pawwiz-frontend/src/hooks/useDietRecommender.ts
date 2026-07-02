@@ -12,14 +12,15 @@ export interface MealLog {
     kcal: number;
     status: 'pending' | 'logged' | 'skipped';
     timestamp?: string;
+    updatedAt?: string;
 }
 
 export interface CatProfile {
     id: string;
     name: string;
     gender: 'male' | 'female';
-    lifeStage: 'kitten' | 'adult';
-    age: number; // months for kitten, years for adult
+    lifeStage: 'kitten' | 'adult' | 'senior';
+    age: number; // months for kitten, years for adult/senior
     weight: number;
     isKg: boolean;
     foodPreference: 'dry' | 'wet' | 'mixed';
@@ -28,6 +29,10 @@ export interface CatProfile {
     loggedMeals: MealLog[];
     waterIntake: number; // in ml
     photoUrl?: string | null;
+    breed?: string | null;
+    marking?: string | null;
+    updatedAt?: string;
+    successDays?: string[];
 }
 
 export interface AgeBracketDetails {
@@ -37,7 +42,7 @@ export interface AgeBracketDetails {
     portionGuide: string;
 }
 
-export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult', age: number): AgeBracketDetails => {
+export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult' | 'senior', age: number): AgeBracketDetails => {
     if (lifeStage === 'kitten') {
         if (age <= 1) {
             return {
@@ -75,6 +80,13 @@ export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult', age: number): A
                 portionGuide: "Adjust portion based on activity and spay/neuter status",
             };
         }
+    } else if (lifeStage === 'senior') {
+        return {
+            bracket: `Senior: ${age} years old`,
+            recommendedFood: "Senior cat food (easy to digest)",
+            frequency: "2 times per day",
+            portionGuide: "Controlled portions (weight and kidney health based)",
+        };
     } else {
         return {
             bracket: `Adult: ${age} ${age === 1 ? 'year' : 'years'} old`,
@@ -121,12 +133,44 @@ export const useDietRecommender = () => {
         return localStorage.getItem('diet_active_profile_id') || '';
     });
 
-    const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0];
+    const activeProfileRaw = profiles.find(p => p.id === activeProfileId) || profiles[0];
+
+    const sanitizeProfileMeals = (profile?: CatProfile): CatProfile | undefined => {
+        if (!profile) return undefined;
+        const todayStr = new Date().toLocaleDateString('sv-SE');
+        const waterDateKey = `diet_water_date_${profile.id}`;
+        const lastWaterDate = localStorage.getItem(waterDateKey);
+        const isWaterToday = lastWaterDate === todayStr;
+
+        return {
+            ...profile,
+            loggedMeals: profile.loggedMeals.map(m => {
+                if (m.status !== 'pending' && m.updatedAt) {
+                    const mealDateStr = new Date(m.updatedAt).toLocaleDateString('sv-SE');
+                    if (mealDateStr !== todayStr) {
+                        return {
+                            ...m,
+                            status: 'pending',
+                            kcal: 0,
+                            foodType: undefined,
+                            amount: undefined,
+                            unit: undefined,
+                            timestamp: undefined,
+                        };
+                    }
+                }
+                return m;
+            }),
+            waterIntake: isWaterToday ? profile.waterIntake : 0
+        };
+    };
+
+    const activeProfile = sanitizeProfileMeals(activeProfileRaw);
 
     // Profile form states (synced to the current active profile)
     const [catName, setCatName] = useState<string>(activeProfile?.name || '');
     const [gender, setGender] = useState<'male' | 'female'>(activeProfile?.gender || 'male');
-    const [lifeStage, setLifeStage] = useState<'kitten' | 'adult'>(activeProfile?.lifeStage || 'adult');
+    const [lifeStage, setLifeStage] = useState<'kitten' | 'adult' | 'senior'>(activeProfile?.lifeStage || 'adult');
     const [age, setAge] = useState<number>(activeProfile?.age || 0);
     const [weight, setWeight] = useState<number>(activeProfile?.weight || 0);
     const [isKg, setIsKg] = useState<boolean>(activeProfile ? activeProfile.isKg : true);
@@ -170,6 +214,21 @@ export const useDietRecommender = () => {
         const loadFromBackend = async (session: any) => {
             if (!session) return;
             try {
+                // Fetch primary profile details first to get displayName
+                let primaryProfile: any = null;
+                const profileRes = await fetch(`${API_BASE}/api/profile`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                    }
+                });
+                if (profileRes.ok && active) {
+                    primaryProfile = await profileRes.json();
+                    if (primaryProfile && primaryProfile.displayName) {
+                        setDisplayName(primaryProfile.displayName);
+                    }
+                }
+
                 const res = await fetch(`${API_BASE}/api/diet/profiles`, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -198,24 +257,11 @@ export const useDietRecommender = () => {
                         syncStatesToSetup(activeProfileData);
                     } else {
                         clearLocalProfileData();
-                        // Query the onboarding profile details to autofill
-                        const profileRes = await fetch(`${API_BASE}/api/profile`, {
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${session.access_token}`,
-                            }
-                        });
-                        if (profileRes.status === 404 && active) {
-                            setHasNoUserProfile(true);
-                            return;
-                        }
-                        if (profileRes.ok && active) {
-                            const primaryProfile = await profileRes.json();
-                            if (primaryProfile) {
-                                setCatName(primaryProfile.catName || '');
-                                setGender(primaryProfile.catSex === 'female' ? 'female' : 'male');
-                                setLifeStage(primaryProfile.catLifeStage === 'kitten' ? 'kitten' : 'adult');
-                            }
+                        // Query the onboarding profile details to autofill if profileRes has already loaded
+                        if (primaryProfile) {
+                            setCatName(primaryProfile.catName || '');
+                            setGender(primaryProfile.catSex === 'female' ? 'female' : 'male');
+                            setLifeStage(primaryProfile.catLifeStage === 'kitten' ? 'kitten' : 'adult');
                         }
                     }
                 }
@@ -277,13 +323,15 @@ export const useDietRecommender = () => {
             isKg: customDetails?.isKg ?? true,
             foodPreference: customDetails?.foodPreference || 'mixed',
             isSpayedNeutered: customDetails?.isSpayedNeutered ?? true,
-            isTracking: customDetails?.isTracking ?? true,
+            isTracking: customDetails?.isTracking ?? false,
             loggedMeals: [
                 { id: '1', mealName: 'Breakfast', status: 'pending', kcal: 0 },
                 { id: '2', mealName: 'Lunch', status: 'pending', kcal: 0 },
                 { id: '3', mealName: 'Dinner', status: 'pending', kcal: 0 }
             ],
-            waterIntake: 0
+            waterIntake: 0,
+            breed: customDetails?.breed || null,
+            marking: customDetails?.marking || null
         };
         const tempProfiles = [...profiles, tempProf];
         setProfiles(tempProfiles);
@@ -305,6 +353,8 @@ export const useDietRecommender = () => {
                     foodPreference: tempProf.foodPreference,
                     isSpayedNeutered: tempProf.isSpayedNeutered,
                     isTracking: tempProf.isTracking,
+                    breed: tempProf.breed,
+                    marking: tempProf.marking
                 }),
             });
             if (res.ok) {
@@ -453,7 +503,7 @@ export const useDietRecommender = () => {
             const kcal = calculateMealCalories(foodType, amount, unit);
 
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     const updatedMeals = p.loggedMeals.map(m => {
                         if (m.id === mealId) {
@@ -472,8 +522,7 @@ export const useDietRecommender = () => {
                     return { ...p, loggedMeals: updatedMeals };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -491,9 +540,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -502,7 +553,7 @@ export const useDietRecommender = () => {
 
         const skipMeal = async (mealId: string) => {
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     const updatedMeals = p.loggedMeals.map(m => {
                         if (m.id === mealId) {
@@ -517,8 +568,7 @@ export const useDietRecommender = () => {
                     return { ...p, loggedMeals: updatedMeals };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -532,9 +582,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -543,7 +595,7 @@ export const useDietRecommender = () => {
 
         const resetMealLog = async (mealId: string) => {
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     const updatedMeals = p.loggedMeals.map(m => {
                         if (m.id === mealId) {
@@ -562,8 +614,7 @@ export const useDietRecommender = () => {
                     return { ...p, loggedMeals: updatedMeals };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -581,9 +632,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -591,8 +644,11 @@ export const useDietRecommender = () => {
         };
 
         const addWater = async (amount: number) => {
+            const todayStr = new Date().toLocaleDateString('sv-SE');
+            localStorage.setItem(`diet_water_date_${activeProfileId}`, todayStr);
+
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     return {
                         ...p,
@@ -600,8 +656,7 @@ export const useDietRecommender = () => {
                     };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -612,9 +667,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? { ...updatedProf, waterIntake: updatedProf.waterIntake } : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -622,8 +679,11 @@ export const useDietRecommender = () => {
         };
 
         const resetWater = async () => {
+            const todayStr = new Date().toLocaleDateString('sv-SE');
+            localStorage.setItem(`diet_water_date_${activeProfileId}`, todayStr);
+
             // Optimistic UI update
-            const updatedProfilesLocal = profiles.map(p => {
+            setProfiles(prevProfiles => prevProfiles.map(p => {
                 if (p.id === activeProfileId) {
                     return {
                         ...p,
@@ -631,8 +691,7 @@ export const useDietRecommender = () => {
                     };
                 }
                 return p;
-            });
-            setProfiles(updatedProfilesLocal);
+            }));
 
             try {
                 const headers = await getAuthHeaders();
@@ -643,9 +702,11 @@ export const useDietRecommender = () => {
                 });
                 if (res.ok) {
                     const updatedProf = await res.json();
-                    const synced = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                    setProfiles(synced);
-                    saveProfilesToStorage(synced);
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? { ...updatedProf, waterIntake: 0 } : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
                 }
             } catch (e) {
                 console.error(e);
@@ -657,6 +718,74 @@ export const useDietRecommender = () => {
             setIsKg(toKg);
             setWeight(prev => toKg ? parseFloat((prev / 2.205).toFixed(1)) : parseFloat((prev * 2.205).toFixed(1)));
         };
+
+        // Daily Reset Logic
+        useEffect(() => {
+            if (!activeProfileId || !activeProfileRaw) return;
+
+            const checkDailyReset = async () => {
+                const todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+                const lastDateKey = `diet_last_date_${activeProfileId}`;
+                const successDaysKey = `diet_success_days_${activeProfileId}`;
+                const lastTrackedDate = localStorage.getItem(lastDateKey);
+
+                let needsReset = false;
+                let prevDayStr = lastTrackedDate;
+
+                if (lastTrackedDate && lastTrackedDate !== todayStr) {
+                    needsReset = true;
+                }
+
+                if (activeProfileRaw && activeProfileRaw.loggedMeals) {
+                    const loggedMealsWithDates = activeProfileRaw.loggedMeals.filter(m => m.updatedAt && (m.status === 'logged' || m.status === 'skipped'));
+                    if (loggedMealsWithDates.length > 0) {
+                        const latestMealDate = new Date(Math.max(...loggedMealsWithDates.map(m => new Date(m.updatedAt!).getTime())));
+                        const latestMealDateStr = latestMealDate.toLocaleDateString('sv-SE');
+                        if (latestMealDateStr !== todayStr) {
+                            needsReset = true;
+                            prevDayStr = latestMealDateStr;
+                        }
+                    }
+                }
+
+                if (needsReset && prevDayStr) {
+                    const meals = activeProfileRaw.loggedMeals || [];
+                    const allCompleted = meals.length > 0 && meals.every(m => m.status === 'logged' || m.status === 'skipped');
+
+                    if (allCompleted) {
+                        try {
+                            const successDays = JSON.parse(localStorage.getItem(successDaysKey) || '[]');
+                            if (!successDays.includes(prevDayStr)) {
+                                successDays.push(prevDayStr);
+                                localStorage.setItem(successDaysKey, JSON.stringify(successDays));
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse success days history', e);
+                        }
+                    }
+
+                    // Reset meals for new day
+                    for (const meal of meals) {
+                        if (meal.status !== 'pending') {
+                            await resetMealLog(meal.id);
+                        }
+                    }
+                    if (activeProfileRaw.waterIntake > 0) {
+                        await resetWater();
+                    }
+                }
+
+                // Only set the last checked date to today if data is clean or reset has occurred
+                if (!needsReset || (activeProfileRaw && activeProfileRaw.loggedMeals && activeProfileRaw.loggedMeals.every(m => m.status === 'pending'))) {
+                    localStorage.setItem(lastDateKey, todayStr);
+                }
+            };
+
+            checkDailyReset();
+
+            const interval = setInterval(checkDailyReset, 30000);
+            return () => clearInterval(interval);
+        }, [activeProfileId, activeProfileRaw?.loggedMeals, activeProfileRaw?.waterIntake]);
 
         const ageBracketInfo = getAgeBracketInfo(lifeStage, age);
 

@@ -65,7 +65,10 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
   const filteredOptions = onSearchChange 
     ? options 
-    : options.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
+    : (searchTerm === value || !searchTerm
+        ? options 
+        : options.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
 
   return (
     <div ref={containerRef} className="relative w-full">

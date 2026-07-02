@@ -3,6 +3,7 @@ import { profileRepository } from '../repositories/profile.repository.js';
 import { assertDefined } from '../utils/guards.js';
 import { AppError } from '../utils/errors.js';
 import { profileService } from './profile.service.js';
+import { prisma } from '../lib/prisma.js';
 
 function mapProfileToFrontend(profile: any) {
   const mealMap: Record<string, string> = {
@@ -11,19 +12,71 @@ function mapProfileToFrontend(profile: any) {
     'Dinner': '3'
   };
 
-  const loggedMeals = (profile.mealLogs || []).map((m: any) => ({
-    id: mealMap[m.mealName] || m.id,
-    mealName: m.mealName,
-    foodType: m.foodType || undefined,
-    amount: m.amount !== null ? m.amount : undefined,
-    unit: m.unit || undefined,
-    kcal: m.kcal,
-    status: m.status,
-    timestamp: m.timestamp || undefined,
-  }));
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setUTCHours(23, 59, 59, 999);
+
+  // Filter logs to only include those created today in UTC
+  const todayLogs = (profile.mealLogs || []).filter((m: any) => {
+    const d = new Date(m.createdAt);
+    return d >= todayStart && d <= todayEnd;
+  });
+
+  // Construct loggedMeals, ensuring all 3 standard meals are present
+  const standardMeals = ['Breakfast', 'Lunch', 'Dinner'];
+  const loggedMeals = standardMeals.map(mealName => {
+    const existing = todayLogs.find((m: any) => m.mealName === mealName);
+    if (existing) {
+      return {
+        id: mealMap[mealName] || existing.id,
+        mealName: existing.mealName,
+        foodType: existing.foodType || undefined,
+        amount: existing.amount !== null ? existing.amount : undefined,
+        unit: existing.unit || undefined,
+        kcal: existing.kcal,
+        status: existing.status,
+        timestamp: existing.timestamp || undefined,
+        updatedAt: existing.updatedAt,
+      };
+    } else {
+      return {
+        id: mealMap[mealName],
+        mealName,
+        foodType: undefined,
+        amount: undefined,
+        unit: undefined,
+        kcal: 0,
+        status: 'pending',
+        timestamp: undefined,
+      };
+    }
+  });
 
   // Sort: Breakfast (1), Lunch (2), Dinner (3)
   loggedMeals.sort((a: any, b: any) => a.id.localeCompare(b.id));
+
+  // Compute successDays based on database records
+  const logsByDate: Record<string, any[]> = {};
+  (profile.mealLogs || []).forEach((m: any) => {
+    const dateStr = new Date(m.createdAt).toLocaleDateString('sv-SE'); // YYYY-MM-DD
+    if (!logsByDate[dateStr]) {
+      logsByDate[dateStr] = [];
+    }
+    logsByDate[dateStr].push(m);
+  });
+
+  const successDays: string[] = [];
+  Object.entries(logsByDate).forEach(([dateStr, logs]) => {
+    const standardMeals = ['Breakfast', 'Lunch', 'Dinner'];
+    const completedMeals = logs.filter((m: any) => m.status === 'logged' || m.status === 'skipped');
+    const hasAllThree = standardMeals.every(mealName => 
+      completedMeals.some((m: any) => m.mealName === mealName)
+    );
+    if (hasAllThree) {
+      successDays.push(dateStr);
+    }
+  });
 
   return {
     id: profile.id,
@@ -37,6 +90,10 @@ function mapProfileToFrontend(profile: any) {
     isSpayedNeutered: profile.isSpayedNeutered,
     isTracking: profile.isTracking,
     waterIntake: profile.waterIntake,
+    breed: profile.cat ? profile.cat.breed : profile.profile.catBreed,
+    marking: profile.cat ? profile.cat.marking : profile.profile.catMarking,
+    updatedAt: profile.updatedAt,
+    successDays,
     loggedMeals,
   };
 }
@@ -75,7 +132,13 @@ class DietService {
     const existing = await dietRepository.findByIdAndProfileId(id, profileId);
     if (!existing) throw AppError.notFound('Diet profile not found');
 
-    await dietRepository.delete(id);
+    if (existing.catId) {
+      await prisma.cat.delete({
+        where: { id: existing.catId },
+      });
+    } else {
+      await dietRepository.delete(id);
+    }
     return { success: true };
   }
 

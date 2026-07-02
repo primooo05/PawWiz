@@ -12,6 +12,8 @@ export interface CreateDietProfileData {
   isSpayedNeutered: boolean;
   isTracking?: boolean;
   waterIntake?: number;
+  breed?: string | null;
+  marking?: string | null;
 }
 
 export interface UpdateDietProfileData {
@@ -25,6 +27,8 @@ export interface UpdateDietProfileData {
   isSpayedNeutered?: boolean;
   isTracking?: boolean;
   waterIntake?: number;
+  breed?: string | null;
+  marking?: string | null;
 }
 
 export interface UpdateDietMealLogData {
@@ -86,6 +90,8 @@ class DietRepository {
         sex: data.gender,
         lifeStage: data.lifeStage,
         age: data.age,
+        breed: data.breed,
+        marking: data.marking,
       }
     });
 
@@ -116,14 +122,14 @@ class DietRepository {
   }
 
   async update(id: string, data: UpdateDietProfileData) {
-    const { name, gender, lifeStage, age, ...dietData } = data;
+    const { name, gender, lifeStage, age, breed, marking, ...dietData } = data;
 
     const dietProfile = await prisma.dietProfile.findUnique({
       where: { id },
       select: { catId: true },
     });
 
-    if (dietProfile?.catId && (name !== undefined || gender !== undefined || lifeStage !== undefined || age !== undefined)) {
+    if (dietProfile?.catId && (name !== undefined || gender !== undefined || lifeStage !== undefined || age !== undefined || breed !== undefined || marking !== undefined)) {
       await prisma.cat.update({
         where: { id: dietProfile.catId },
         data: {
@@ -131,6 +137,8 @@ class DietRepository {
           sex: gender,
           lifeStage,
           age,
+          breed,
+          marking,
         },
       });
     }
@@ -153,13 +161,25 @@ class DietRepository {
   }
 
   async updateMealLog(dietProfileId: string, mealName: string, data: UpdateDietMealLogData) {
-    // Find the meal log ID first
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setUTCHours(23, 59, 59, 999);
+
+    // Find a meal log for today
     const mealLog = await prisma.dietMealLog.findFirst({
-      where: { dietProfileId, mealName },
+      where: { 
+        dietProfileId, 
+        mealName,
+        createdAt: {
+          gte: todayStart,
+          lte: todayEnd,
+        }
+      },
     });
 
     if (!mealLog) {
-      // If for some reason it doesn't exist, create it
+      // If none exists for today, create a new record
       return prisma.dietMealLog.create({
         data: {
           dietProfileId,

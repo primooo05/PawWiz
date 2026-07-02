@@ -18,6 +18,17 @@ vi.mock('../../repositories/onboarding.repository.js', () => ({
   },
 }));
 
+vi.mock('../../lib/prisma.js', () => ({
+  prisma: {
+    cat: {
+      create: vi.fn().mockResolvedValue({ id: 'cat-id' }),
+    },
+    dietProfile: {
+      create: vi.fn().mockResolvedValue({ id: 'diet-profile-id' }),
+    },
+  },
+}));
+
 const makeSession = (overrides: Record<string, unknown> = {}) => ({
   id: 'session-id',
   step: 6,
