@@ -1,36 +1,28 @@
 import React from 'react';
 import type { DailyLog } from '../../../hooks/usePregnancyTracker';
-
-import nestingIcon from '../../../assets/nesting.png';
-import appetiteUpIcon from '../../../assets/appetite-up.png';
-import pinkingUpIcon from '../../../assets/pinking-up.png';
-import sleepIcon from '../../../assets/sleep.png';
-import vomitingIcon from '../../../assets/vomiting.png';
-import weightGainIcon from '../../../assets/weight-gain.png';
-import milkProductionIcon from '../../../assets/milk-production.png';
-import contractionsIcon from '../../../assets/contractions.png';
+import { Droplet, Palette, Scale, Moon, UtensilsCrossed, Home, Milk, Zap } from 'lucide-react';
 
 const getSymptomsForWeek = (week: number) => {
     if (week <= 3) {
         return [
-            { label: 'Nausea', icon: vomitingIcon },
-            { label: 'Nipple Changes', icon: pinkingUpIcon },
-            { label: 'Weight Gain', icon: weightGainIcon },
-            { label: 'Lethargy', icon: sleepIcon },
+            { label: 'Nausea', icon: Droplet },
+            { label: 'Nipple Changes', icon: Palette },
+            { label: 'Weight Gain', icon: Scale },
+            { label: 'Lethargy', icon: Moon },
         ];
     } else if (week <= 6) {
         return [
-            { label: 'Weight Gain', icon: weightGainIcon },
-            { label: 'Appetite Changes', icon: appetiteUpIcon },
-            { label: 'Lethargy', icon: sleepIcon },
-            { label: 'Nipple Changes', icon: pinkingUpIcon },
+            { label: 'Weight Gain', icon: Scale },
+            { label: 'Appetite Changes', icon: UtensilsCrossed },
+            { label: 'Lethargy', icon: Moon },
+            { label: 'Nipple Changes', icon: Palette },
         ];
     } else {
         return [
-            { label: 'Nesting', icon: nestingIcon },
-            { label: 'Milk Production', icon: milkProductionIcon },
-            { label: 'Contractions', icon: contractionsIcon },
-            { label: 'Appetite Changes', icon: appetiteUpIcon },
+            { label: 'Nesting', icon: Home },
+            { label: 'Milk Production', icon: Milk },
+            { label: 'Contractions', icon: Zap },
+            { label: 'Appetite Changes', icon: UtensilsCrossed },
         ];
     }
 };
@@ -73,6 +65,7 @@ export const TodaySymptomsCard: React.FC<TodaySymptomsCardProps> = ({
                 {getSymptomsForWeek(currentWeek).map((symptom) => {
                     const isSymptomLogged = (safeTodayLog.symptoms || []).includes(symptom.label);
                     const severity = safeTodayLog.symptomSeverities?.[symptom.label];
+                    const SymptomIcon = symptom.icon;
                     return (
                         <div
                             key={symptom.label}
@@ -87,10 +80,10 @@ export const TodaySymptomsCard: React.FC<TodaySymptomsCardProps> = ({
                                     : 'bg-[#F8FAFC] border-slate-100 text-slate-400'}
                             `}
                         >
-                            <img
-                                src={symptom.icon}
-                                alt={symptom.label}
-                                className={`h-10 w-10 object-contain mb-3 transition-opacity ${isSymptomLogged ? 'opacity-100' : 'opacity-40'}`}
+                            <SymptomIcon
+                                aria-label={symptom.label}
+                                className={`h-10 w-10 mb-3 transition-opacity ${isSymptomLogged ? 'opacity-100' : 'opacity-40'}`}
+                                strokeWidth={2}
                             />
                             <span className="text-[11px] font-bold">{symptom.label}</span>
                             {isSymptomLogged && severity && (

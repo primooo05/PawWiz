@@ -2,42 +2,29 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { DailyLog } from '../../../hooks/usePregnancyTracker';
 import ExposureSlider from '../../smoothui/exposure-slider/Temp.tsx';
-
-import nestingIcon from '../../../assets/nesting.png';
-import appetiteUpIcon from '../../../assets/appetite-up.png';
-import pinkingUpIcon from '../../../assets/pinking-up.png';
-import sleepIcon from '../../../assets/sleep.png';
-import vomitingIcon from '../../../assets/vomiting.png';
-import weightGainIcon from '../../../assets/weight-gain.png';
-import milkProductionIcon from '../../../assets/milk-production.png';
-import contractionsIcon from '../../../assets/contractions.png';
-
-import affectionateIcon from '../../../assets/affectionate.png';
-import quietIcon from '../../../assets/quiet.png';
-import calmIcon from '../../../assets/calm.png';
-import stressIcon from '../../../assets/stress.png';
+import { Droplet, Palette, Scale, Moon, UtensilsCrossed, Home, Milk, Zap, Heart, Activity, VolumeX, Feather } from 'lucide-react';
 
 const getSymptomsForWeek = (week: number) => {
     if (week <= 3) {
         return [
-            { label: 'Nausea', icon: vomitingIcon },
-            { label: 'Nipple Changes', icon: pinkingUpIcon },
-            { label: 'Weight Gain', icon: weightGainIcon },
-            { label: 'Lethargy', icon: sleepIcon },
+            { label: 'Nausea', icon: Droplet },
+            { label: 'Nipple Changes', icon: Palette },
+            { label: 'Weight Gain', icon: Scale },
+            { label: 'Lethargy', icon: Moon },
         ];
     } else if (week <= 6) {
         return [
-            { label: 'Weight Gain', icon: weightGainIcon },
-            { label: 'Appetite Changes', icon: appetiteUpIcon },
-            { label: 'Lethargy', icon: sleepIcon },
-            { label: 'Nipple Changes', icon: pinkingUpIcon },
+            { label: 'Weight Gain', icon: Scale },
+            { label: 'Appetite Changes', icon: UtensilsCrossed },
+            { label: 'Lethargy', icon: Moon },
+            { label: 'Nipple Changes', icon: Palette },
         ];
     } else {
         return [
-            { label: 'Nesting', icon: nestingIcon },
-            { label: 'Milk Production', icon: milkProductionIcon },
-            { label: 'Contractions', icon: contractionsIcon },
-            { label: 'Appetite Changes', icon: appetiteUpIcon },
+            { label: 'Nesting', icon: Home },
+            { label: 'Milk Production', icon: Milk },
+            { label: 'Contractions', icon: Zap },
+            { label: 'Appetite Changes', icon: UtensilsCrossed },
         ];
     }
 };
@@ -122,6 +109,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                 <div className="grid grid-cols-3 gap-3">
                                     {getSymptomsForWeek(selectedDateWeek).map((symptom) => {
                                         const isSymptomLogged = activeLog.symptoms.includes(symptom.label);
+                                        const SymptomIcon = symptom.icon;
                                         return (
                                             <button
                                                 key={symptom.label}
@@ -148,7 +136,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                                     : 'bg-[#F8FAFC] border-slate-100 text-slate-700 hover:border-teal-200'
                                                     }`}
                                             >
-                                                <img src={symptom.icon} alt={symptom.label} className="h-10 w-10 object-contain mb-1" />
+                                                <SymptomIcon aria-label={symptom.label} className="h-10 w-10 mb-1" strokeWidth={2} />
                                                 <span className="text-[10px] font-black text-center leading-tight break-words max-w-full">{symptom.label}</span>
                                                 {isSymptomLogged && (
                                                     <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full mt-1 ${activeLog.symptomSeverities?.[symptom.label] === 'Severe'
@@ -234,12 +222,13 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                 </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
-                                        { label: 'Affectionate', icon: affectionateIcon },
-                                        { label: 'Restless', icon: stressIcon },
-                                        { label: 'Quiet', icon: quietIcon },
-                                        { label: 'Calm', icon: calmIcon },
+                                        { label: 'Affectionate', icon: Heart },
+                                        { label: 'Restless', icon: Activity },
+                                        { label: 'Quiet', icon: VolumeX },
+                                        { label: 'Calm', icon: Feather },
                                     ].map((moodItem) => {
                                         const isMoodSelected = activeLog.moods?.includes(moodItem.label) || false;
+                                        const MoodIcon = moodItem.icon;
                                         return (
                                             <button
                                                 key={moodItem.label}
@@ -259,7 +248,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                                     : 'bg-[#F8FAFC] border-slate-100 text-slate-700 hover:border-yellow-100'
                                                     }`}
                                             >
-                                                <img src={moodItem.icon} alt={moodItem.label} className="h-8 w-8 object-contain" />
+                                                <MoodIcon aria-label={moodItem.label} className="h-8 w-8" strokeWidth={2} />
                                                 <span>{moodItem.label}</span>
                                             </button>
                                         );

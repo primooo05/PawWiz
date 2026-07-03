@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import type { DailyLog } from '../../hooks/usePregnancyTracker';
+import { useDietRecommender } from '../../hooks/useDietRecommender';
+import { useProfilePanel } from '../../hooks/useProfilePanel';
+import { getTimeGreeting } from '../../utils/greeting';
 import CycleProgressCard from './sub-components/CycleProgressCard';
 import CalendarModule from './CalendarModule';
 import TodaySymptomsCard from './sub-components/TodaySymptomsCard';
 import SymptomLogForm from './sub-components/SymptomLogForm';
 import WeightPickerModal from '../modals/WeightPickerModal';
 import ConfirmationDialog from '../modals/ConfirmationDialog';
+import GreetingHeader from '../GreetingHeader';
 import { useWeightManager } from '../../hooks/useWeightManager';
 import { AnimatePresence } from 'motion/react';
 
@@ -76,6 +80,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const [isEduExpanded, setIsEduExpanded] = useState(true);
     const [isConfirmEditOpen, setIsConfirmEditOpen] = useState(false);
 
+    const { profiles, activeProfileId, switchProfile, catName } = useDietRecommender();
+    const { profile } = useProfilePanel();
+
+    const pregnancyGreeting = getTimeGreeting(
+        {
+            morning: (owner, cat) => ({
+                title: `Good morning, ${owner}!`,
+                subtitle: `Day ${currentDay} of ${cat}'s pregnancy journey`,
+            }),
+            midday: (owner, cat) => ({
+                title: `Hi ${owner}!`,
+                subtitle: `Checking in on ${cat} at week ${currentWeek}`,
+            }),
+            evening: (owner, cat) => ({
+                title: `Good evening, ${owner}.`,
+                subtitle: `Log any symptoms ${cat} had today`,
+            }),
+            night: (owner, cat) => ({
+                title: `Hello, ${owner}!`,
+                subtitle: `${cat} has ${daysRemaining} days until delivery`,
+            }),
+        },
+        profile?.displayName,
+        catName
+    );
+
+    const avatarDataList = profiles.map((p) => ({
+        id: p.id,
+        name: p.name,
+        src: p.photoUrl || undefined,
+        alt: p.name,
+        isActive: p.id === activeProfileId,
+        isNew: !p.isTracking,
+    }));
+
     const activeSummaryDateStr = selectedDateStr || todayStr;
     const activeSummaryLog = logs[activeSummaryDateStr] || { symptoms: [], moods: [] };
 
@@ -124,6 +163,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     return (
         <>
+            <GreetingHeader
+                title={pregnancyGreeting.title}
+                subtitle={pregnancyGreeting.subtitle}
+                avatars={avatarDataList}
+                onAvatarClick={(id) => switchProfile(id)}
+                className="mb-8"
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-x-12 gap-y-8 items-stretch flex-grow w-full">
                 {/* LEFT COLUMN: Molly's Cycle (Soft UI) */}
                 <CycleProgressCard

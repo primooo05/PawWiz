@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase.js';
 import { API_BASE } from '../../lib/config.js';
 import BottomNav from '../BottomNav.js';
+import GreetingHeader from '../GreetingHeader';
 import BehaviorInsightsWidget from './BehaviorInsightsWidget';
 import { CircleWrapper } from '../CircleWrapper';
 import { Activity, Apple, Heart, TrendingUp, AlertCircle } from 'lucide-react';
@@ -10,6 +11,7 @@ import { useProfilePanel } from '../../hooks/useProfilePanel';
 import { usePregnancyTracker } from '../../hooks/usePregnancyTracker';
 import { useDietRecommender } from '../../hooks/useDietRecommender';
 import { useBehaviorDecoder } from '../../hooks/useBehaviorDecoder';
+import { getTimeGreeting } from '../../utils/greeting';
 
 interface DashboardStats {
   diet?: {
@@ -108,6 +110,38 @@ const Dashboard: React.FC = () => {
     : 0;
   const totalMealsCount = diet.activeProfile ? Object.keys(diet.loggedMeals).length : 3;
 
+  const dashboardGreeting = getTimeGreeting(
+    {
+      morning: (owner, cat) => ({
+        title: `Good morning, ${owner}!`,
+        subtitle: `Here's how ${cat} is doing across every module`,
+      }),
+      midday: (owner, cat) => ({
+        title: `Hi ${owner}!`,
+        subtitle: `A quick look at ${cat}'s day so far`,
+      }),
+      evening: (owner, cat) => ({
+        title: `Good evening, ${owner}.`,
+        subtitle: `Wrapping up ${cat}'s care for today`,
+      }),
+      night: (owner, cat) => ({
+        title: `Hello, ${owner}!`,
+        subtitle: `Checking in on ${cat} tonight`,
+      }),
+    },
+    profile?.displayName,
+    catName
+  );
+
+  const avatarDataList = diet.profiles.map((p) => ({
+    id: p.id,
+    name: p.name,
+    src: p.photoUrl || undefined,
+    alt: p.name,
+    isActive: p.id === diet.activeProfileId,
+    isNew: !p.isTracking,
+  }));
+
   // Merge API stats with hook data
   const mergedStats: DashboardStats = {
     diet: {
@@ -142,21 +176,17 @@ const Dashboard: React.FC = () => {
             ? 'opacity-0'
             : 'opacity-100'
       }`}>
-        {/* Header Section */}
-        <div className="bg-[#1a1a1a] text-white px-6 md:px-8 py-8 md:py-12 border-b-4 border-[#FFD700]">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-2">
-              PAWWIZ
-            </h1>
-            <p className="text-lg md:text-xl font-bold text-gray-300">
-              Welcome back, {profile?.displayName || catName || 'Furparent'}
-            </p>
-            <p className="text-sm text-gray-400 mt-1">Your comprehensive pet care dashboard</p>
-          </div>
-        </div>
-
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
+          {/* Greeting Header */}
+          <GreetingHeader
+            title={dashboardGreeting.title}
+            subtitle={dashboardGreeting.subtitle}
+            avatars={avatarDataList}
+            onAvatarClick={(id) => diet.switchProfile(id)}
+            className="mb-10"
+          />
+
           {/* Stats Grid Header */}
           <div className="mb-12">
             <div className="border-l-4 border-[#1a1a1a] pl-4 mb-6">

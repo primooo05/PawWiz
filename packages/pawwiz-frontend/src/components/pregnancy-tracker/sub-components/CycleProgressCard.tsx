@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DailyLog } from '../../../hooks/usePregnancyTracker';
+import { Stethoscope, PawPrint, Scale, Thermometer } from 'lucide-react';
 
 const WEEK_DESCRIPTIONS: Record<number, string> = {
     1: "Fertilization occurs. Eggs travel to the uterus. No visible symptoms yet; keep her stress levels low.",
@@ -87,8 +88,8 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
                     {/* Symptoms Card */}
                     <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl flex flex-col justify-between min-h-[120px] shadow-sm relative">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-lg">
-                                🩺
+                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-teal-500">
+                                <Stethoscope className="h-5 w-5" strokeWidth={2} />
                             </div>
                             <span className="text-[10px] font-bold text-teal-800 bg-teal-100/50 px-2 py-0.5 rounded-full">
                                 {activeSummaryLog.symptoms && activeSummaryLog.symptoms.length > 0 ? `${activeSummaryLog.symptoms.length} Logged` : 'None'}
@@ -116,8 +117,8 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
                     {/* Behavior Card */}
                     <div className="p-4 bg-yellow-50/70 border border-yellow-100 rounded-2xl flex flex-col justify-between min-h-[120px] shadow-sm relative">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-lg">
-                                🐾
+                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-yellow-600">
+                                <PawPrint className="h-5 w-5" strokeWidth={2} />
                             </div>
                             <span className="text-[10px] font-bold text-yellow-800 bg-yellow-100/50 px-2 py-0.5 rounded-full">
                                 {activeSummaryLog.moods && activeSummaryLog.moods.length > 0 ? 'Active' : 'Normal'}
@@ -142,8 +143,8 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
                     {/* Weight Card */}
                     <div className="p-4 bg-sky-50/70 border border-sky-100 rounded-2xl flex flex-col justify-between min-h-[120px] shadow-sm relative">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-lg">
-                                ⚖️
+                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-sky-500">
+                                <Scale className="h-5 w-5" strokeWidth={2} />
                             </div>
                             <span className="text-[10px] font-bold text-sky-800 bg-sky-100/50 px-2 py-0.5 rounded-full">
                                 {activeSummaryLog.weight !== undefined ? 'Logged' : 'None'}
@@ -160,8 +161,8 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
                     {/* Temperature Card */}
                     <div className="p-4 bg-emerald-50/70 border border-emerald-100 rounded-2xl flex flex-col justify-between min-h-[120px] shadow-sm relative">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-lg">
-                                🌡️
+                            <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm text-emerald-500">
+                                <Thermometer className="h-5 w-5" strokeWidth={2} />
                             </div>
                             {activeSummaryLog.temperature !== undefined ? (
                                 activeSummaryLog.temperature < 37.2 ? (
