@@ -29,7 +29,7 @@ export const BehaviorChat: React.FC = () => {
     else if (item === 'dashboard') navigate('/dashboard');
     else if (item === 'diet-reco') navigate('/diet-recommender');
     else if (item === 'settings') navigate('/settings');
-    else if (item === 'behavior') navigate('/behavior');
+    else if (item === 'behavior') navigate('/behavior-chat');
   };
 
   const handleExampleClick = (exampleText: string) => {

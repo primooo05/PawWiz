@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import LoadingScreen from '../LoadingScreen';
-import DietSetupView from './DietSetupView';
+import DietSetupView, { DietSetupModal } from './DietSetupView';
 import DietDashboardView from './DietDashboardView';
 import { useDietRecommender } from '../../hooks/useDietRecommender';
 import BottomNav from '../BottomNav';
@@ -50,17 +50,19 @@ export const DietRecommender: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [loadingTarget, setLoadingTarget] = useState<'dashboard' | 'setup' | null>(null);
-    const [showSetup, setShowSetup] = useState<boolean>(true);
+    const [isSetupModalOpen, setIsSetupModalOpen] = useState<boolean>(false);
     const [hasCheckedInitialState, setHasCheckedInitialState] = useState<boolean>(false);
     const [newCatToSetup, setNewCatToSetup] = useState<any>(null);
 
     useEffect(() => {
         if (!hasCheckedInitialState) {
+            // Open setup modal if no tracking profile exists
             if (!hasNoUserProfile && profiles.length > 0) {
-                setShowSetup(false);
+                const hasTrackingProfile = profiles.some(p => p.isTracking);
+                setIsSetupModalOpen(!hasTrackingProfile);
                 setHasCheckedInitialState(true);
             } else if (hasNoUserProfile) {
-                setShowSetup(!isTracking);
+                setIsSetupModalOpen(!isTracking);
                 setHasCheckedInitialState(true);
             }
         }
@@ -89,7 +91,7 @@ export const DietRecommender: React.FC = () => {
     const handleConfirmSetup = () => {
         if (newCatToSetup) {
             switchProfile(newCatToSetup.id);
-            setShowSetup(true);
+            setIsSetupModalOpen(true);
             setNewCatToSetup(null);
         }
     };
@@ -103,21 +105,17 @@ export const DietRecommender: React.FC = () => {
     };
 
     const handleResetWithLoading = () => {
-        setLoadingTarget('setup');
-        setIsLoading(true);
+        setIsSetupModalOpen(true);
     };
 
     const handleLoadingComplete = useCallback(() => {
         setIsLoading(false);
         if (loadingTarget === 'dashboard') {
             handleStartDietTracking();
-            setShowSetup(false);
-        } else if (loadingTarget === 'setup') {
-            handleResetDietTracking();
-            setShowSetup(true);
+            setIsSetupModalOpen(false);
         }
         setLoadingTarget(null);
-    }, [loadingTarget, handleStartDietTracking, handleResetDietTracking]);
+    }, [loadingTarget, handleStartDietTracking]);
 
     const handleNavigation = (item: string) => {
         if (item === 'calendar') {
@@ -127,7 +125,7 @@ export const DietRecommender: React.FC = () => {
         } else if (item === 'diet-reco') {
             navigate('/diet-recommender');
         } else if (item === 'behavior') {
-            navigate('/behavior');
+            navigate('/behavior-chat');
         } else if (item === 'settings') {
             navigate('/settings');
         } else if (item === 'plant') {
@@ -137,62 +135,65 @@ export const DietRecommender: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
-            {/* Main content container */}
-            <main className={showSetup || !isTracking ? "max-w-[1440px] w-full px-8 py-12 mx-auto" : "w-full px-4 sm:px-6 md:px-8 py-6 flex-grow flex flex-col justify-stretch"}>
-                {showSetup || !isTracking ? (
-                    <DietSetupView
-                        catName={catName}
-                        setCatName={setCatName}
-                        gender={gender}
-                        setGender={setGender}
-                        lifeStage={lifeStage}
-                        setLifeStage={setLifeStage}
-                        age={age}
-                        setAge={setAge}
-                        weight={weight}
-                        setWeight={setWeight}
-                        isKg={isKg}
-                        toggleUnit={toggleUnit}
-                        foodPreference={foodPreference}
-                        setFoodPreference={setFoodPreference}
-                        isSpayedNeutered={isSpayedNeutered}
-                        setIsSpayedNeutered={setIsSpayedNeutered}
-                        onSubmit={handleSubmit}
-                        profiles={profiles}
-                        activeProfileId={activeProfileId}
-                        switchProfile={handleSwitchProfile}
-                        hasNoUserProfile={hasNoUserProfile}
-                        displayName={displayName}
-                        setDisplayName={setDisplayName}
-                        isLoading={isLoading}
-                    />
-                ) : (
-                    <DietDashboardView
-                        weight={weight}
-                        isKg={isKg}
-                        foodPreference={foodPreference}
-                        isSpayedNeutered={isSpayedNeutered}
-                        activeLifeStage={activeLifeStage}
-                        lifeStage={lifeStage}
-                        age={age}
-                        ageBracketInfo={ageBracketInfo}
-                        onReset={handleResetWithLoading}
-                        catName={catName}
-                        gender={gender}
-                        profiles={profiles}
-                        activeProfileId={activeProfileId}
-                        switchProfile={handleSwitchProfile}
-                        createNewProfile={createNewProfile}
-                        loggedMeals={loggedMeals}
-                        waterIntake={waterIntake}
-                        addMeal={addMeal}
-                        skipMeal={skipMeal}
-                        resetMealLog={resetMealLog}
-                        addWater={addWater}
-                        resetWater={resetWater}
-                        displayName={displayName}
-                    />
-                )}
+            {/* Main content container - Always show dashboard */}
+            <main className="w-full px-4 sm:px-6 md:px-8 py-6 flex-grow flex flex-col justify-stretch">
+                <DietDashboardView
+                    weight={weight}
+                    isKg={isKg}
+                    foodPreference={foodPreference}
+                    isSpayedNeutered={isSpayedNeutered}
+                    activeLifeStage={activeLifeStage}
+                    lifeStage={lifeStage}
+                    age={age}
+                    ageBracketInfo={ageBracketInfo}
+                    onReset={handleResetWithLoading}
+                    catName={catName}
+                    gender={gender}
+                    profiles={profiles}
+                    activeProfileId={activeProfileId}
+                    switchProfile={handleSwitchProfile}
+                    createNewProfile={createNewProfile}
+                    loggedMeals={loggedMeals}
+                    waterIntake={waterIntake}
+                    addMeal={addMeal}
+                    skipMeal={skipMeal}
+                    resetMealLog={resetMealLog}
+                    addWater={addWater}
+                    resetWater={resetWater}
+                    displayName={displayName}
+                />
+                
+                {/* Setup Modal Overlay */}
+                <DietSetupModal
+                    isOpen={isSetupModalOpen}
+                    onClose={() => setIsSetupModalOpen(false)}
+                    catName={catName}
+                    setCatName={setCatName}
+                    gender={gender}
+                    setGender={setGender}
+                    lifeStage={lifeStage}
+                    setLifeStage={setLifeStage}
+                    age={age}
+                    setAge={setAge}
+                    weight={weight}
+                    setWeight={setWeight}
+                    isKg={isKg}
+                    toggleUnit={toggleUnit}
+                    foodPreference={foodPreference}
+                    setFoodPreference={setFoodPreference}
+                    isSpayedNeutered={isSpayedNeutered}
+                    setIsSpayedNeutered={setIsSpayedNeutered}
+                    onSubmit={(e) => {
+                        handleSubmit(e);
+                    }}
+                    profiles={profiles}
+                    activeProfileId={activeProfileId}
+                    switchProfile={handleSwitchProfile}
+                    hasNoUserProfile={hasNoUserProfile}
+                    displayName={displayName}
+                    setDisplayName={setDisplayName}
+                    isLoading={isLoading}
+                />
             </main>
 
             {/* Bottom Navigation */}
@@ -202,9 +203,8 @@ export const DietRecommender: React.FC = () => {
 
             {isLoading && (
                 <LoadingScreen
-                    durationMs={loadingTarget === 'setup' ? 2500 : 4000}
+                    durationMs={4000}
                     catName={catName}
-                    message={loadingTarget === 'setup' ? `Resetting ${catName || "cat"}'s tracker...` : undefined}
                     onComplete={handleLoadingComplete}
                 />
             )}
@@ -222,7 +222,6 @@ export const DietRecommender: React.FC = () => {
                         const configuredProfile = profiles.find(p => p.isTracking);
                         if (configuredProfile) {
                             switchProfile(configuredProfile.id);
-                            setShowSetup(false);
                         }
                     }}
                 />

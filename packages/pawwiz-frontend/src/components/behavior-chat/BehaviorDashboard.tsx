@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { API_BASE } from '../lib/config.js';
-import BottomNav from '../components/BottomNav';
+import { supabase } from '../../lib/supabase.js';
+import { API_BASE } from '../../lib/config.js';
+import BottomNav from '../BottomNav.js';
 
 interface DailyBehaviorSummary {
   date: string;
@@ -128,7 +128,7 @@ const BehaviorDashboard: React.FC = () => {
     else if (item === 'dashboard') navigate('/dashboard');
     else if (item === 'diet-reco') navigate('/diet-recommender');
     else if (item === 'settings') navigate('/settings');
-    else if (item === 'behavior') navigate('/behavior');
+    else if (item === 'behavior') navigate('/behavior-chat');
   };
 
   if (isLoading) {
@@ -385,7 +385,7 @@ const BehaviorDashboard: React.FC = () => {
             <p className="text-lg font-black text-slate-900 mb-2">No behavior data yet</p>
             <p className="text-slate-600 mb-4">Start logging cat behaviors in the behavior chat to see patterns here</p>
             <button
-              onClick={() => navigate('/behavior')}
+              onClick={() => navigate('/behavior-chat')}
               className="px-6 py-3 bg-[#30c290] text-white font-black rounded-xl hover:bg-[#27a7a0] transition-colors"
             >
               Go to Behavior Chat

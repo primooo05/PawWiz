@@ -47,7 +47,7 @@ export default function Hero({ apiBase }: HeroProps) {
       {/* Centered Heading */}
       <div className="max-w-4xl mx-auto px-6 space-y-5">
         <h2 className="reveal-item stagger-1 text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">
-          YOUR <span className="text-[#e9c46a] drop-shadow-[0_2px_10px_rgba(233,196,106,0.15)]">CAT</span> JUST ATE A <span className="text-[#2ec4b6] drop-shadow-[0_2px_10px_rgba(46,196,182,0.15)]">LEAF</span>. IS IT <span className="text-rose-500 drop-shadow-[0_2px_10px_rgba(239,68,68,0.15)]">DANGEROUS</span>?
+          YOUR <span className="text-[#e9c46a] drop-shadow-[0_2px_10px_rgba(233,196,106,0.15)]">CAT</span> JUST ATE A <span className="text-[#30c290] drop-shadow-[0_2px_10px_rgba(46,196,182,0.15)]">LEAF</span>. IS IT <span className="text-rose-500 drop-shadow-[0_2px_10px_rgba(239,68,68,0.15)]">DANGEROUS</span>?
         </h2>
         <p className="reveal-item stagger-2 text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
           PawWiz will tell you immediately before it became an emergency! Plant Toxicity Checker, Feeding guide, and Pregnancy Monitoring, Health Tracker built for furparents!
@@ -60,9 +60,13 @@ export default function Hero({ apiBase }: HeroProps) {
         <img
           src={CatHero01}
           alt="Hanging Cat Mascot"
-          className="absolute -top-10 left-10 md:-top-18 md:left-20 w-32 md:w-44 z-20 pointer-events-none select-none"
+          className="absolute -top-10 left-10 md:-top-26 md:left-12 w-32 md:w-44 z-[20] pointer-events-none select-none"
         />
-        <div className="w-full bg-[#2ec4b6] py-16 md:py-20 px-6 md:px-12 rounded-3xl md:rounded-[56px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_25px_60px_-15px_rgba(46,196,182,0.3)] text-center text-white relative overflow-hidden">
+        {/* Shadow below cat */}
+        <div className="absolute left-10 md:left-12 w-32 md:w-44 h-2 md:h-3 top-24 md:top-2 z-[15] pointer-events-none">
+          <div className="w-full h-full bg-black/40 rounded-full blur-lg" style={{ filter: 'blur(12px)' }} />
+        </div>
+        <div className="w-full bg-[#30c290] py-16 md:py-20 px-6 md:px-12 rounded-3xl md:rounded-[56px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_25px_60px_-15px_rgba(46,196,182,0.3)] text-center text-white relative overflow-hidden">
           {/* Subtle graphic accent inside green card */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full filter blur-2xl pointer-events-none -mr-20 -mt-20" />
 

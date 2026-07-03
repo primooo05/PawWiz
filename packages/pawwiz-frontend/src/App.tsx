@@ -12,7 +12,10 @@ export default function App() {
   const isLoginPage = location.pathname === '/login';
   const hideHeader = location.pathname === '/diet-recommender' || 
                      location.pathname === '/behavior' || 
+                     location.pathname === '/behavior-chat' ||
+                     location.pathname === '/behavior-dashboard' ||
                      location.pathname === '/dashboard' || 
+                     location.pathname === '/user-dashboard' ||
                      location.pathname === '/pregnancy-tracker' || 
                      location.pathname === '/settings';
 

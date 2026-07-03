@@ -47,19 +47,19 @@ const BehaviorInsightsWidget: React.FC<BehaviorInsightsWidgetProps> = ({ onViewM
 
   if (isLoading) {
     return (
-      <div className="bg-[#F0F8F7] border-2 border-slate-900 rounded-2xl p-5 shadow-[4px_4px_0_0_#0f172a]">
-        <div className="h-32 bg-slate-100 rounded animate-pulse" />
+      <div className="bg-[#F0F8F7] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a]">
+        <div className="h-40 bg-slate-200 animate-pulse border-2 border-slate-300" />
       </div>
     );
   }
 
   if (!insights) {
     return (
-      <div className="bg-[#F0F8F7] border-2 border-slate-900 rounded-2xl p-5 shadow-[4px_4px_0_0_#0f172a]">
-        <h2 className="text-xs font-black text-teal-700 uppercase tracking-widest mb-3">
+      <div className="bg-[#F0F8F7] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a]">
+        <h2 className="text-xs font-black text-[#0d7377] uppercase tracking-widest mb-3">
           Behavior Insights
         </h2>
-        <p className="text-sm font-bold text-slate-500">No behavior data collected yet</p>
+        <p className="text-sm font-bold text-gray-600">No behavior data collected yet</p>
       </div>
     );
   }
@@ -71,25 +71,25 @@ const BehaviorInsightsWidget: React.FC<BehaviorInsightsWidgetProps> = ({ onViewM
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#F0F8F7] to-[#E8F4F2] border-2 border-slate-900 rounded-2xl p-5 shadow-[4px_4px_0_0_#0f172a] flex flex-col gap-4">
-      <h2 className="text-xs font-black text-teal-700 uppercase tracking-widest">
+    <div className="bg-[#F0F8F7] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a] flex flex-col gap-4">
+      <h2 className="text-xs font-black text-[#0d7377] uppercase tracking-widest">
         Behavior Insights
       </h2>
 
       {/* Trend Status */}
-      <div className="flex items-center gap-3 bg-white rounded-xl p-3 border border-teal-200">
-        <span className="text-2xl">{getTrendEmoji(insights.overallTrend)}</span>
+      <div className="flex items-center gap-4 bg-white border-2 border-[#1a1a1a] p-4">
+        <span className="text-3xl">{getTrendEmoji(insights.overallTrend)}</span>
         <div>
-          <p className="text-[10px] font-bold text-slate-500 uppercase">Overall Trend</p>
+          <p className="text-xs font-black text-gray-600 uppercase tracking-widest">Overall Trend</p>
           <p className="text-sm font-black text-slate-900">{insights.overallTrend}</p>
         </div>
       </div>
 
       {/* Concerns Summary */}
       {insights.primaryConcerns.length > 0 && insights.primaryConcerns[0] !== 'None observed' && (
-        <div className="bg-orange-50 border-l-4 border-orange-400 rounded p-3">
-          <p className="text-[10px] font-black text-orange-900 uppercase mb-1">Concerns</p>
-          <p className="text-xs font-bold text-orange-800 line-clamp-2">
+        <div className="bg-orange-50 border-l-4 border-orange-500 p-4">
+          <p className="text-xs font-black text-orange-900 uppercase tracking-widest mb-1">Concerns</p>
+          <p className="text-sm font-bold text-orange-800 line-clamp-2">
             {insights.primaryConcerns[0]}
           </p>
         </div>
@@ -97,9 +97,9 @@ const BehaviorInsightsWidget: React.FC<BehaviorInsightsWidgetProps> = ({ onViewM
 
       {/* Positive Indicators */}
       {insights.positiveIndicators.length > 0 && (
-        <div className="bg-green-50 border-l-4 border-green-400 rounded p-3">
-          <p className="text-[10px] font-black text-green-900 uppercase mb-1">Positive</p>
-          <p className="text-xs font-bold text-green-800 line-clamp-2">
+        <div className="bg-green-50 border-l-4 border-green-500 p-4">
+          <p className="text-xs font-black text-green-900 uppercase tracking-widest mb-1">Positive</p>
+          <p className="text-sm font-bold text-green-800 line-clamp-2">
             {insights.positiveIndicators[0]}
           </p>
         </div>
@@ -108,7 +108,7 @@ const BehaviorInsightsWidget: React.FC<BehaviorInsightsWidgetProps> = ({ onViewM
       {/* View More Button */}
       <button
         onClick={onViewMore}
-        className="w-full bg-[#30c290] hover:bg-[#3bd4c5] text-white font-black py-2.5 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer text-xs tracking-wider uppercase"
+        className="w-full bg-[#30c290] hover:bg-white text-white hover:text-[#30c290] font-black py-3 border-2 border-[#1a1a1a] shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-xs tracking-wider uppercase"
       >
         View Full Report
       </button>

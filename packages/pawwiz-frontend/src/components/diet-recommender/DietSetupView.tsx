@@ -35,7 +35,51 @@ interface DietSetupViewProps {
     isLoading?: boolean;
 }
 
-export const DietSetupView: React.FC<DietSetupViewProps> = ({
+interface DietSetupModalProps extends DietSetupViewProps {
+    isOpen?: boolean;
+    onClose?: () => void;
+}
+
+export const DietSetupView: React.FC<DietSetupViewProps> = (props) => {
+    return <DietSetupContent {...props} />;
+};
+
+export const DietSetupModal: React.FC<DietSetupModalProps> = ({ isOpen, onClose, ...props }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+            {/* Backdrop */}
+            <div 
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                onClick={onClose}
+            />
+            
+            {/* Modal Content */}
+            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div className="relative">
+                    {/* Close button */}
+                    {onClose && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="absolute -top-2 -right-2 z-10 w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-800 transition-colors shadow-lg"
+                            aria-label="Close"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
+                    
+                    <DietSetupContent {...props} />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DietSetupContent: React.FC<DietSetupViewProps> = ({
     catName,
     setCatName,
     gender,
@@ -68,6 +112,7 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
 
     const [onboardedCat, setOnboardedCat] = useState<{ name: string; gender: 'male' | 'female'; lifeStage: 'kitten' | 'adult' | 'senior' } | null>(null);
     const [selectedCatId, setSelectedCatId] = useState<string>('onboarding');
+    const [isEditingName, setIsEditingName] = useState<boolean>(false);
 
     // Fetch user profile from backend on mount to auto-fill onboarding details
     useEffect(() => {
@@ -234,14 +279,28 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Cat's Name
                     </label>
-                    <input
-                        type="text"
-                        value={catName}
-                        onChange={(e) => setCatName(e.target.value)}
-                        placeholder="Aki"
-                        required
-                        className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl font-bold text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white"
-                    />
+                    <div className="relative flex items-center">
+                        <input
+                            type="text"
+                            value={catName}
+                            onChange={(e) => setCatName(e.target.value)}
+                            placeholder="Aki"
+                            required
+                            disabled={!isEditingName}
+                            className={`w-full pr-12 px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl font-bold text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-300 disabled:cursor-not-allowed`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setIsEditingName(!isEditingName)}
+                            className="absolute right-3.5 p-1 text-slate-400 hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                            style={{ color: '#2ec4b6' }}
+                            title="Edit Name"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* 2. Gender Selection */}
@@ -249,18 +308,18 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Gender
                     </label>
-                    <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
+                    <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit opacity-60 cursor-not-allowed" title="Gender is set via cat profile and cannot be changed here">
                         <button
                             type="button"
-                            onClick={() => setGender('male')}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${gender === 'male' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            disabled
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${gender === 'male' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
                         >
                             Male
                         </button>
                         <button
                             type="button"
-                            onClick={() => setGender('female')}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${gender === 'female' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            disabled
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${gender === 'female' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
                         >
                             Female
                         </button>
@@ -347,25 +406,25 @@ export const DietSetupView: React.FC<DietSetupViewProps> = ({
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Life Stage
                     </label>
-                    <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
+                    <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit opacity-60 cursor-not-allowed" title="Life stage is set via cat profile and cannot be changed here">
                         <button
                             type="button"
-                            onClick={() => handleLifeStageChange('kitten')}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${lifeStage === 'kitten' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            disabled
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${lifeStage === 'kitten' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
                         >
                             Kitten
                         </button>
                         <button
                             type="button"
-                            onClick={() => handleLifeStageChange('adult')}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${lifeStage === 'adult' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            disabled
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${lifeStage === 'adult' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
                         >
                             Adult
                         </button>
                         <button
                             type="button"
-                            onClick={() => handleLifeStageChange('senior')}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${lifeStage === 'senior' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            disabled
+                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${lifeStage === 'senior' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
                         >
                             Senior
                         </button>
