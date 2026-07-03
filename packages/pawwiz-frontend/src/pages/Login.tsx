@@ -3,12 +3,14 @@ import { useLocation } from 'react-router-dom';
 import { CircleWrapper } from '../components/CircleWrapper';
 import Navbar from '../components/Navbar';
 import { useLogin } from '../hooks/useLogin';
+import { useForgotPassword } from '../hooks/useForgotPassword';
 import catsLogin from '../assets/Cats_Login.svg';
 
 export default function Login() {
   const location = useLocation();
   const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   // Transition state for the circular scale animation
   const [isTransitioning, setIsTransitioning] = useState(
@@ -30,10 +32,14 @@ export default function Login() {
     },
   });
 
+  const recovery = useForgotPassword();
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('registered') === 'true') {
       setSuccessMessage('Account created successfully! Please sign in.');
+    } else if (params.get('reset') === 'true') {
+      setSuccessMessage('Password updated successfully! Please sign in.');
     }
   }, [location]);
 
@@ -93,97 +99,167 @@ export default function Login() {
             </div>
           )}
 
-          {serverError && (
-            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm text-center">
-              {serverError}
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} noValidate className="flex flex-col gap-6">
-            {/* Email Field */}
-            <div className="flex flex-col text-left">
-              <label htmlFor="email" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
-                Enter Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                placeholder="Your Email"
-                value={form.values.email}
-                onChange={(e) => form.handleChange('email', e.target.value)}
-                onBlur={() => form.handleBlur('email')}
-                className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
-              />
-              <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${form.errors.email ? 'opacity-100' : 'opacity-0'}`}>
-                {form.errors.email || '\u00A0'}
+          {/* ── Recovery Mode ─────────────────────────────────────────── */}
+          {isRecoveryMode ? (
+            <>
+              <h2 className="italic text-[#a0aec0] text-xl font-bold mb-2">Forgot your password?</h2>
+              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                Enter your email and we'll send you a reset link if an account exists.
               </p>
-            </div>
 
-            {/* Password Field */}
-            <div className="flex flex-col text-left">
-              <label htmlFor="password" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
-                Enter Password
-              </label>
-              <div className="relative">
+              {recovery.serverError && (
+                <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-xl text-sm text-center">
+                  {recovery.serverError}
+                </div>
+              )}
+
+              {recovery.submitted ? (
+                <div className="p-4 bg-teal-50 text-teal-700 rounded-xl text-sm text-center">
+                  If an account with that email exists, a reset link has been sent. Check your inbox.
+                </div>
+              ) : (
+                <form onSubmit={recovery.handleSubmit} noValidate className="flex flex-col gap-6">
+                  <div className="flex flex-col text-left">
+                    <label htmlFor="recovery-email" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
+                      Enter Email
+                    </label>
+                    <input
+                      id="recovery-email"
+                      type="email"
+                      name="email"
+                      placeholder="Your Email"
+                      value={recovery.form.values.email}
+                      onChange={(e) => recovery.form.handleChange('email', e.target.value)}
+                      onBlur={() => recovery.form.handleBlur('email')}
+                      className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
+                    />
+                    <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${recovery.form.errors.email ? 'opacity-100' : 'opacity-0'}`}>
+                      {recovery.form.errors.email || '\u00A0'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={!recovery.form.isValid || recovery.isSubmitting}
+                    className="w-full sm:max-w-xs mx-auto bg-[#e9c46a] text-white font-extrabold py-3.5 px-6 rounded-2xl text-center text-lg shadow-[0_4px_0_0_#b8862a] transition-all border-none mt-2 min-h-[44px] disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed enabled:hover:bg-[#f0cc74] enabled:active:shadow-none enabled:active:translate-y-[4px]"
+                  >
+                    {recovery.isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                </form>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsRecoveryMode(false)}
+                className="mt-6 text-sm text-[#30c290] hover:underline focus:outline-none focus:ring-2 focus:ring-[#e9c46a] rounded self-center"
+              >
+                ← Back to login
+              </button>
+            </>
+          ) : (
+            /* ── Login Mode ─────────────────────────────────────────────── */
+            <>
+              {serverError && (
+                <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm text-center">
+                  {serverError}
+                </div>
+              )}
+
+              <form onSubmit={handleLogin} noValidate className="flex flex-col gap-6">
+                {/* Email Field */}
+                <div className="flex flex-col text-left">
+                  <label htmlFor="email" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
+                    Enter Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="Your Email"
+                    value={form.values.email}
+                    onChange={(e) => form.handleChange('email', e.target.value)}
+                    onBlur={() => form.handleBlur('email')}
+                    className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
+                  />
+                  <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${form.errors.email ? 'opacity-100' : 'opacity-0'}`}>
+                    {form.errors.email || '\u00A0'}
+                  </p>
+                </div>
+
+                {/* Password Field */}
+                <div className="flex flex-col text-left">
+                  <label htmlFor="password" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
+                    Enter Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      placeholder="Your Password"
+                      value={form.values.password}
+                      onChange={(e) => form.handleChange('password', e.target.value)}
+                      onBlur={() => form.handleBlur('password')}
+                      autoComplete="current-password"
+                      className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 pr-14 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#e9c46a] rounded-full p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      tabIndex={0}
+                    >
+                      {showPassword ? (
+                        /* Eye-slash — password visible */
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      ) : (
+                        /* Eye — password hidden */
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+                          <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${form.errors.password ? 'opacity-100' : 'opacity-0'}`}>
+                    {form.errors.password || '\u00A0'}
+                  </p>
+                  {/* Forgot password trigger — decoupled from login payload */}
+                  <button
+                    type="button"
+                    onClick={() => setIsRecoveryMode(true)}
+                    className="mt-1 text-sm text-[#30c290] hover:underline focus:outline-none focus:ring-2 focus:ring-[#e9c46a] rounded self-end mr-1"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
                 <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Your Password"
-                  value={form.values.password}
-                  onChange={(e) => form.handleChange('password', e.target.value)}
-                  onBlur={() => form.handleBlur('password')}
-                  autoComplete="current-password"
-                  className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 pr-14 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
+                  type="text"
+                  name="honeypot"
+                  value={form.values.honeypot}
+                  onChange={(e) => form.handleChange('honeypot', e.target.value)}
+                  style={{ position: 'absolute', opacity: 0, zIndex: -1, width: 0, height: 0, pointerEvents: 'none' }}
+                  tabIndex={-1}
+                  autoComplete="new-password"
                 />
+
                 <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  aria-pressed={showPassword}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#e9c46a] rounded-full p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  tabIndex={0}
+                  type="submit"
+                  disabled={!form.isValid || isSubmitting}
+                  className="w-full sm:max-w-xs mx-auto bg-[#e9c46a] text-white font-extrabold py-3.5 px-6 rounded-2xl text-center text-lg shadow-[0_4px_0_0_#b8862a] transition-all border-none mt-4 min-h-[44px] disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed enabled:hover:bg-[#f0cc74] enabled:active:shadow-none enabled:active:translate-y-[4px]"
                 >
-                  {showPassword ? (
-                    /* Eye-slash — password visible */
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    /* Eye — password hidden */
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
-                      <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  {isSubmitting ? 'Signing in...' : 'Login'}
                 </button>
-              </div>
-              <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${form.errors.password ? 'opacity-100' : 'opacity-0'}`}>
-                {form.errors.password || '\u00A0'}
-              </p>
-            </div>
-
-            <input
-              type="text"
-              name="honeypot"
-              value={form.values.honeypot}
-              onChange={(e) => form.handleChange('honeypot', e.target.value)}
-              style={{ position: 'absolute', opacity: 0, zIndex: -1, width: 0, height: 0, pointerEvents: 'none' }}
-              tabIndex={-1}
-              autoComplete="new-password"
-            />
-
-            <button
-              type="submit"
-              disabled={!form.isValid || isSubmitting}
-              className="w-full sm:max-w-xs mx-auto bg-[#e9c46a] text-white font-extrabold py-3.5 px-6 rounded-2xl text-center text-lg shadow-[0_4px_0_0_#b8862a] transition-all border-none mt-4 min-h-[44px] disabled:bg-slate-300 disabled:shadow-none disabled:cursor-not-allowed enabled:hover:bg-[#f0cc74] enabled:active:shadow-none enabled:active:translate-y-[4px]"
-            >
-              {isSubmitting ? 'Signing in...' : 'Login'}
-            </button>
-          </form>
+              </form>
+            </>
+          )}
 
           {/* Illustration — mobile only, sits below the submit button */}
           <img

@@ -11,6 +11,18 @@ export const loginSchema = z.object({
   honeypot: z.string().optional(),
 });
 
+export const recoverySchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+export const resetPasswordSchema = z.object({
+  password: loginSchema.shape.password,
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+
 export const registrationSchema = z.object({
   email: loginSchema.shape.email,
   displayName: z.string().min(2, 'Display name must be at least 2 characters'),

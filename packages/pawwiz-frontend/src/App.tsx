@@ -17,7 +17,8 @@ export default function App() {
                      location.pathname === '/dashboard' || 
                      location.pathname === '/user-dashboard' ||
                      location.pathname === '/pregnancy-tracker' || 
-                     location.pathname === '/settings';
+                     location.pathname === '/settings' ||
+                     location.pathname === '/reset-password';
 
   return (
     <div className="min-h-screen bg-white text-slate-800 relative overflow-x-hidden">

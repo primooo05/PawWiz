@@ -27,6 +27,17 @@ export const registerLimiter = rateLimit({
   }
 });
 
+export const recoveryLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 3,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator,
+  handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
+    res.status(options.statusCode).json({ error: 'Too many recovery requests. Please wait before trying again.' });
+  },
+});
+
 // ── Toxicity pipeline rate limiters ────────────────────────────────────────────
 
 const SCAN_429_MESSAGE =

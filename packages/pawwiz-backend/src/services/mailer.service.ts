@@ -32,6 +32,36 @@ class MailerService {
   }
 
   /**
+   * Sends a password recovery email containing a time-bound reset link.
+   * Falls back to a console log when the transport is not configured.
+   * Throws on delivery failure so the caller can surface the error appropriately.
+   */
+  async sendRecoveryEmail(to: string, ownerName: string, resetLink: string): Promise<void> {
+    if (!this.transporter) {
+      logger.info(`[MailerService] Recovery link for ${to}: ${resetLink} (printed because SMTP credentials are absent)`);
+      return;
+    }
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: `"PawWiz" <${process.env.GMAIL_USER}>`,
+        to,
+        subject: 'PawWiz — Reset Your Password',
+        html: this.buildRecoveryTemplate(ownerName, resetLink),
+      });
+
+      logger.info('[MailerService] Recovery email accepted by provider', { messageId: info.messageId, to });
+    } catch (err: unknown) {
+      logger.error('[MailerService] Failed to send recovery email', {
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+        to,
+      });
+      throw new Error(`Recovery email delivery failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  /**
    * Sends a 6-digit OTP email to the specified address.
    * Falls back to a console log when the transport is not configured.
    * Throws on delivery failure so the caller can surface the error appropriately.
@@ -59,6 +89,27 @@ class MailerService {
       });
       throw new Error(`OTP email delivery failed: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+
+  private buildRecoveryTemplate(ownerName: string, resetLink: string): string {
+    return `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+        <h1 style="color: #1e293b; font-size: 24px; margin-bottom: 8px;">Hey ${ownerName}! 🐾</h1>
+        <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+          We received a request to reset your PawWiz password. Click the button below to set a new one:
+        </p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${resetLink}"
+             style="background: #30c290; color: #ffffff; font-weight: 800; font-size: 16px; padding: 14px 32px; border-radius: 999px; text-decoration: none; display: inline-block;">
+            Reset My Password
+          </a>
+        </div>
+        <p style="color: #64748b; font-size: 14px;">
+          This link expires in <strong>1 hour</strong>. If you didn't request a password reset, you can safely ignore this email — your account is still secure.
+        </p>
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 32px;">— Wiz the Cat 🐱</p>
+      </div>
+    `;
   }
 
   private buildTemplate(ownerName: string, code: string): string {

@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
+import ResetPassword from './pages/ResetPassword';
 import CatPregnancyTracker from './components/pregnancy-tracker/PregnancyTracker';
 import CatHeatTracker from './components/heat-tracker/CatHeatTracker';
 import DietRecommender from './components/diet-recommender/DietRecommender';
@@ -18,6 +19,7 @@ export function Router() {
       <Route element={<App />}>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/user-dashboard" element={<Dashboard />} />
         <Route path="/pregnancy-tracker" element={<CatPregnancyTracker />} />
