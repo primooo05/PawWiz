@@ -6,12 +6,21 @@ import BottomNav from '../../layout/BottomNav.js';
 import GreetingHeader from '../../layout/GreetingHeader';
 import BehaviorInsightsWidget from './BehaviorInsightsWidget';
 import { CircleWrapper } from '../../ui/CircleWrapper';
-import { Activity, Apple, Heart, TrendingUp, AlertCircle } from 'lucide-react';
+import { StackedBarChart, DonutChart, LineChart } from './charts/Charts';
+import { Activity, Apple, Heart, TrendingUp, AlertCircle, BarChart3, Droplet } from 'lucide-react';
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker.js';
 import { useDietRecommender } from '../../../hooks/features/useDietRecommender';
 import { useBehaviorDecoder } from '../../../hooks/features/useBehaviorDecoder';
 import { getTimeGreeting } from '../../../utils/greeting';
+
+// Neo-brutalist palette (shared with charts)
+const ORANGE = '#FF6B35';
+const TEAL = '#4ECDC4';
+const PINK = '#F98080';
+const GREEN = '#30c290';
+
+type TrendPeriod = '7' | '30' | 'all';
 
 interface DashboardStats {
   diet?: {
@@ -104,11 +113,73 @@ const Dashboard: React.FC = () => {
     else if (item === 'plant') navigate('/');
   };
 
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('7');
+
   // Count logged meals that are completed
   const completedMealsCount = diet.activeProfile
     ? Object.values(diet.loggedMeals).filter((meal) => meal.status === 'logged').length
     : 0;
   const totalMealsCount = diet.activeProfile ? Object.keys(diet.loggedMeals).length : 3;
+
+  // --- Gender gating: pregnancy features require at least one female cat ---
+  const femaleCats = diet.profiles.filter((p) => p.gender === 'female');
+  const hasFemaleCat = femaleCats.length > 0 || profile?.catSex === 'female';
+
+  // --- Nutrition analytics (real data from the active diet profile) ---
+  const activeMeals = diet.activeProfile?.loggedMeals ?? [];
+  const mealLabels = activeMeals.length
+    ? activeMeals.map((m) => m.mealName.slice(0, 3))
+    : ['Bre', 'Lun', 'Din'];
+  const mealKcals = activeMeals.length ? activeMeals.map((m) => Math.round(m.kcal || 0)) : [0, 0, 0];
+
+  const weightKg = diet.activeProfile
+    ? diet.activeProfile.isKg
+      ? diet.activeProfile.weight
+      : diet.activeProfile.weight / 2.205
+    : 0;
+  // Resting Energy Requirement (veterinary RER formula), split per meal.
+  const dailyRer = weightKg > 0 ? Math.round(70 * Math.pow(weightKg, 0.75)) : 0;
+  const perMealTarget = dailyRer > 0 ? Math.round(dailyRer / (mealLabels.length || 3)) : undefined;
+
+  const waterNow = diet.activeProfile?.waterIntake ?? 0;
+  const waterGoal = weightKg > 0 ? Math.round(weightKg * 50) : 250; // ~50 ml/kg/day
+
+  // --- Behavior analytics (representative series until a trend endpoint exists) ---
+  const behaviorTrendByPeriod: Record<TrendPeriod, { labels: string[]; series: { name: string; color: string; data: number[] }[] }> = {
+    '7': {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      series: [
+        { name: 'Playful', color: TEAL, data: [3, 2, 4, 3, 5, 4, 3] },
+        { name: 'Anxious', color: PINK, data: [1, 3, 1, 2, 1, 0, 1] },
+        { name: 'Affectionate', color: ORANGE, data: [2, 1, 2, 3, 2, 3, 2] },
+      ],
+    },
+    '30': {
+      labels: ['W1', 'W2', 'W3', 'W4'],
+      series: [
+        { name: 'Playful', color: TEAL, data: [22, 18, 25, 20] },
+        { name: 'Anxious', color: PINK, data: [8, 12, 6, 7] },
+        { name: 'Affectionate', color: ORANGE, data: [14, 11, 16, 13] },
+      ],
+    },
+    all: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+      series: [
+        { name: 'Playful', color: TEAL, data: [80, 92, 75, 88, 95] },
+        { name: 'Anxious', color: PINK, data: [30, 25, 40, 22, 18] },
+        { name: 'Affectionate', color: ORANGE, data: [55, 60, 50, 62, 58] },
+      ],
+    },
+  };
+  const behaviorTrend = behaviorTrendByPeriod[trendPeriod];
+
+  const behaviorComposition = [
+    { name: 'Playful', color: TEAL, value: 42 },
+    { name: 'Affectionate', color: ORANGE, value: 28 },
+    { name: 'Anxious', color: PINK, value: 15 },
+    { name: 'Aggressive', color: '#b91c1c', value: 8 },
+    { name: 'Lethargic', color: '#94a3b8', value: 7 },
+  ];
 
   const dashboardGreeting = getTimeGreeting(
     {
@@ -186,6 +257,39 @@ const Dashboard: React.FC = () => {
             onAvatarClick={(id) => diet.switchProfile(id)}
             className="mb-10"
           />
+
+          {/* KPI Strip */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Meals Today</p>
+              <p className="text-3xl font-black mt-1" style={{ color: ORANGE }}>
+                {completedMealsCount}/{totalMealsCount}
+              </p>
+              <p className="text-xs font-bold text-[#555] mt-1">logged</p>
+            </div>
+            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Behaviors / Week</p>
+              <p className="text-3xl font-black mt-1" style={{ color: TEAL }}>
+                {mergedStats.behavior?.totalEventsWeek ?? '--'}
+              </p>
+              <p className="text-xs font-bold text-[#555] mt-1">{mergedStats.behavior?.primaryBehavior || 'tracking'}</p>
+            </div>
+            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Water Today</p>
+              <p className="text-3xl font-black mt-1" style={{ color: '#0d7377' }}>
+                {waterNow}
+                <span className="text-lg"> ml</span>
+              </p>
+              <p className="text-xs font-bold text-[#555] mt-1">goal {waterGoal} ml</p>
+            </div>
+            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Diet Score</p>
+              <p className="text-3xl font-black mt-1" style={{ color: GREEN }}>
+                {mergedStats.diet?.adherenceScore ?? '--'}%
+              </p>
+              <p className="text-xs font-bold text-[#555] mt-1">adherence</p>
+            </div>
+          </div>
 
           {/* Stats Grid Header */}
           <div className="mb-12">
@@ -282,7 +386,8 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
 
-              {/* Pregnancy Tracker Card */}
+              {/* Pregnancy Tracker Card (female cats only) */}
+              {hasFemaleCat && (
               <div
                 onClick={() => navigate('/pregnancy-tracker')}
                 className="cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1 rounded-3xl"
@@ -321,8 +426,195 @@ const Dashboard: React.FC = () => {
                   MONITOR
                 </button>
               </div>
+              )}
             </div>
           </div>
+
+          {/* Behavior Analytics Section */}
+          <div className="mt-16">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+              <div className="border-l-4 border-[#1a1a1a] pl-4">
+                <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
+                  <BarChart3 className="w-7 h-7" strokeWidth={3} /> BEHAVIOR ANALYTICS
+                </h2>
+                <p className="text-sm text-[#555] mt-2 font-bold">Trends and composition across logged behaviors</p>
+              </div>
+              {/* Period toggle */}
+              <div className="flex border-3 border-[#1a1a1a] rounded-xl overflow-hidden self-start">
+                {(['7', '30', 'all'] as TrendPeriod[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setTrendPeriod(p)}
+                    className={`px-4 py-2 text-xs font-black tracking-wider uppercase border-r-2 border-[#1a1a1a] last:border-r-0 transition-colors ${
+                      trendPeriod === p ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f0f0eb]'
+                    }`}
+                  >
+                    {p === 'all' ? 'ALL' : `${p}D`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
+              <div className="lg:col-span-3 bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#0d7377' }}>
+                    Behavior Trend
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {behaviorTrend.series.map((s) => (
+                      <span key={s.name} className="flex items-center gap-1.5 text-xs font-black">
+                        <span
+                          className="inline-block w-3 h-3 border-2 border-[#1a1a1a] rounded-sm"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        {s.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={260} />
+              </div>
+
+              <div className="lg:col-span-2 bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                <h3 className="text-xs font-black uppercase tracking-widest mb-4" style={{ color: '#0d7377' }}>
+                  Behavior Composition
+                </h3>
+                <DonutChart data={behaviorComposition} size={180} />
+              </div>
+            </div>
+          </div>
+
+          {/* Nutrition Analytics Section */}
+          <div className="mt-16">
+            <div className="border-l-4 border-[#1a1a1a] pl-4 mb-6">
+              <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
+                <Apple className="w-7 h-7" strokeWidth={3} /> NUTRITION ANALYTICS
+              </h2>
+              <p className="text-sm text-[#555] mt-2 font-bold">Calorie intake vs target and hydration</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+              <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: ORANGE }}>
+                    Calorie Intake vs RER Target
+                  </h3>
+                  {perMealTarget !== undefined && (
+                    <span className="text-xs font-black text-[#555]">Target ~{perMealTarget} kcal/meal</span>
+                  )}
+                </div>
+                <LineChart labels={mealLabels} values={mealKcals} target={perMealTarget} color={ORANGE} height={240} />
+              </div>
+
+              <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                <h3 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: '#0d7377' }}>
+                  <Droplet className="w-4 h-4" strokeWidth={3} /> Hydration — Today vs Goal
+                </h3>
+                <StackedBarChart
+                  labels={['Intake', 'Goal']}
+                  series={[{ name: 'ml', color: TEAL, data: [waterNow, waterGoal] }]}
+                  height={240}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Pregnancy & Insights Section (female cats only) */}
+          {hasFemaleCat && (
+            <div className="mt-16">
+              <div className="border-l-4 border-[#1a1a1a] pl-4 mb-6">
+                <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
+                  <Heart className="w-7 h-7" strokeWidth={3} /> PREGNANCY &amp; INSIGHTS
+                </h2>
+                <p className="text-sm text-[#555] mt-2 font-bold">Gestation milestones and prep guidance</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                {/* Gestation timeline */}
+                <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: PINK }}>
+                      Gestation Timeline
+                    </h3>
+                    <span className="text-xs font-black text-[#555]">
+                      {pregnancy.isTracking ? `Day ${pregnancy.currentDay} / 65` : 'Not tracking'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start">
+                    {[
+                      { label: 'Mating', day: 0 },
+                      { label: 'Confirm', day: 14 },
+                      { label: 'Mid-term', day: 30 },
+                      { label: 'Nesting', day: 50 },
+                      { label: 'Birth', day: 65 },
+                    ].map((step, idx, arr) => {
+                      const reached = pregnancy.currentDay >= step.day;
+                      const isActive =
+                        pregnancy.currentDay >= step.day &&
+                        (idx === arr.length - 1 || pregnancy.currentDay < arr[idx + 1].day);
+                      return (
+                        <div key={step.label} className="flex-1 text-center relative">
+                          {idx < arr.length - 1 && (
+                            <div
+                              className="absolute top-[10px] left-1/2 w-full h-1 border-t-4 border-[#1a1a1a]"
+                              style={{ zIndex: 0 }}
+                            />
+                          )}
+                          <div
+                            className={`relative z-10 w-6 h-6 mx-auto mb-2 border-3 border-[#1a1a1a] rounded-full ${
+                              isActive ? 'bg-[#FFD700]' : reached ? 'bg-[#30c290]' : 'bg-white'
+                            }`}
+                          />
+                          <span className="text-[10px] md:text-xs font-black uppercase">{step.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-6 bg-[#f5f5f0] border-3 border-[#1a1a1a] rounded-full h-4 overflow-hidden">
+                    <div
+                      className="h-full bg-[#30c290] border-r-2 border-[#1a1a1a] transition-all"
+                      style={{ width: `${Math.min(100, Math.max(0, pregnancy.progressPercentage))}%` }}
+                    />
+                  </div>
+                  <p className="text-xs font-black mt-2 text-right">
+                    {Math.round(pregnancy.progressPercentage)}% COMPLETE
+                    {pregnancy.isTracking ? ` · ${pregnancy.daysRemaining} DAYS LEFT` : ''}
+                  </p>
+
+                  <button
+                    onClick={() => navigate('/pregnancy-tracker')}
+                    className="mt-5 w-full bg-[#F98080] hover:bg-white text-white hover:text-[#F98080] font-black py-3 border-2 border-[#1a1a1a] rounded-2xl shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
+                  >
+                    Open Pregnancy Tracker
+                  </button>
+                </div>
+
+                {/* Prep recommendations */}
+                <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                  <div className="flex items-start gap-4 mb-4">
+                    <TrendingUp className="w-7 h-7 flex-shrink-0 mt-1" strokeWidth={3} />
+                    <div>
+                      <h3 className="font-black text-lg tracking-wide">PREP INSIGHTS</h3>
+                      <p className="text-xs text-[#888] font-bold mt-1 uppercase">Stage-based guidance</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3 border-t-2 border-[#1a1a1a] pt-4">
+                    {pregnancy.currentWeek >= 7 ? (
+                      <p className="text-sm font-bold">→ Prepare a quiet birthing box in a warm, private spot</p>
+                    ) : (
+                      <p className="text-sm font-bold">→ Schedule a vet checkup to confirm pregnancy and litter size</p>
+                    )}
+                    <p className="text-sm font-bold">→ Increase calorie intake with a kitten/gestation formula</p>
+                    <p className="text-sm font-bold">→ Keep fresh water available and monitor daily weight</p>
+                    <p className="text-sm font-bold">→ Log symptoms daily so we can flag anything concerning</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Recent Activity Section */}
           <div className="mt-16">
@@ -390,8 +682,8 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Pregnancy Widget */}
-              {pregnancy.isTracking ? (
+              {/* Pregnancy Widget (female cats only) */}
+              {hasFemaleCat && pregnancy.isTracking ? (
                 <div className="bg-[#FFFDF0] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a] rounded-3xl">
                   <div className="flex justify-between items-start mb-4">
                     <div>

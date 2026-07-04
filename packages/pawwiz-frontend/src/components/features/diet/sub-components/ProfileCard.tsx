@@ -162,31 +162,31 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                     {/* Details */}
                     <div className="flex-1 flex flex-col justify-center gap-1 text-[11px] sm:text-xs font-bold text-slate-800 leading-tight">
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">NAME:</span>
+                            <span className="text-[#30c290] font-black w-16 shrink-0">NAME:</span>
                             <span className="uppercase truncate">{catName}</span>
                         </div>
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">SEX:</span>
+                            <span className="text-[#30c290] font-black w-16 shrink-0">SEX:</span>
                             <span className="uppercase">{gender === 'female' ? 'F' : 'M'}</span>
                         </div>
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">AGE:</span>
+                            <span className="text-[#30c290] font-black w-16 shrink-0">AGE:</span>
                             <span className="uppercase">{ageLabel}</span>
                         </div>
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">WT:</span>
+                            <span className="text-[#30c290] font-black w-16 shrink-0">WT:</span>
                             <span className="uppercase">{weight.toFixed(1)} {isKg ? 'KG' : 'LBS'}</span>
                         </div>
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">CLASS:</span>
+                            <span className="text-[#30c290] font-black w-16 shrink-0">CLASS:</span>
                             <span className="uppercase">{activeLifeStage}</span>
                         </div>
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">DIET:</span>
+                            <span className="text-[#30c290] font-black w-16 shrink-0">DIET:</span>
                             <span className="uppercase">{foodLabel}</span>
                         </div>
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">NEUTERED:</span>
+                            <span className="text-[#30c290] font-black w-16 shrink-0">NEUTERED:</span>
                             <span className="uppercase">{isSpayedNeutered ? 'YES' : 'NO'}</span>
                         </div>
                     </div>

@@ -3,12 +3,37 @@ import BottomNav from '../../layout/BottomNav';
 import LoadingScreen from '../../layout/LoadingScreen';
 import SetupView from './SetupView';
 import DashboardView from './DashboardView';
+import FemaleOnlyModal from './FemaleOnlyModal';
+import FemaleCatSelector from './FemaleCatSelector';
 
 import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker';
+import { useDietRecommender } from '../../../hooks/features/useDietRecommender';
+import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { useNavigate } from 'react-router-dom';
 
 const CatPregnancyTracker: React.FC = () => {
     const navigate = useNavigate();
+    const diet = useDietRecommender();
+    const { profile, isLoading: isProfileLoading } = useProfilePanel();
+
+    // Build the roster of female cats. Diet profiles carry gender; fall back to the
+    // primary profile when the owner has a female cat but no diet profile yet.
+    const femaleRoster =
+        diet.profiles.filter((p) => p.gender === 'female').map((p) => ({ id: p.id, name: p.name, photoUrl: p.photoUrl ?? null }));
+    if (femaleRoster.length === 0 && profile?.catSex === 'female') {
+        femaleRoster.push({ id: 'primary', name: profile.catName || 'Your Cat', photoUrl: null });
+    }
+    const hasFemaleCat = femaleRoster.length > 0;
+
+    const [selectedCatId, setSelectedCatId] = React.useState<string | null>(null);
+
+    // Auto-select when there is exactly one female cat — no need to prompt.
+    React.useEffect(() => {
+        if (hasFemaleCat && femaleRoster.length === 1 && !selectedCatId) {
+            setSelectedCatId(femaleRoster[0].id);
+        }
+    }, [hasFemaleCat, femaleRoster.length, selectedCatId]);
+
     const {
         matingDate,
         setMatingDate,
@@ -67,6 +92,42 @@ const CatPregnancyTracker: React.FC = () => {
             navigate('/');
         }
     };
+
+    // Wait until profile data has loaded before deciding gender eligibility,
+    // so male owners don't briefly see the tracker (and vice versa).
+    if (isProfileLoading) {
+        return (
+            <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-[#1a1a1a] border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    // Male-only owners: block the feature with a modal.
+    if (!hasFemaleCat) {
+        return (
+            <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
+                <FemaleOnlyModal onClose={() => navigate('/dashboard')} />
+                <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
+                    <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" />
+                </div>
+            </div>
+        );
+    }
+
+    // Female owners with more than one female cat: pick which cat is pregnant.
+    if (!selectedCatId) {
+        return (
+            <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
+                <main className="max-w-[1440px] w-full px-4 sm:px-6 md:px-8 py-12 mx-auto flex-grow">
+                    <FemaleCatSelector cats={femaleRoster} onSelect={(id) => setSelectedCatId(id)} />
+                </main>
+                <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
+                    <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
