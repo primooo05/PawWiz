@@ -1,0 +1,7 @@
+-- Placeholder for the already-applied "add_mood_tracking" migration.
+-- This migration is recorded as applied in the _prisma_migrations table but its
+-- migration.sql was missing, which caused `prisma migrate deploy` to abort with
+-- P3015 ("Could not find the migration file") during its directory scan.
+-- Restoring an empty (no-op) file lets deploy validate the directory and proceed
+-- to apply pending migrations. Because the row is already marked applied, the
+-- contents here are never re-executed.

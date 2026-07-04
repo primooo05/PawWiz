@@ -6,10 +6,11 @@
 import {
   getBehaviorLogsForUser,
   getBehaviorTypeFrequency,
-  getAverageIntensityByType,
-  getUniqueBehaviorTypes,
+  getBehaviorLogsForDateRange,
 } from '../repositories/behavior-log.repository.js';
 import { logger } from '../utils/winston.js';
+
+type IntensityBreakdown = { mild: number; moderate: number; severe: number };
 
 interface DailyBehaviorSummary {
   date: string;
@@ -142,33 +143,47 @@ class BehaviorDashboardService {
     catId?: string,
     days: number = 7
   ): Promise<BehaviorPattern[]> {
-    const behaviorTypes = await getUniqueBehaviorTypes(supabaseUserId, days);
-    const patterns: BehaviorPattern[] = [];
+    // Single fetch — logs are ordered newest-first by the repository. All
+    // per-type aggregation (frequency, intensity breakdown, contexts) is derived
+    // in memory, eliminating the previous N+1 (one query per behavior type plus
+    // a redundant re-fetch inside the loop).
+    const logs = await getBehaviorLogsForUser(supabaseUserId, catId, days);
 
-    for (const type of behaviorTypes) {
-      const logs = await getBehaviorLogsForUser(supabaseUserId, catId, days);
-      const typeLogs = logs.filter(log => log.behaviorType === type);
+    const grouped = new Map<string, {
+      frequency: number;
+      lastObserved: string;
+      intensity: IntensityBreakdown;
+      contexts: Set<string>;
+    }>();
 
-      if (typeLogs.length === 0) continue;
-
-      const intensities = await getAverageIntensityByType(supabaseUserId, type, days);
-      const contexts = new Set<string>();
-
-      for (const log of typeLogs) {
-        if (log.context) {
-          log.context.split(', ').forEach(ctx => contexts.add(ctx));
-        }
+    for (const log of logs) {
+      let entry = grouped.get(log.behaviorType);
+      if (!entry) {
+        entry = {
+          frequency: 0,
+          lastObserved: log.createdAt.toISOString(), // first seen = newest (desc order)
+          intensity: { mild: 0, moderate: 0, severe: 0 },
+          contexts: new Set<string>(),
+        };
+        grouped.set(log.behaviorType, entry);
       }
-
-      patterns.push({
-        type,
-        frequency: typeLogs.length,
-        lastObserved: typeLogs[0]!.createdAt.toISOString(),
-        avgIntensity: this.determineAverageIntensity(intensities),
-        intensityBreakdown: intensities,
-        commonContexts: Array.from(contexts),
-      });
+      entry.frequency += 1;
+      if (log.intensity in entry.intensity) {
+        entry.intensity[log.intensity as keyof IntensityBreakdown] += 1;
+      }
+      if (log.context) {
+        log.context.split(', ').forEach(ctx => entry!.contexts.add(ctx));
+      }
     }
+
+    const patterns: BehaviorPattern[] = Array.from(grouped.entries()).map(([type, entry]) => ({
+      type,
+      frequency: entry.frequency,
+      lastObserved: entry.lastObserved,
+      avgIntensity: this.determineAverageIntensity(entry.intensity),
+      intensityBreakdown: entry.intensity,
+      commonContexts: Array.from(entry.contexts),
+    }));
 
     return patterns.sort((a, b) => b.frequency - a.frequency);
   }
@@ -181,13 +196,16 @@ class BehaviorDashboardService {
     date: string,
     catId?: string
   ): Promise<TimelineEvent[]> {
-    const logs = await getBehaviorLogsForUser(supabaseUserId, catId, 365);
-    
-    // Filter to the specific date
-    const dateLogs = logs.filter(log => {
-      const logDate = log.createdAt.toISOString().split('T')[0];
-      return logDate === date;
-    });
+    // Bound the query to the requested UTC day instead of pulling 365 days into
+    // memory and filtering client-side.
+    const dayStart = new Date(`${date}T00:00:00.000Z`);
+    const dayEnd = new Date(`${date}T23:59:59.999Z`);
+
+    if (Number.isNaN(dayStart.getTime()) || Number.isNaN(dayEnd.getTime())) {
+      return [];
+    }
+
+    const dateLogs = await getBehaviorLogsForDateRange(supabaseUserId, dayStart, dayEnd, catId);
 
     return dateLogs.map(log => ({
       timestamp: log.createdAt.toISOString(),

@@ -21,7 +21,7 @@ describe('Auth Middleware', () => {
     
     await fc.assert(
       fc.asyncProperty(validSubs, async (sub) => {
-        const token = jwt.sign({ sub, email: 'test@example.com' }, Buffer.from(TEST_SECRET_RAW), { algorithm: 'HS256', expiresIn: '1h' });
+        const token = jwt.sign({ sub, email: 'test@example.com' }, Buffer.from(TEST_SECRET_RAW), { algorithm: 'HS256', expiresIn: '1h', audience: 'authenticated' });
         const mockReq = { headers: { authorization: `Bearer ${token}` } } as Partial<Request>;
         const mockRes = {
           status: vi.fn().mockReturnThis(),

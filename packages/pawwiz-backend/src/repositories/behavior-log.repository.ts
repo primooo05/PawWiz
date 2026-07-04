@@ -63,6 +63,32 @@ export async function getBehaviorLogsForUser(
 }
 
 /**
+ * Get behavior logs for a user within an explicit [start, end] date window.
+ * Pushes the range predicate into Postgres so we never over-fetch (used by the
+ * daily timeline, which previously pulled a full 365-day window into memory).
+ */
+export async function getBehaviorLogsForDateRange(
+  supabaseUserId: string,
+  start: Date,
+  end: Date,
+  catId?: string
+): Promise<BehaviorLog[]> {
+  const whereClause: any = {
+    supabaseUserId,
+    createdAt: { gte: start, lte: end },
+  };
+
+  if (catId) {
+    whereClause.catId = catId;
+  }
+
+  return prisma.behaviorLog.findMany({
+    where: whereClause,
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+/**
  * Get behavior logs for a specific chat
  */
 export async function getBehaviorLogsForChat(chatId: string): Promise<BehaviorLog[]> {

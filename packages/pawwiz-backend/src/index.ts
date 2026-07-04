@@ -4,15 +4,11 @@ import cors from 'cors';
 import multer from 'multer';
 import { connectDatabase, disconnectDatabase } from './lib/prisma.js';
 import { registerRoutes } from './routes/index.js';
-import { optimizeDiet, decodeBehavior } from './services/gemini.js';
 
 import { helmetMiddleware } from './middleware/helmet.js';
 import { corsMiddleware } from './middleware/cors.js';
 import { contentTypeMiddleware } from './middleware/contentType.js';
 import { sanitizerMiddleware } from './middleware/sanitizer.js';
-
-import { validate } from './middleware/validate.js';
-import { dietSchema, behaviorSchema } from './schemas/index.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -65,27 +61,11 @@ app.post('/api/scan', (req, res) => {
   res.redirect(308, '/api/toxicity/scan');
 });
 
-// Diet optimization endpoint
-app.post('/api/diet', validate(dietSchema), async (req, res) => {
-  try {
-    const plan = await optimizeDiet(req.body);
-    res.json(plan);
-  } catch (error) {
-    console.error("Diet endpoint failure:", error);
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
-
-// Behavioral decoder endpoint
-app.post('/api/behavior', validate(behaviorSchema), async (req, res) => {
-  try {
-    const decodeResult = await decodeBehavior(req.body);
-    res.json(decodeResult);
-  } catch (error) {
-    console.error("Behavior endpoint failure:", error);
-    res.status(500).json({ error: (error as Error).message });
-  }
-});
+// NOTE: The legacy inline `POST /api/diet` and `POST /api/behavior` handlers were
+// removed. They were unauthenticated duplicates that bypassed the MRSC layer and
+// relied on coincidental mount ordering. The authenticated, service-layered
+// equivalents live in geminiRouter: `POST /api/gemini/diet/optimize` and
+// `POST /api/gemini/behavior/decode`.
 
 /**
  * Startup sequence:

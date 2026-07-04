@@ -62,21 +62,23 @@ class BehaviorChatRepository {
     });
   }
 
-  /** Add a message to a chat */
+  /** Add a message to a chat (atomic: chat touch + message insert commit together) */
   async addMessage(data: CreateMessageData): Promise<BehaviorMessage> {
-    // Also touch the chat's updatedAt
-    await prisma.behaviorChat.update({
-      where: { id: data.chatId },
-      data: { updatedAt: new Date() },
-    });
+    return prisma.$transaction(async (tx) => {
+      // Touch the chat's updatedAt so ordering stays consistent with the insert.
+      await tx.behaviorChat.update({
+        where: { id: data.chatId },
+        data: { updatedAt: new Date() },
+      });
 
-    return prisma.behaviorMessage.create({
-      data: {
-        chatId: data.chatId,
-        speaker: data.speaker,
-        text: data.text,
-        analysis: data.analysis ? (data.analysis as any) : undefined,
-      },
+      return tx.behaviorMessage.create({
+        data: {
+          chatId: data.chatId,
+          speaker: data.speaker,
+          text: data.text,
+          analysis: data.analysis ? (data.analysis as any) : undefined,
+        },
+      });
     });
   }
 

@@ -9,7 +9,9 @@ import { AppError } from '../utils/errors.js';
 import { otpService } from './otp.service.js';
 import { mailerService } from './mailer.service.js';
 import { prisma } from '../lib/prisma.js';
+import { Prisma } from '@prisma/client';
 import type { OnboardingSession } from '@prisma/client';
+import { logger } from '../utils/winston.js';
 import {
   onboardingStep2Schema,
   onboardingStep3Schema,
@@ -38,6 +40,16 @@ class OnboardingService {
    */
   async getSession(id: string): Promise<OnboardingSession> {
     const session = await onboardingRepository.findById(id);
+    assertDefined(session, 'Onboarding session not found');
+    return session;
+  }
+
+  /**
+   * Retrieves a sanitized onboarding session for public (unauthenticated) reads.
+   * Strips OTP secret material so it is never returned to the client.
+   */
+  async getSessionPublic(id: string) {
+    const session = await onboardingRepository.findByIdPublic(id);
     assertDefined(session, 'Onboarding session not found');
     return session;
   }
@@ -104,11 +116,6 @@ class OnboardingService {
       throw AppError.badRequest('Email address is required before OTP can be sent');
     }
 
-    const emailExists = await this.checkEmailExists(session.ownerEmail.trim());
-    if (emailExists) {
-      throw AppError.badRequest('Email already exists, meow');
-    }
-
     // Rate-limit: 60s cooldown
     if (session.otpLastSentAt) {
       const elapsed = Date.now() - session.otpLastSentAt.getTime();
@@ -117,18 +124,29 @@ class OnboardingService {
       }
     }
 
+    // Enumeration-safe: if the email is already registered we still return the
+    // identical generic response, but skip generating/sending a code. Callers
+    // cannot distinguish "sent" from "already exists" — no account oracle.
+    const emailExists = await this.checkEmailExists(session.ownerEmail.trim());
+    if (emailExists) {
+      logger.info('[Onboarding] OTP send suppressed for already-registered email', { sessionId: id });
+      return { cooldownSeconds: 60 };
+    }
+
     const code = otpService.generateOtp();
     const hash = otpService.hashOtp(code);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min TTL
     const now = new Date();
 
-    // Persist FIRST (if DB fails, no email sent — consistent state)
+    // Persist FIRST (if DB fails, no email sent — consistent state).
+    // Reset the failed-attempt counter each time a fresh code is issued.
     await onboardingRepository.update(id, {
       otpHash: hash,
       otpExpiresAt: expiresAt,
       otpLastSentAt: now,
       otpVerified: false,
-    });
+      otpAttempts: 0,
+    } as Prisma.OnboardingSessionUpdateInput);
 
     // Send email (may silently skip if GMAIL credentials are absent)
     await mailerService.sendOtpEmail(
@@ -155,15 +173,36 @@ class OnboardingService {
       throw AppError.badRequest('Email has already been verified');
     }
 
+    // Per-session brute-force lockout. After MAX_OTP_ATTEMPTS failures the code
+    // is invalidated and the user must request a fresh one (which resets the
+    // counter). This bounds guesses to MAX_OTP_ATTEMPTS per issued code.
+    const MAX_OTP_ATTEMPTS = 3;
+    const attempts = (session as { otpAttempts?: number }).otpAttempts ?? 0;
+    if (attempts >= MAX_OTP_ATTEMPTS) {
+      throw AppError.badRequest('Too many incorrect attempts. Please request a new code.');
+    }
+
     const isValid = otpService.verifyOtp(code, session.otpHash, session.otpExpiresAt);
     if (!isValid) {
+      // Count the failed attempt; invalidate the code once the cap is reached.
+      const nextAttempts = attempts + 1;
+      await onboardingRepository.update(id, {
+        otpAttempts: nextAttempts,
+        ...(nextAttempts >= MAX_OTP_ATTEMPTS
+          ? { otpHash: null, otpExpiresAt: null }
+          : {}),
+      } as Prisma.OnboardingSessionUpdateInput);
       throw AppError.badRequest('Invalid or expired code');
     }
 
+    // Success — clear the OTP secret material and reset the attempt counter.
     return onboardingRepository.update(id, {
       otpVerified: true,
+      otpHash: null,
+      otpExpiresAt: null,
+      otpAttempts: 0,
       step: Math.max(session.step, 4), // Unlock step 4 (cats count)
-    });
+    } as Prisma.OnboardingSessionUpdateInput);
   }
 
   /**

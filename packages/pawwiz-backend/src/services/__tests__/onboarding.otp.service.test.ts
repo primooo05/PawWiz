@@ -56,6 +56,7 @@ function makeSession(overrides: Partial<OnboardingSession> = {}): OnboardingSess
     otpExpiresAt: null,
     otpVerified: false,
     otpLastSentAt: null,
+    otpAttempts: 0,
     consumedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -93,16 +94,19 @@ describe('onboardingService.sendOtp', () => {
     });
   });
 
-  it('throws 400 when ownerEmail is already associated with a completed registration', async () => {
+  it('is enumeration-safe when ownerEmail is already registered: returns the generic success shape and sends no code', async () => {
     vi.mocked(onboardingRepository.findById).mockResolvedValue(
       makeSession({ ownerEmail: 'ayla@example.com' })
     );
     vi.mocked(onboardingRepository.isEmailConsumed).mockResolvedValueOnce(true);
 
-    await expect(onboardingService.sendOtp('test-session-id')).rejects.toMatchObject({
-      statusCode: 400,
-      message: 'Email already exists, meow',
+    // Identical response to a real send — no oracle for account existence.
+    await expect(onboardingService.sendOtp('test-session-id')).resolves.toMatchObject({
+      cooldownSeconds: 60,
     });
+    // But no code is generated, persisted, or emailed.
+    expect(mailerService.sendOtpEmail).not.toHaveBeenCalled();
+    expect(onboardingRepository.update).not.toHaveBeenCalled();
   });
 
   it('throws 400 when called within 60s of the last send (rate limit)', async () => {
@@ -195,11 +199,12 @@ describe('onboardingService.verifyOtp', () => {
     vi.clearAllMocks();
   });
 
-  const validSessionWithOtp = () =>
+  const validSessionWithOtp = (overrides: Record<string, unknown> = {}) =>
     makeSession({
       otpHash: 'hashed_999999',
       otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
       otpVerified: false,
+      ...overrides,
     });
 
   it('throws 404 when session does not exist', async () => {
@@ -230,14 +235,32 @@ describe('onboardingService.verifyOtp', () => {
     });
   });
 
-  it('throws 400 when otpService.verifyOtp returns false (wrong code or expired)', async () => {
+  it('throws 400 and records a failed attempt when otpService.verifyOtp returns false', async () => {
     vi.mocked(onboardingRepository.findById).mockResolvedValue(validSessionWithOtp());
     vi.mocked(otpService.verifyOtp).mockReturnValue(false);
+    vi.mocked(onboardingRepository.update).mockResolvedValue(validSessionWithOtp());
 
     await expect(onboardingService.verifyOtp('test-session-id', '000000')).rejects.toMatchObject({
       statusCode: 400,
     });
-    expect(onboardingRepository.update).not.toHaveBeenCalled();
+    // The failed attempt is counted (bounded brute-force protection).
+    expect(onboardingRepository.update).toHaveBeenCalledWith(
+      'test-session-id',
+      expect.objectContaining({ otpAttempts: 1 })
+    );
+  });
+
+  it('locks out and invalidates the code after the max failed attempts', async () => {
+    // Session already at the attempt cap (3) with an outstanding hash.
+    vi.mocked(onboardingRepository.findById).mockResolvedValue(
+      validSessionWithOtp({ otpAttempts: 3 })
+    );
+
+    await expect(onboardingService.verifyOtp('test-session-id', '000000')).rejects.toMatchObject({
+      statusCode: 400,
+    });
+    // No further verification is attempted once locked out.
+    expect(otpService.verifyOtp).not.toHaveBeenCalled();
   });
 
   it('persists otpVerified=true and advances step on success', async () => {
