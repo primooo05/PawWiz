@@ -186,7 +186,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                             <span className="uppercase">{foodLabel}</span>
                         </div>
                         <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-14 shrink-0">FIXED:</span>
+                            <span className="text-[#30c290] font-black w-14 shrink-0">NEUTERED:</span>
                             <span className="uppercase">{isSpayedNeutered ? 'YES' : 'NO'}</span>
                         </div>
                     </div>
