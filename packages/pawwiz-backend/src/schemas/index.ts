@@ -40,6 +40,32 @@ export const behaviorSchema = z.object({
   ).max(6).optional(),
 });
 
+export const dietAdviceSchema = z.object({
+  question: z.string().min(1).max(1000),
+  catProfile: z.object({
+    catName: z.string().min(1),
+    gender: z.enum(['male', 'female']),
+    lifeStage: z.enum(['kitten', 'adult', 'senior']),
+    age: z.number().nonnegative(),
+    weight: z.number().positive(),
+    isKg: z.boolean(),
+    foodPreference: z.enum(['dry', 'wet', 'mixed']),
+    isSpayedNeutered: z.boolean(),
+    dailyCalories: z.number().nonnegative(),
+    totalLoggedCalories: z.number().nonnegative(),
+    waterIntake: z.number().nonnegative(),
+    waterTarget: z.number().nonnegative(),
+    mealsLoggedToday: z.number().nonnegative(),
+    mealsPendingToday: z.number().nonnegative(),
+  }),
+  conversationHistory: z.array(
+    z.object({
+      role: z.enum(['user', 'wiz']),
+      content: z.string(),
+    })
+  ).max(6).optional(),
+});
+
 // Toxicity search endpoint — POST /api/toxicity/search
 export const toxicitySearchSchema = z.object({
   plantNameQuery: z.string().min(1).max(200),

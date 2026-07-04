@@ -9,10 +9,10 @@
  */
 
 import { Router } from 'express';
-import { optimizeDiet, decodeBehavior } from '../controllers/gemini.controller.js';
+import { optimizeDiet, decodeBehavior, adviseDiet } from '../controllers/gemini.controller.js';
 import { validate } from '../middleware/validate.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { dietSchema, behaviorSchema } from '../schemas/index.js';
+import { dietSchema, behaviorSchema, dietAdviceSchema } from '../schemas/index.js';
 
 const geminiRouter = Router();
 
@@ -21,6 +21,9 @@ geminiRouter.use(authMiddleware);
 
 // Diet — Personalized feline nutrition plan
 geminiRouter.post('/diet/optimize', validate(dietSchema), optimizeDiet);
+
+// Diet — Conversational advisor grounded in the cat's current diet profile
+geminiRouter.post('/diet/advice', validate(dietAdviceSchema), adviseDiet);
 
 // Behavior — Cat vocalization and body language decoder
 geminiRouter.post('/behavior/decode', validate(behaviorSchema), decodeBehavior);

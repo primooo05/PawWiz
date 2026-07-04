@@ -3,6 +3,7 @@ import { getFelineFeedingGuideDetails } from '../../hooks/useDietRecommender';
 import type { AgeBracketDetails, MealLog, CatProfile } from '../../hooks/useDietRecommender';
 import ConfirmationDialog from '../modals/ConfirmationDialog';
 import { useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 
 // Import subcomponents
 import ProfileCard from './sub-components/ProfileCard';
@@ -11,6 +12,7 @@ import MonthCalendar from './sub-components/MonthCalendar';
 import FeedingGuideline from './sub-components/FeedingGuideline';
 import CalorieTracker from './sub-components/CalorieTracker';
 import MealLogModal from './sub-components/MealLogModal';
+import DietAdvisorModal from './sub-components/DietAdvisorModal';
 import AnimatedAvatarGroup from '../smoothui/animated-avatar-group';
 import { motion } from 'motion/react';
 
@@ -68,6 +70,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 }) => {
     const navigate = useNavigate();
     const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
+    const [isAskAiOpen, setIsAskAiOpen] = useState(false);
 
     // Modal state
     const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
@@ -217,6 +220,9 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     };
 
     const greeting = getGreeting();
+
+    const mealsLoggedToday = loggedMeals.filter(m => m.status === 'logged').length;
+    const mealsPendingToday = loggedMeals.filter(m => m.status === 'pending').length;
 
     return (
         <div className="flex flex-col gap-8 w-full flex-grow text-slate-800">
@@ -395,6 +401,39 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                 initialAmount={modalAmount}
                 catName={catName}
                 loggedMeals={loggedMeals}
+            />
+
+            {/* Floating Ask AI button — bottom-right, opens the Diet Advisor chat modal */}
+            <button
+                type="button"
+                onClick={() => setIsAskAiOpen(true)}
+                className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 bg-white border-2 border-slate-900 rounded-full pl-2 pr-5 py-2 shadow-[3px_3px_0_0_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-95 transition-all cursor-pointer"
+            >
+                <span className="w-8 h-8 rounded-full bg-[#FFB870] border-2 border-slate-900 flex items-center justify-center flex-shrink-0">
+                    <Sparkles size={15} className="text-slate-900" strokeWidth={2.5} />
+                </span>
+                <span className="text-sm font-black text-slate-900">Ask Wiz</span>
+            </button>
+
+            <DietAdvisorModal
+                isOpen={isAskAiOpen}
+                onClose={() => setIsAskAiOpen(false)}
+                catContext={{
+                    catName,
+                    gender,
+                    lifeStage: activeLifeStage,
+                    age,
+                    weight,
+                    isKg,
+                    foodPreference,
+                    isSpayedNeutered,
+                    dailyCalories,
+                    totalLoggedCalories,
+                    waterIntake,
+                    waterTarget,
+                    mealsLoggedToday,
+                    mealsPendingToday,
+                }}
             />
         </div>
     );

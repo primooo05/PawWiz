@@ -98,3 +98,29 @@ export interface ConversationalReply {
   type: 'conversational';
   text: string;
 }
+
+/** Snapshot of a cat's current diet profile, passed as grounding context to the Diet Advisor AI. */
+export interface DietAdviceCatContext {
+  catName: string;
+  gender: 'male' | 'female';
+  lifeStage: 'kitten' | 'adult' | 'senior';
+  age: number;
+  weight: number;
+  isKg: boolean;
+  foodPreference: 'dry' | 'wet' | 'mixed';
+  isSpayedNeutered: boolean;
+  dailyCalories: number;
+  totalLoggedCalories: number;
+  waterIntake: number;
+  waterTarget: number;
+  mealsLoggedToday: number;
+  mealsPendingToday: number;
+}
+
+export interface DietAdviceRequest {
+  question: string;
+  catProfile: DietAdviceCatContext;
+  /** Recent conversation turns for context-aware follow-up handling.
+   *  Each entry is a { role, content } pair (max 6 turns = 3 exchanges). */
+  conversationHistory?: Array<{ role: 'user' | 'wiz'; content: string }>;
+}

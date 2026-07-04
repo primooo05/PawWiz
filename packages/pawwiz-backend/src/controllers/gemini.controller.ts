@@ -14,6 +14,7 @@ import type { Request, Response } from 'express';
 import { withErrorHandling } from './base.controller.js';
 import { dietOptimizationService } from '../services/diet-optimization.service.js';
 import { behaviorDecoderService } from '../services/behavior-decoder.service.js';
+import { dietAdvisorService } from '../services/diet-advisor.service.js';
 
 /**
  * POST /api/gemini/diet/optimize
@@ -32,5 +33,16 @@ export const optimizeDiet = withErrorHandling(async (req: Request, res: Response
  */
 export const decodeBehavior = withErrorHandling(async (req: Request, res: Response) => {
   const result = await behaviorDecoderService.decode(req.body);
+  res.json(result);
+});
+
+/**
+ * POST /api/gemini/diet/advice
+ * Answer a conversational question about a cat's diet recommendation,
+ * grounded in the cat's current diet profile snapshot.
+ * Body: { question, catProfile, conversationHistory }
+ */
+export const adviseDiet = withErrorHandling(async (req: Request, res: Response) => {
+  const result = await dietAdvisorService.advise(req.body);
   res.json(result);
 });
