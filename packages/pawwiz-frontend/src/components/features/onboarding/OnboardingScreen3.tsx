@@ -69,7 +69,7 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
               disabled={isTyping || !active}
               className={`w-full py-4 px-6 rounded-2xl text-white font-extrabold text-lg md:text-xl border-none cursor-pointer transition-all duration-200 ${isSelected
                   ? 'bg-[#1b9e91] shadow-[0_4px_0_0_#126b62]'
-                  : 'bg-[#30c290] hover:bg-[#39d3c5] shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+                  : 'bg-[#2ec4b6] hover:bg-[#39d3c5] shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
                 }`}
             >
               {option}
