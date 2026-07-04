@@ -199,10 +199,10 @@ const Dashboard: React.FC = () => {
               {/* Diet Recommender Card */}
               <div
                 onClick={() => navigate('/diet-recommender')}
-                className="cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1"
+                className="cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1 rounded-3xl"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <div className="w-16 h-16 bg-[#FF6B35] flex items-center justify-center border-3 border-[#1a1a1a] group-hover:rotate-12 transition-transform">
+                  <div className="w-16 h-16 bg-[#FF6B35] flex items-center justify-center border-3 border-[#1a1a1a] rounded-2xl group-hover:rotate-12 transition-transform">
                     <Apple className="w-8 h-8 text-white font-black" strokeWidth={3} />
                   </div>
                   <div className="text-right">
@@ -229,7 +229,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <button className="w-full bg-[#FF6B35] text-white font-black py-3 border-2 border-[#1a1a1a] hover:bg-white hover:text-[#FF6B35] transition-all">
+                <button className="w-full bg-[#FF6B35] text-white font-black py-3 border-2 border-[#1a1a1a] rounded-2xl hover:bg-white hover:text-[#FF6B35] transition-all">
                   VIEW PLAN
                 </button>
               </div>
@@ -237,10 +237,10 @@ const Dashboard: React.FC = () => {
               {/* Behavior Tracker Card */}
               <div
                 onClick={() => navigate('/behavior-chat')}
-                className="cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1"
+                className="cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1 rounded-3xl"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <div className="w-16 h-16 bg-[#4ECDC4] flex items-center justify-center border-3 border-[#1a1a1a] group-hover:rotate-12 transition-transform">
+                  <div className="w-16 h-16 bg-[#4ECDC4] flex items-center justify-center border-3 border-[#1a1a1a] rounded-2xl group-hover:rotate-12 transition-transform">
                     <Activity className="w-8 h-8 text-white font-black" strokeWidth={3} />
                   </div>
                   <div className="text-right">
@@ -264,7 +264,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-black uppercase">Status:</span>
                     <span
-                      className={`font-black uppercase px-2 py-1 ${
+                      className={`font-black uppercase px-2 py-1 rounded-lg ${
                         mergedStats.behavior?.healthStatus === 'healthy'
                           ? 'bg-green-200 text-green-900'
                           : mergedStats.behavior?.healthStatus === 'needs_attention'
@@ -277,7 +277,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <button className="w-full bg-[#4ECDC4] text-white font-black py-3 border-2 border-[#1a1a1a] hover:bg-white hover:text-[#4ECDC4] transition-all">
+                <button className="w-full bg-[#4ECDC4] text-white font-black py-3 border-2 border-[#1a1a1a] rounded-2xl hover:bg-white hover:text-[#4ECDC4] transition-all">
                   TRACK BEHAVIOR
                 </button>
               </div>
@@ -285,10 +285,10 @@ const Dashboard: React.FC = () => {
               {/* Pregnancy Tracker Card */}
               <div
                 onClick={() => navigate('/pregnancy-tracker')}
-                className="cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1"
+                className="cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1 rounded-3xl"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <div className="w-16 h-16 bg-[#F98080] flex items-center justify-center border-3 border-[#1a1a1a] group-hover:rotate-12 transition-transform">
+                  <div className="w-16 h-16 bg-[#F98080] flex items-center justify-center border-3 border-[#1a1a1a] rounded-2xl group-hover:rotate-12 transition-transform">
                     <Heart className="w-8 h-8 text-white font-black" strokeWidth={3} />
                   </div>
                   <div className="text-right">
@@ -317,7 +317,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <button className="w-full bg-[#F98080] text-white font-black py-3 border-2 border-[#1a1a1a] hover:bg-white hover:text-[#F98080] transition-all">
+                <button className="w-full bg-[#F98080] text-white font-black py-3 border-2 border-[#1a1a1a] rounded-2xl hover:bg-white hover:text-[#F98080] transition-all">
                   MONITOR
                 </button>
               </div>
@@ -333,7 +333,7 @@ const Dashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               {/* Alert Card - Left */}
-              <div className="bg-white border-4 border-[#FFD700] p-8">
+              <div className="bg-white border-4 border-[#FFD700] p-8 rounded-3xl">
                 <div className="flex items-start gap-4 mb-4">
                   <AlertCircle className="w-8 h-8 text-[#FFD700] flex-shrink-0 mt-1" strokeWidth={3} />
                   <div>
@@ -359,7 +359,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Recommendations Card - Right */}
-              <div className="bg-white border-4 border-[#1a1a1a] p-8">
+              <div className="bg-white border-4 border-[#1a1a1a] p-8 rounded-3xl">
                 <div className="flex items-start gap-4 mb-4">
                   <TrendingUp className="w-8 h-8 text-[#1a1a1a] flex-shrink-0 mt-1" strokeWidth={3} />
                   <div>
@@ -392,7 +392,7 @@ const Dashboard: React.FC = () => {
             <div className="space-y-6">
               {/* Pregnancy Widget */}
               {pregnancy.isTracking ? (
-                <div className="bg-[#FFFDF0] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a]">
+                <div className="bg-[#FFFDF0] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a] rounded-3xl">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h2 className="text-xs font-black text-[#b8860b] uppercase tracking-widest mb-2">
@@ -402,11 +402,11 @@ const Dashboard: React.FC = () => {
                         Day {pregnancy.currentDay} / 65
                       </p>
                     </div>
-                    <span className="inline-block bg-[#FFB870] border-2 border-[#1a1a1a] px-4 py-2 text-xs font-black text-slate-900 uppercase tracking-widest">
+                    <span className="inline-block bg-[#FFB870] border-2 border-[#1a1a1a] px-4 py-2 text-xs font-black text-slate-900 uppercase tracking-widest rounded-xl">
                       Week {pregnancy.currentWeek}
                     </span>
                   </div>
-                  <div className="w-full bg-slate-200 h-4 border-2 border-[#1a1a1a] overflow-hidden mb-4">
+                  <div className="w-full bg-slate-200 h-4 border-2 border-[#1a1a1a] overflow-hidden mb-4 rounded-full">
                     <div
                       className="bg-[#30c290] h-full transition-all duration-300 border-r-2 border-[#1a1a1a]"
                       style={{ width: `${pregnancy.progressPercentage}%` }}
@@ -420,7 +420,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <button
                     onClick={() => navigate('/pregnancy-tracker')}
-                    className="w-full bg-[#F98080] hover:bg-white text-white hover:text-[#F98080] font-black py-3 border-2 border-[#1a1a1a] shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
+                    className="w-full bg-[#F98080] hover:bg-white text-white hover:text-[#F98080] font-black py-3 border-2 border-[#1a1a1a] rounded-2xl shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
                   >
                     Open Pregnancy Tracker
                   </button>
@@ -429,7 +429,7 @@ const Dashboard: React.FC = () => {
 
               {/* Diet Widget */}
               {diet.activeProfile && (
-                <div className="bg-[#EBF7F5] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a]">
+                <div className="bg-[#EBF7F5] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a] rounded-3xl">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h2 className="text-xs font-black text-[#0d7377] uppercase tracking-widest mb-2">
@@ -449,7 +449,7 @@ const Dashboard: React.FC = () => {
                     {Object.entries(diet.loggedMeals).map(([key, meal]) => (
                       <div
                         key={key}
-                        className={`border-2 p-3 text-center transition-all font-black ${
+                        className={`border-2 p-3 text-center transition-all font-black rounded-xl ${
                           meal.status === 'logged'
                             ? 'bg-[#30c290]/20 border-[#30c290] text-teal-950'
                             : meal.status === 'skipped'
@@ -459,7 +459,7 @@ const Dashboard: React.FC = () => {
                       >
                         <div className="text-xs uppercase tracking-wider">{key}</div>
                         <div className="text-sm mt-1 uppercase tracking-wider">
-                          {meal.status === 'logged' ? 'Done' : meal.status === 'skipped' ? 'Skipped' : 'Pending'}
+                           {meal.status === 'logged' ? 'Done' : meal.status === 'skipped' ? 'Skipped' : 'Pending'}
                         </div>
                       </div>
                     ))}
@@ -467,7 +467,7 @@ const Dashboard: React.FC = () => {
 
                   <button
                     onClick={() => navigate('/diet-recommender')}
-                    className="w-full bg-[#30c290] hover:bg-white text-white hover:text-[#30c290] font-black py-3 border-2 border-[#1a1a1a] shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
+                    className="w-full bg-[#30c290] hover:bg-white text-white hover:text-[#30c290] font-black py-3 border-2 border-[#1a1a1a] rounded-2xl shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
                   >
                     Manage Diet & Water
                   </button>
@@ -478,17 +478,17 @@ const Dashboard: React.FC = () => {
               <BehaviorInsightsWidget onViewMore={() => navigate('/behavior-chat')} />
 
               {/* Behavior Explainer Widget */}
-              <div className="bg-[#FFF5F5] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a]">
+              <div className="bg-[#FFF5F5] border-4 border-[#1a1a1a] p-6 shadow-[4px_4px_0_0_#1a1a1a] rounded-3xl">
                 <h2 className="text-xs font-black text-[#b91c1c] uppercase tracking-widest mb-4">
                   Feline Behavior Explainer
                 </h2>
                 {behavior.decodeResult ? (
-                  <div className="bg-white border-2 border-[#1a1a1a] p-4 mb-4">
+                  <div className="bg-white border-2 border-[#1a1a1a] p-4 mb-4 rounded-2xl">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-xs font-black text-[#1a1a1a] uppercase tracking-wider">
                         Decoded State
                       </span>
-                      <span className="text-xs font-black bg-red-100 text-red-700 px-3 py-1">
+                      <span className="text-xs font-black bg-red-100 text-red-700 px-3 py-1 rounded-lg">
                         {Math.round(behavior.decodeResult.confidenceScore * 100)}% MATCH
                       </span>
                     </div>
@@ -512,7 +512,7 @@ const Dashboard: React.FC = () => {
                       document.getElementById('behavior')?.scrollIntoView({ behavior: 'smooth' });
                     }, 100);
                   }}
-                  className="w-full bg-[#FFB870] hover:bg-white text-slate-900 hover:text-[#FFB870] font-black py-3 border-2 border-[#1a1a1a] shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
+                  className="w-full bg-[#FFB870] hover:bg-white text-slate-900 hover:text-[#FFB870] font-black py-3 border-2 border-[#1a1a1a] rounded-2xl shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
                 >
                   Analyze Behavior
                 </button>

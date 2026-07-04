@@ -167,9 +167,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const completedMessageIds = useRef<Set<string>>(new Set());
   // Track which message's chips have been clicked — disables all chips for that message
   const [clickedChipMessageId, setClickedChipMessageId] = useState<string | null>(null);
-  // Snapshot the message IDs that were present on initial mount (loaded from server/history).
-  // These are pre-existing and should never typewrite.
-  const initialMessageIdsRef = useRef<Set<string>>(new Set(messages.map((m) => m.id)));
+  // Snapshot the message IDs that were present once chat history finished loading
+  // from the server. These are pre-existing and should never typewrite.
+  // NOTE: captured lazily (once, after loading completes) rather than on the
+  // component's first render — history loads asynchronously, so an eager
+  // useRef(new Set(messages...)) would freeze on an empty set before the
+  // fetch resolves. That stale-empty snapshot is what caused the typewriter
+  // to replay every historical message whenever ChatWindow remounted
+  // (e.g. after navigating away and back to the behavior chat tab).
+  const initialMessageIdsRef = useRef<Set<string>>(new Set());
+  const hasSnapshotRef = useRef(false);
+
+  useEffect(() => {
+    if (!isInitialLoading && !hasSnapshotRef.current) {
+      initialMessageIdsRef.current = new Set(messages.map((m) => m.id));
+      hasSnapshotRef.current = true;
+    }
+  }, [isInitialLoading, messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -345,7 +359,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
             {/* Suggestion Chips - rendered below the message */}
             {msg.suggestedPrompts && msg.suggestedPrompts.length > 0 && (
-              <div className="flex flex-wrap gap-2 ml-10 mt-3 animate-fadeInUp">
+              <div className="ml-10 mt-3">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">
+                  Try one of these:
+                </p>
+                <div className="flex flex-wrap gap-2 animate-fadeInUp">
                 {msg.suggestedPrompts.map((suggestion, idx) => (
                   <button
                     key={idx}
@@ -375,6 +393,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 >
                   ✏️ Others
                 </button>
+                </div>
               </div>
             )}
             </div>

@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 // Import subcomponents
 import ProfileCard from './sub-components/ProfileCard';
 import MealsTracker from './sub-components/MealsTracker';
-import WeeklyCalendar from './sub-components/WeeklyCalendar';
+import MonthCalendar from './sub-components/MonthCalendar';
 import FeedingGuideline from './sub-components/FeedingGuideline';
 import CalorieTracker from './sub-components/CalorieTracker';
 import MealLogModal from './sub-components/MealLogModal';
@@ -237,81 +237,106 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                 </div>
             </div>
 
-            {/* Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1.1fr] gap-8 items-stretch flex-grow">
-                {/* Left Column */}
-                <motion.div
-                    key={`profile-${activeProfileId}`}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="h-full"
-                >
-                    <ProfileCard
-                        catName={catName}
-                        gender={gender}
-                        weight={weight}
-                        isKg={isKg}
-                        foodPreference={foodPreference}
-                        isSpayedNeutered={isSpayedNeutered}
-                        activeLifeStage={activeLifeStage}
-                        lifeStage={lifeStage}
-                        age={age}
-                        onEditProfile={() => setIsConfirmResetOpen(true)}
-                        photoUrl={activePhotoUrl}
-                    />
-                </motion.div>
+            {/* Layout Grid — three independent columns grouped by relevance:
+                Col 1 = identity + reference (Profile, Feeding Guideline) — stacked in
+                        its own flex column so it never shifts when Col 2 resizes.
+                Col 2 = today's activity (Meals, Calorie summary underneath)
+                Col 3 = the month calendar, spanning the full column height,
+                        with every week besides the current one dimmed out */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1.1fr] gap-8 items-start flex-grow">
+                {/* Column 1: Profile + Feeding Guideline, self-contained so its
+                    position is fixed regardless of how tall the Meals column gets. */}
+                <div className="flex flex-col gap-4">
+                    <motion.div
+                        key={`profile-${activeProfileId}`}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                    >
+                        <ProfileCard
+                            catName={catName}
+                            displayName={displayName}
+                            gender={gender}
+                            weight={weight}
+                            isKg={isKg}
+                            foodPreference={foodPreference}
+                            isSpayedNeutered={isSpayedNeutered}
+                            activeLifeStage={activeLifeStage}
+                            lifeStage={lifeStage}
+                            age={age}
+                            onEditProfile={() => setIsConfirmResetOpen(true)}
+                            photoUrl={activePhotoUrl}
+                        />
+                    </motion.div>
 
-                {/* Middle Column */}
-                <motion.div
-                    key={`tracker-${activeProfileId}`}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
-                    className="h-full"
-                >
-                    <MealsTracker
-                        loggedMeals={loggedMeals}
-                        waterIntake={waterIntake}
-                        waterTarget={waterTarget}
-                        addWater={addWater}
-                        resetWater={resetWater}
-                        onAddMeal={handleAddMealClick}
-                        onEditMeal={handleEditMealClick}
-                        onUndoSkip={(mealId) => resetMealLog(mealId)}
-                        lifeStage={lifeStage}
-                        catName={catName}
-                    />
-                </motion.div>
+                    <motion.div
+                        key={`guideline-${activeProfileId}`}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+                    >
+                        <FeedingGuideline
+                            lifeStage={activeLifeStage}
+                            weight={weight}
+                            isKg={isKg}
+                            foodPreference={foodPreference}
+                        />
+                    </motion.div>
+                </div>
 
-                {/* Right Column */}
-                <motion.div
-                    key={`guidelines-${activeProfileId}`}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
-                    className="flex flex-col gap-8 w-full h-full"
-                >
-                    <WeeklyCalendar successDays={React.useMemo(() => {
-                        const localDays = (() => {
-                            try {
-                                return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
-                            } catch (e) {
-                                return [];
-                            }
-                        })();
-                        const currentProfile = profiles.find(p => p.id === activeProfileId);
-                        const dbDays = currentProfile?.successDays || [];
-                        return Array.from(new Set([...localDays, ...dbDays]));
-                    }, [activeProfileId, profiles, loggedMeals])} />
-                    <FeedingGuideline
-                        lifeStage={activeLifeStage}
-                        weight={weight}
-                        isKg={isKg}
-                        foodPreference={foodPreference}
-                    />
-                    <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
-                </motion.div>
+                {/* Column 2: Meals tracker. */}
+                <div className="flex flex-col gap-8">
+                    <motion.div
+                        key={`tracker-${activeProfileId}`}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
+                    >
+                        <MealsTracker
+                            loggedMeals={loggedMeals}
+                            waterIntake={waterIntake}
+                            waterTarget={waterTarget}
+                            addWater={addWater}
+                            resetWater={resetWater}
+                            onAddMeal={handleAddMealClick}
+                            onEditMeal={handleEditMealClick}
+                            onUndoSkip={(mealId) => resetMealLog(mealId)}
+                            catName={catName}
+                        />
+                    </motion.div>
+                </div>
+
+                {/* Column 3: Month calendar + Calorie summary. */}
+                <div className="flex flex-col gap-8">
+                    <motion.div
+                        key={`calendar-${activeProfileId}`}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.2 }}
+                    >
+                        <MonthCalendar successDays={React.useMemo(() => {
+                            const localDays = (() => {
+                                try {
+                                    return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
+                                } catch (e) {
+                                    return [];
+                                }
+                            })();
+                            const currentProfile = profiles.find(p => p.id === activeProfileId);
+                            const dbDays = currentProfile?.successDays || [];
+                            return Array.from(new Set([...localDays, ...dbDays]));
+                        }, [activeProfileId, profiles, loggedMeals])} />
+                    </motion.div>
+
+                    <motion.div
+                        key={`calorie-${activeProfileId}`}
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.15 }}
+                    >
+                        <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
+                    </motion.div>
+                </div>
             </div>
 
             {/* Dialogs */}

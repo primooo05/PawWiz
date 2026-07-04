@@ -275,8 +275,13 @@ export function useBehaviorChat() {
           const data = await response.json();
           
           // Handle clarifying response (vague prompt)
+          // NOTE: don't bake "Try one of these:" into the text — suggestedPrompts
+          // isn't persisted server-side, so a reload (tab switch, refresh, chat
+          // reselect) would strip the chips while leaving behind a promise of
+          // options that no longer exist. ChatWindow renders the label itself,
+          // conditional on suggestedPrompts actually being present.
           if (data.type === 'clarifying') {
-            wizText = `${data.question}\n\n**Try one of these:**`;
+            wizText = data.question;
             suggestedPrompts = data.suggestedPrompts;
           }
           // Handle curiosity follow-up (structured-but-thin prompt)

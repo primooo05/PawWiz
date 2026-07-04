@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import type { MealLog } from '../../../hooks/useDietRecommender';
 
 interface MealsTrackerProps {
@@ -10,9 +11,14 @@ interface MealsTrackerProps {
     onEditMeal: (meal: MealLog) => void;
     onAddMeal: () => void;
     onUndoSkip: (mealId: string) => void;
-    lifeStage?: string;
     catName?: string;
 }
+
+const MEAL_COLORS: Record<string, { bg: string; text: string }> = {
+    Breakfast: { bg: '#FFE57F', text: '#8A4F00' }, // Gold/Yellow
+    Lunch: { bg: '#A7F3D0', text: '#046A38' },     // Mint Green
+    Dinner: { bg: '#DDD6FE', text: '#5B21B6' },    // Purple
+};
 
 export const MealsTracker: React.FC<MealsTrackerProps> = ({
     loggedMeals,
@@ -23,7 +29,6 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
     onEditMeal,
     onAddMeal,
     onUndoSkip,
-    lifeStage,
     catName = 'Your cat',
 }) => {
     const [localWater, setLocalWater] = useState(waterIntake);
@@ -39,7 +44,11 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
         }
     };
 
-    const hasLoggedMeals = loggedMeals.some(m => m.status === 'logged' || m.status === 'skipped');
+    const hasLoggedMeals = loggedMeals.some(m => m.status === 'logged' || m.status === 'skipped' || m.status === 'pending');
+
+    // Which folder is currently expanded. Default to the first logged or first meal.
+    const [expandedMealId, setExpandedMealId] = useState<string | null>(loggedMeals[0]?.id ?? null);
+    const [hoveredMealId, setHoveredMealId] = useState<string | null>(null);
 
     return (
         <div className="flex flex-col gap-6 w-full h-full">
@@ -53,71 +62,137 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
                 </button>
             </div>
 
-            <div className="space-y-6">
-                {!hasLoggedMeals ? (
-                    <p className="text-xs font-bold text-slate-400 text-center py-10 bg-white border border-slate-200 rounded-[1.5rem] shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
-                        No meals logged today. Click (+) to start tracking.
-                    </p>
-                ) : (
-                    loggedMeals.map((meal) => {
-                        const isLogged = meal.status === 'logged';
-                        const isSkipped = meal.status === 'skipped';
+            {!hasLoggedMeals ? (
+                <p className="text-xs font-bold text-slate-400 text-center py-10 bg-white border border-slate-200 rounded-[1.5rem] shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
+                    No meals logged today. Click (+) to start tracking.
+                </p>
+            ) : (
+                <div className="flex flex-col pt-6 pb-4 w-full">
+                    {loggedMeals.map((meal, index) => {
+                        const isExpanded = meal.id === expandedMealId;
+                        const isHovered = meal.id === hoveredMealId;
+                        const colors = MEAL_COLORS[meal.mealName] || { bg: '#E2E8F0', text: '#475569' };
 
-                        if (isLogged) {
-                            return (
-                                <div key={meal.id} className="relative p-5 bg-[#F2FBF9] border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0_0_rgba(15,23,42,1)] flex flex-col gap-3">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="font-black text-slate-900 text-lg">{meal.mealName}</span>
-                                            <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">{meal.timestamp || '10:00am'}</span>
+                        // Dynamic Z-Index: expanded/active at top (50), hovered just below (40),
+                        // and base stack layers from back-to-front (Breakfast at 10, Lunch at 20, Dinner at 30)
+                        const zIndex = isExpanded ? 50 : isHovered ? 40 : 10 + index * 10;
+
+                        return (
+                            <div
+                                key={meal.id}
+                                onMouseEnter={() => setHoveredMealId(meal.id)}
+                                onMouseLeave={() => setHoveredMealId(null)}
+                                onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
+                                className={`relative flex flex-col transition-all duration-300 ease-out cursor-pointer group w-full
+                                    ${index > 0 ? '-mt-10' : ''}
+                                    ${isExpanded ? 'scale-[1.01]' : 'scale-100'}
+                                    hover:-translate-y-4`}
+                                style={{ zIndex }}
+                            >
+                                {/* Folder Tab (Attached directly to folder body color) */}
+                                <div className="flex">
+                                    <div
+                                        className="h-7 px-4 border-t-2 border-x-2 border-slate-900 rounded-t-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors"
+                                        style={{
+                                            backgroundColor: colors.bg,
+                                            borderColor: '#0f172a',
+                                            color: colors.text,
+                                        }}
+                                    >
+                                        {meal.mealName}
+                                    </div>
+                                </div>
+
+                                {/* Folder Body */}
+                                <div
+                                    className="border-2 border-slate-900 rounded-b-2xl rounded-tr-2xl p-4 shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col gap-3 min-h-[110px] transition-colors -mt-[2px]"
+                                    style={{
+                                        backgroundColor: colors.bg,
+                                    }}
+                                >
+                                    {/* Folder Header */}
+                                    <div className="flex justify-between items-start gap-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">
+                                                {meal.timestamp || 'Pending'}
+                                            </span>
+                                            <span className="font-black text-slate-900 text-base leading-tight">
+                                                {meal.status === 'logged' ? 'Logged' : meal.status === 'skipped' ? 'Skipped' : 'Pending'}
+                                            </span>
                                         </div>
 
-                                        {/* Edit Button */}
-                                        <button
-                                            onClick={() => onEditMeal(meal)}
-                                            className="w-7 h-7 bg-[#2ec4b6] hover:bg-[#20a396] text-white border border-slate-900 rounded-full flex items-center justify-center cursor-pointer transition-colors shadow-sm"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-white">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                            </svg>
-                                        </button>
+                                        {meal.status === 'logged' && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEditMeal(meal);
+                                                }}
+                                                className="w-7 h-7 bg-[#2ec4b6] hover:bg-[#20a396] text-white border-2 border-slate-900 rounded-full flex items-center justify-center cursor-pointer transition-colors shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-white">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                                                </svg>
+                                            </button>
+                                        )}
                                     </div>
 
-                                    <hr className="border-slate-200" />
-
-                                    {/* Details */}
-                                    <div className="text-xs text-slate-500 font-bold space-y-1 mt-1">
-                                        <div>Food type: <span className="text-slate-800 capitalize">{meal.foodType === 'dry' ? 'Kibble' : meal.foodType === 'wet' ? 'Wet Food' : 'Mixed Food'}</span></div>
-                                        <div>Measurement: <span className="text-slate-800">{meal.amount} {meal.unit}{meal.amount !== 1 ? 's' : ''}</span></div>
-                                    </div>
-                                </div>
-                            );
-                        }
-
-                        if (isSkipped) {
-                            return (
-                                <div key={meal.id} className="p-5 bg-white border-2 border-slate-900 rounded-2xl flex items-center justify-between shadow-[3px_3px_0_0_rgba(15,23,42,1)]">
-                                    <div className="flex items-center gap-3">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 flex-shrink-0 animate-pulse" />
-                                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
-                                            {meal.mealName} &middot; Meal Skipped
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={() => onUndoSkip(meal.id)}
-                                        className="text-xs font-black text-[#2ec4b6] hover:text-[#20a396] uppercase tracking-wider cursor-pointer transition-colors border-none bg-transparent"
+                                    {/* Expandable Details Container */}
+                                    <motion.div
+                                        initial={false}
+                                        animate={{ height: isExpanded ? 'auto' : 0, opacity: isExpanded ? 1 : 0 }}
+                                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                        className="overflow-hidden"
                                     >
-                                        Undo
-                                    </button>
+                                        <div className="pt-3 border-t border-slate-900/10 flex flex-col gap-2.5 text-xs font-bold text-slate-700">
+                                            {meal.status === 'logged' ? (
+                                                <>
+                                                    <div className="flex justify-between">
+                                                        <span>Food:</span>
+                                                        <span className="text-slate-900 capitalize">{meal.foodType === 'dry' ? 'Kibble' : meal.foodType === 'wet' ? 'Wet Food' : 'Mixed Food'}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span>Amount:</span>
+                                                        <span className="text-slate-900">{meal.amount} {meal.unit}{meal.amount !== 1 ? 's' : ''}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center bg-slate-900/5 p-2 rounded-xl mt-1">
+                                                        <span>Energy:</span>
+                                                        <span className="text-[#20a396] font-black text-sm">{meal.kcal} kcal</span>
+                                                    </div>
+                                                </>
+                                            ) : meal.status === 'skipped' ? (
+                                                <div className="flex flex-col gap-2">
+                                                    <p className="text-[11px] text-slate-500 italic">This meal was skipped.</p>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onUndoSkip(meal.id);
+                                                        }}
+                                                        className="w-full py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 border-2 border-slate-900 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-colors"
+                                                    >
+                                                        Undo Skip
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col gap-2 pt-1">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onEditMeal(meal);
+                                                        }}
+                                                        className="w-full py-2 bg-[#2ec4b6] hover:bg-[#20a396] text-white border-2 border-slate-900 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                                                    >
+                                                        Log Meal
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
                                 </div>
-                            );
-                        }
-
-                        return null;
-                    })
-                )}
-            </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* Slim Water Intake Row */}
             <div className="mt-4 flex flex-col gap-4">
@@ -186,25 +261,12 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
                     </div>
                 </div>
 
-                {/* Water Intake Tips & Guidelines */}
-                <div className="border border-blue-100 rounded-2xl p-4 bg-blue-50/30 text-xs text-slate-700 space-y-3 mt-1">
-                    <p className="font-extrabold text-blue-905 uppercase tracking-wider text-[9px] mb-1">Hydration Guidelines</p>
-                    
-                    <div className="flex items-start gap-2.5">
-                        <span className="text-sm mt-0.5">💡</span>
-                        <p className="leading-relaxed font-bold text-slate-700">
-                            <strong className="text-blue-900 font-black">Tip:</strong> Measuring the water in a cup first before putting it on a bowl is more accurate.
-                        </p>
-                    </div>
-                    
-                    <div className="flex items-start gap-2.5">
-                        <span className="text-sm mt-0.5">📝</span>
-                        <p className="leading-relaxed font-bold text-slate-700">
-                            <strong className="text-blue-900 font-black">Note:</strong> {lifeStage?.toLowerCase() === 'kitten' 
-                                ? 'A growing kitten needs approximately 60 to 80 ml of water per kilogram of body weight daily.' 
-                                : 'An adult cat needs approximately 50 ml of water per kilogram of body weight daily.'}
-                        </p>
-                    </div>
+                {/* Water Intake Tip */}
+                <div className="border border-blue-100 rounded-2xl p-4 bg-blue-50/30 text-xs text-slate-700 flex items-start gap-2.5 mt-1">
+                    <span className="text-sm mt-0.5">💡</span>
+                    <p className="leading-relaxed font-bold text-slate-700">
+                        <strong className="text-blue-900 font-black">Tip:</strong> Measuring the water in a cup first before putting it on a bowl is more accurate.
+                    </p>
                 </div>
             </div>
         </div>
