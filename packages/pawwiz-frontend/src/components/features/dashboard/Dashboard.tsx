@@ -506,12 +506,7 @@ const Dashboard: React.FC = () => {
                 )}
 
                 <button
-                  onClick={() => {
-                    navigate('/');
-                    setTimeout(() => {
-                      document.getElementById('behavior')?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                  }}
+                  onClick={() => navigate('/behavior-chat')}
                   className="w-full bg-[#FFB870] hover:bg-white text-slate-900 hover:text-[#FFB870] font-black py-3 border-2 border-[#1a1a1a] rounded-2xl shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
                 >
                   Analyze Behavior
