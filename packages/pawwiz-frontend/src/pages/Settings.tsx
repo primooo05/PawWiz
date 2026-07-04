@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useDietRecommender } from '../hooks/useDietRecommender';
-import { useCatAvatarUpload } from '../hooks/useCatAvatarUpload';
-import BottomNav from '../components/BottomNav';
+import { useDietRecommender } from '../hooks/features/useDietRecommender';
+import { useCatAvatarUpload } from '../hooks/features/useCatAvatarUpload';
+import BottomNav from '../components/layout/BottomNav';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import LoadingScreen from '../components/LoadingScreen';
-import { SearchableDropdown } from '../components/onboarding/SearchableDropdown';
+import LoadingScreen from '../components/layout/LoadingScreen';
+import { SearchableDropdown } from '../components/features/onboarding/SearchableDropdown';
 import { AnimatePresence, motion } from 'motion/react';
 
 const markingOptions = [

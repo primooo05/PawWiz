@@ -1,8 +1,8 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import ReturnToTop from './components/ReturnToTop';
-import { useScrollToTop } from './hooks/useScrollToTop';
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
+import ReturnToTop from './components/layout/ReturnToTop';
+import { useScrollToTop } from './hooks/ui/useScrollToTop';
 import pawWizText from './assets/PawWiz_Text_logo.png';
 
 export default function App() {

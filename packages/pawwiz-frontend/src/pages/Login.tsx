@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { CircleWrapper } from '../components/CircleWrapper';
-import Navbar from '../components/Navbar';
-import { useLogin } from '../hooks/useLogin';
-import { useForgotPassword } from '../hooks/useForgotPassword';
+import { CircleWrapper } from '../components/ui/CircleWrapper';
+import Navbar from '../components/layout/Navbar';
+import { useLogin } from '../hooks/auth/useLogin';
+import { useForgotPassword } from '../hooks/auth/useForgotPassword';
 import catsLogin from '../assets/Cats_Login.svg';
 
 export default function Login() {

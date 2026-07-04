@@ -1,9 +1,9 @@
-import { useHashScroll } from '../hooks/useHashScroll';
-import Hero from '../components/landing/Hero';
-import PregnancySection from '../components/landing/PregnancySection';
-import DietSection from '../components/landing/DietSection';
-import BehaviorSection from '../components/landing/BehaviorSection';
-import ContactSection from '../components/landing/ContactSection';
+import { useHashScroll } from '../hooks/ui/useHashScroll.js';
+import Hero from '../components/features/landing/Hero';
+import PregnancySection from '../components/features/landing/PregnancySection';
+import DietSection from '../components/features/landing/DietSection';
+import BehaviorSection from '../components/features/landing/BehaviorSection';
+import ContactSection from '../components/features/landing/ContactSection';
 import { API_BASE } from '../lib/config.js';
 
 export default function Home() {

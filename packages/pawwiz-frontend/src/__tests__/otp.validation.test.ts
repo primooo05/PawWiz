@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { validateStep3Otp } from '../hooks/useOnboardingValidation.js';
+import { validateStep3Otp } from '../hooks/onboarding/useOnboardingValidation.js';
 
 // ---------------------------------------------------------------------------
 // validateStep3Otp — format-only validation (crypto happens on the backend)
