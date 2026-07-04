@@ -1,6 +1,7 @@
 
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import PrivacyModal from '../footer/PrivacyModal';
 import TermsModal from '../footer/TermsModal';
 import DataSourcesModal from '../footer/DataSourcesModal';
@@ -19,6 +20,12 @@ export default function Footer() {
             <span className="font-bold text-slate-700">PawWiz</span>
           </div>
           <div className="flex space-x-6">
+            <Link
+              to="/docs"
+              className="hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              Docs
+            </Link>
             <button
               onClick={() => setIsPrivacyOpen(true)}
               className="hover:text-slate-600 transition-colors cursor-pointer"

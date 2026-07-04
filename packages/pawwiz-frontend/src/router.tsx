@@ -6,6 +6,7 @@ import NotFound from './pages/NotFound';
 import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
 import ResetPassword from './pages/ResetPassword';
+import Docs from './pages/Docs';
 import CatPregnancyTracker from './components/features/pregnancy/PregnancyTracker';
 import CatHeatTracker from './components/features/heat/CatHeatTracker';
 import DietRecommender from './components/features/diet/DietRecommender';
@@ -28,6 +29,7 @@ export function Router() {
         <Route path="/diet-recommender" element={<DietRecommender />} />
         <Route path="/behavior-chat" element={<BehaviorChat />} />
         <Route path="/behavior-dashboard" element={<BehaviorDashboard />} />
+        <Route path="/docs" element={<Docs />} />
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="/onboarding" element={<Onboarding />} />
