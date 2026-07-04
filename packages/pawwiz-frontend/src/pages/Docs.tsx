@@ -117,7 +117,7 @@ const API_GROUPS: { group: string; endpoints: Endpoint[] }[] = [
   {
     group: 'Auth',
     endpoints: [
-      { method: 'POST', path: '/api/auth/recover', auth: 'public', desc: 'Password reset email. Rate-limited 3/15min; identical response regardless of email existence.' },
+      { method: 'POST', path: '/api/auth/recover', auth: 'public', desc: 'Password reset email. Rate-limited 3/15min; identical, constant-time response regardless of email existence.' },
     ],
   },
   {
@@ -169,11 +169,11 @@ const API_GROUPS: { group: string; endpoints: Endpoint[] }[] = [
     group: 'Onboarding',
     endpoints: [
       { method: 'POST', path: '/api/onboarding/check-email', auth: 'public', desc: 'Check email availability (rate-limited).' },
-      { method: 'POST', path: '/api/onboarding/start', auth: 'public', desc: 'Start an onboarding session.' },
-      { method: 'GET', path: '/api/onboarding/session/:id', auth: 'public', desc: 'Fetch onboarding session state.' },
+      { method: 'POST', path: '/api/onboarding/start', auth: 'public', desc: 'Start an onboarding session (rate-limited 3/hr per IP).' },
+      { method: 'GET', path: '/api/onboarding/session/:id', auth: 'public', desc: 'Fetch onboarding session state (OTP secrets stripped from the response).' },
       { method: 'POST', path: '/api/onboarding/session/:id/update', auth: 'public', desc: 'Persist a step of the onboarding wizard.' },
-      { method: 'POST', path: '/api/onboarding/session/:id/send-otp', auth: 'public', desc: 'Send an email OTP challenge.' },
-      { method: 'POST', path: '/api/onboarding/session/:id/verify-otp', auth: 'public', desc: 'Verify the submitted OTP code.' },
+      { method: 'POST', path: '/api/onboarding/session/:id/send-otp', auth: 'public', desc: 'Send an email OTP challenge (enumeration-safe; 60s cooldown).' },
+      { method: 'POST', path: '/api/onboarding/session/:id/verify-otp', auth: 'public', desc: 'Verify the OTP code (rate-limited 5/15min; 3-attempt per-code lockout).' },
     ],
   },
   {
@@ -625,20 +625,71 @@ function TestIDE() {
 // Code samples (verbatim-style snippets illustrating the implementation)
 // ---------------------------------------------------------------------------
 
-const AUTH_SNIPPET = `// middleware/auth.ts — Supabase JWT verification
+const AUTH_SNIPPET = `// middleware/auth.ts — Supabase JWT verification (ES256 JWKS + HS256 fallback)
 import jwt from 'jsonwebtoken';
 
-export function requireAuth(req, res, next) {
+// Tokens must be issued by *our* Supabase project and minted for the
+// 'authenticated' audience — this blocks cross-project / wrong-aud replay.
+const verifyOptions = (algorithms) => ({
+  algorithms,
+  audience: 'authenticated',
+  issuer: \`\${process.env.SUPABASE_URL}/auth/v1\`,
+});
+
+export async function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const payload = jwt.verify(token, process.env.SUPABASE_JWT_SECRET);
-    req.user = { id: payload.sub, email: payload.email };
+    const { alg } = jwt.decode(token, { complete: true }).header;
+    const decoded = alg === 'ES256'
+      ? jwt.verify(token, await jwksKey(token), verifyOptions(['ES256']))
+      : jwt.verify(token, hs256Secret(), verifyOptions(['HS256']));
+    req.user = { sub: decoded.sub, email: decoded.email, role: decoded.role };
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid token' });
   }
 }`;
+
+// OWASP hardening delivered in the security & performance refactor.
+const HARDENING: { tag: string; title: string; detail: string }[] = [
+  {
+    tag: 'A07',
+    title: 'OTP brute-force lockout',
+    detail:
+      'Onboarding OTP is capped at 3 attempts per issued code; the hash is invalidated on lockout and cleared on success. verify-otp is rate-limited 5 / 15 min per IP.',
+  },
+  {
+    tag: 'A01',
+    title: 'Enumeration-safe auth',
+    detail:
+      'Password recovery and OTP send return identical responses whether or not the account exists, with a constant-time floor on the recovery path.',
+  },
+  {
+    tag: 'A07',
+    title: 'No OTP secret leakage',
+    detail:
+      'GET /onboarding/session/:id returns a sanitized projection — otpHash, expiry, and attempt counters are never sent to the client.',
+  },
+  {
+    tag: 'A04',
+    title: 'Spoof-resistant rate limiting',
+    detail:
+      'Limiters key on req.ip behind a single trusted proxy (trust proxy = 1) instead of the client-settable X-Real-IP header.',
+  },
+  {
+    tag: 'A04',
+    title: 'JWT issuer + audience checks',
+    detail:
+      'Tokens are verified against the Supabase issuer and the "authenticated" audience across both ES256 (JWKS) and HS256 paths.',
+  },
+  {
+    tag: 'A04',
+    title: 'No route auth drift',
+    detail:
+      'Removed unauthenticated inline /api/diet & /api/behavior endpoints; AI routes now sit behind authMiddleware in the router layer.',
+  },
+];
 
 const HONEYPOT_SNIPPET = `// middleware/honeypot.ts — silent bot trap
 export function honeypot(req, res, next) {
@@ -791,8 +842,11 @@ export default function Docs() {
         {/* SECTION 3 — SECURITY */}
         <SectionCard id="security" eyebrow="Section 03" title="Security">
           <p className="text-sm text-slate-600 font-medium mb-6">
-            Defense-in-depth on the auth surface: JWT verification, Zod input gating, HTML
-            sanitization, rate limiting, Helmet headers, plus a honeypot + Cloudflare Turnstile combo.
+            Defense-in-depth across the auth surface, hardened against the OWASP Top 10
+            (A01 · A04 · A07): Supabase JWT verification with issuer + audience validation,
+            Zod input gating, HTML sanitization, IP-based rate limiting behind a trusted proxy,
+            Helmet headers, honeypot bot traps, and OTP email verification with per-session
+            brute-force lockout and enumeration-safe responses.
           </p>
           <div className="grid gap-5 md:grid-cols-2 mb-6">
             <div>
@@ -806,6 +860,27 @@ export default function Docs() {
           </div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Zod Validation Gate</h3>
           <Code code={VALIDATE_SNIPPET} />
+
+          {/* OWASP hardening delivered in the security & performance refactor */}
+          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mt-8 mb-3">
+            OWASP Hardening
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {HARDENING.map((h) => (
+              <div key={h.title} className="p-4 bg-white border-2 border-slate-900 rounded-2xl">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-black uppercase text-sm text-slate-900">{h.title}</p>
+                  <span
+                    className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: TEAL, color: '#fff' }}
+                  >
+                    {h.tag}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium mt-1 leading-relaxed">{h.detail}</p>
+              </div>
+            ))}
+          </div>
         </SectionCard>
 
         {/* SECTION 4 — TESTING */}
