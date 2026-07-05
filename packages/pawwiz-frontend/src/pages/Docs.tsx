@@ -647,7 +647,7 @@ function TestIDE() {
             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: TEAL }} />
           </div>
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
-            PawWiz Test Explorer
+            PawWiz Test Explorer — 621 tests
           </span>
         </div>
         <span className="text-[10px] font-bold text-slate-500">{allFiles.length} test files</span>
