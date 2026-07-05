@@ -10,6 +10,8 @@ interface DietAdvisorModalProps {
     isOpen: boolean;
     onClose: () => void;
     catContext: DietAdviceCatContext;
+    /** When provided, auto-sends this question as soon as the modal opens */
+    prefillQuestion?: string;
 }
 
 const PawIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
@@ -118,11 +120,12 @@ const SUGGESTED_QUESTIONS = [
     'How should I split meals throughout the day?',
 ];
 
-export const DietAdvisorModal: React.FC<DietAdvisorModalProps> = ({ isOpen, onClose, catContext }) => {
+export const DietAdvisorModal: React.FC<DietAdvisorModalProps> = ({ isOpen, onClose, catContext, prefillQuestion }) => {
     useBodyScrollLock(isOpen);
     const { messages, inputValue, setInputValue, isLoading, sendMessage } = useDietAdvisorChat(catContext);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const hasSentPrefillRef = useRef(false);
 
     // Tracks how many characters have been revealed per message during typewriter animation.
     const [typewriterState, setTypewriterState] = useState<Record<string, number>>({});
@@ -151,6 +154,19 @@ export const DietAdvisorModal: React.FC<DietAdvisorModalProps> = ({ isOpen, onCl
             return () => clearTimeout(timer);
         }
     }, [isOpen]);
+
+    // Auto-send a prefill question when the modal opens with one
+    useEffect(() => {
+        if (isOpen && prefillQuestion && !hasSentPrefillRef.current) {
+            hasSentPrefillRef.current = true;
+            // Small delay so the modal animation finishes before the message appears
+            const timer = setTimeout(() => sendMessage(prefillQuestion), 500);
+            return () => clearTimeout(timer);
+        }
+        if (!isOpen) {
+            hasSentPrefillRef.current = false;
+        }
+    }, [isOpen, prefillQuestion, sendMessage]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

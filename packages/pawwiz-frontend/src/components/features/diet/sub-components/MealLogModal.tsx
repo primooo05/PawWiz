@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Sparkles } from 'lucide-react';
 import type { MealLog } from '../../../../hooks/features/useDietRecommender';
 import {
     FOOD_CATALOG,
@@ -42,7 +43,26 @@ interface MealLogModalProps {
      *  Log's dedicated per-meal buttons); shown for the general "Add Meal"
      *  (+) flow where the period hasn't been chosen yet. Defaults to true. */
     showMealPeriodSelector?: boolean;
+    /** Called when user clicks "Ask Wiz" — opens the Diet Advisor modal with a pre-filled question */
+    onAskWiz?: (question: string) => void;
 }
+
+// ─── Household reference objects for no-scale portion estimation ──────────────
+interface PortionRef {
+    emoji: string;
+    label: string;
+    sublabel: string;
+    grams: number;
+}
+
+const PORTION_REFS: PortionRef[] = [
+    { emoji: '🏓', label: 'Ping pong ball', sublabel: '≈ 30 g', grams: 30 },
+    { emoji: '⛳', label: 'Golf ball',       sublabel: '≈ 45 g', grams: 45 },
+    { emoji: '🥚', label: 'Large egg',       sublabel: '≈ 60 g', grams: 60 },
+    { emoji: '🍊', label: 'Clementine',      sublabel: '≈ 75 g', grams: 75 },
+    { emoji: '🃏', label: 'Deck of cards',   sublabel: '≈ 85 g', grams: 85 },
+    { emoji: '🍎', label: 'Medium apple',    sublabel: '≈ 120 g', grams: 120 },
+];
 
 const isKnownFood = (foodType: string): foodType is FoodType =>
     Object.prototype.hasOwnProperty.call(FOOD_CATALOG, foodType);
@@ -70,6 +90,7 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
     catName,
     loggedMeals,
     showMealPeriodSelector = true,
+    onAskWiz,
 }) => {
     // Select value is always a catalog id or 'other'. A custom food name is held
     // separately so the <select> stays controlled.
@@ -78,6 +99,10 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
     const [customKcalPer100g, setCustomKcalPer100g] = useState<number>(100);
     const [modalUnit, setModalUnit] = useState<MealUnit>(initialUnit);
     const [modalAmount, setModalAmount] = useState<number>(initialAmount);
+    // Step-by-step Flo-like logging flow: 'food' → 'amount' → 'confirm'
+    const [step, setStep] = useState<'food' | 'amount' | 'confirm'>('food');
+    // Whether the household visual estimator is shown (Other path, no scale)
+    const [showEstimator, setShowEstimator] = useState(false);
 
     // Which meal period this entry belongs to. "Other" reveals a free-text
     // label input (e.g. "Midnight Snack") instead of the fixed 3 options.
@@ -113,6 +138,10 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
             setSelectedPeriod('Other');
             setCustomPeriodName(initialMealName || '');
         }
+
+        // Always start at the food-selection step when opening
+        setStep('food');
+        setShowEstimator(false);
     }, [isOpen, initialMealName, initialTimestamp, initialFoodType, initialUnit, initialAmount]);
 
     const isOther = modalFoodType === 'other';
@@ -152,6 +181,18 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
         onSubmit(effectiveMealName || 'Other', foodType, modalAmount, unit, initialTimestamp, previewKcal);
     };
 
+    // Build the context-aware Ask Wiz question
+    const buildWizQuestion = () => {
+        const food = isOther
+            ? (customName.trim() || 'a custom food')
+            : FOOD_CATALOG[modalFoodType]?.label ?? modalFoodType;
+        return `I'm logging ${initialMealName} for ${catName} with ${food}. I don't have a measuring tool — what's a good portion estimate for ${catName}'s size?`;
+    };
+
+    // Step labels for the progress indicator
+    const STEPS = ['Food', 'Amount', 'Confirm'] as const;
+    const stepIndex = step === 'food' ? 0 : step === 'amount' ? 1 : 2;
+
     if (!isOpen) return null;
 
     return (
@@ -168,206 +209,302 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                     initial={{ opacity: 0, scale: 0.9, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    transition={{ type: "spring", duration: 0.4 }}
+                    transition={{ type: 'spring', duration: 0.4 }}
                     className="bg-white border-2 border-slate-900 rounded-[2.5rem] max-w-sm w-full p-8 shadow-[6px_6px_0_0_rgba(15,23,42,1)] pointer-events-auto max-h-[90vh] overflow-y-auto"
                 >
-                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-1">
                         {isEditing
                             ? `Edit ${effectiveMealName || initialMealName}`
                             : showMealPeriodSelector
                                 ? 'Log a Meal'
                                 : `Log ${initialMealName}`}
                     </h3>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Enter food details for {catName}</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5">
+                        {step === 'food' ? `What did ${catName} eat?` : step === 'amount' ? `How much did ${catName} eat?` : 'Confirm the details'}
+                    </p>
 
-                    <div className="space-y-6 text-left">
-                        {/* Meal period selector — Breakfast / Lunch / Dinner / Other */}
-                        {showMealPeriodSelector && (
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Meal period</label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {([...STANDARD_MEAL_PERIODS, 'Other'] as MealPeriod[]).map((period) => (
-                                        <button
-                                            key={period}
-                                            type="button"
-                                            onClick={() => setSelectedPeriod(period)}
-                                            className={`py-2.5 rounded-xl border-2 font-bold text-xs transition-all cursor-pointer ${
-                                                selectedPeriod === period
-                                                    ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]'
-                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400'
-                                            }`}
-                                        >
-                                            {period}
-                                        </button>
-                                    ))}
+                    {/* Flo-like step progress indicator */}
+                    <div className="flex items-center gap-1.5 mb-7">
+                        {STEPS.map((label, i) => (
+                            <React.Fragment key={label}>
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-black transition-all ${i < stepIndex ? 'bg-[#2ec4b6] border-[#2ec4b6] text-white' : i === stepIndex ? 'bg-white border-[#2ec4b6] text-[#2ec4b6]' : 'bg-slate-100 border-slate-300 text-slate-400'}`}>
+                                        {i < stepIndex ? '✓' : i + 1}
+                                    </div>
+                                    <span className={`text-[9px] font-black uppercase tracking-wider ${i === stepIndex ? 'text-[#2ec4b6]' : 'text-slate-400'}`}>{label}</span>
                                 </div>
-
-                                {isCustomPeriod && (
-                                    <input
-                                        type="text"
-                                        value={customPeriodName}
-                                        onChange={(e) => setCustomPeriodName(e.target.value)}
-                                        placeholder="e.g. Midnight Snack"
-                                        className="w-full mt-3 px-4 py-2.5 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white transition-colors"
-                                    />
+                                {i < STEPS.length - 1 && (
+                                    <div className={`flex-1 h-0.5 mb-4 transition-all ${i < stepIndex ? 'bg-[#2ec4b6]' : 'bg-slate-200'}`} />
                                 )}
-                            </div>
-                        )}
+                            </React.Fragment>
+                        ))}
+                    </div>
 
-                        {/* Food selector */}
-                        <div>
-                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Food</label>
-                            <select
-                                value={modalFoodType}
-                                onChange={(e) => handleFoodChange(e.target.value as FoodType)}
-                                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-bold text-slate-800 cursor-pointer focus:outline-none focus:bg-white transition-colors"
-                            >
-                                {FOOD_OPTIONS.map((f) => (
-                                    <option key={f.id} value={f.id}>
-                                        {f.label}
-                                    </option>
-                                ))}
-                                <option value="other">Other / Custom…</option>
-                            </select>
-                        </div>
+                    <AnimatePresence mode="wait">
 
-                        {/* Custom food inputs */}
-                        {isOther && (
-                            <div className="space-y-4 p-4 bg-slate-50 border-2 border-slate-900 rounded-2xl">
+                    {/* ── Step 1: Food selection ─────────────────────────────── */}
+                    {step === 'food' && (
+                        <motion.div
+                            key="step-food"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-5 text-left"
+                        >
+                            {/* Meal period selector — shown when caller hasn't pre-selected a slot */}
+                            {showMealPeriodSelector && (
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Food name</label>
-                                    <input
-                                        type="text"
-                                        value={customName}
-                                        onChange={(e) => setCustomName(e.target.value)}
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Meal period</label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {([...STANDARD_MEAL_PERIODS, 'Other'] as MealPeriod[]).map((period) => (
+                                            <button
+                                                key={period}
+                                                type="button"
+                                                onClick={() => setSelectedPeriod(period)}
+                                                className={`py-2.5 rounded-xl border-2 font-bold text-xs transition-all cursor-pointer ${
+                                                    selectedPeriod === period
+                                                        ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]'
+                                                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400'
+                                                }`}
+                                            >
+                                                {period}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {isCustomPeriod && (
+                                        <input
+                                            type="text"
+                                            value={customPeriodName}
+                                            onChange={(e) => setCustomPeriodName(e.target.value)}
+                                            placeholder="e.g. Midnight Snack"
+                                            className="w-full mt-3 px-4 py-2.5 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white transition-colors"
+                                        />
+                                    )}
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Food type</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {FOOD_OPTIONS.map((f) => (
+                                        <button key={f.id} type="button" onClick={() => handleFoodChange(f.id)}
+                                            className={`py-3 px-3 rounded-xl border-2 font-bold text-xs text-left transition-all cursor-pointer ${modalFoodType === f.id && !isOther ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400'}`}
+                                        >{f.label}</button>
+                                    ))}
+                                    <button type="button" onClick={() => handleFoodChange('other')}
+                                        className={`py-3 px-3 rounded-xl border-2 font-bold text-xs text-left transition-all cursor-pointer col-span-2 ${isOther ? 'bg-amber-50 border-amber-400 text-amber-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400'}`}
+                                    >🍽️ Other / Custom food…</button>
+                                </div>
+                            </div>
+                            {isOther && (
+                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                                    className="space-y-3 p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl"
+                                >
+                                    <label className="block text-xs font-black text-amber-700 uppercase tracking-wider">Food name</label>
+                                    <input type="text" value={customName} onChange={(e) => setCustomName(e.target.value)}
                                         placeholder="e.g. Turkey, homemade stew"
                                         className="w-full px-4 py-2.5 bg-white border-2 border-slate-900 rounded-xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none"
                                     />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                        Calories on the label (kcal per 100 g)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min={1}
-                                        max={1000}
-                                        value={customKcalPer100g || ''}
-                                        onChange={(e) => setCustomKcalPer100g(parseFloat(e.target.value) || 0)}
-                                        placeholder="e.g. 120"
-                                        className="w-full px-4 py-2.5 bg-white border-2 border-slate-900 rounded-xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none"
-                                    />
-                                    <p className="text-[10px] font-bold text-slate-400 mt-1.5 leading-relaxed">
-                                        Check the packaging for "kcal/100 g" (or ME kcal/kg ÷ 10). Then weigh the portion in grams below.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Unit selector — hidden for custom foods (measured in grams) */}
-                        {!isOther && (
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Measure by</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {UNIT_OPTIONS.map((u) => (
-                                        <button
-                                            key={u.id}
-                                            type="button"
-                                            onClick={() => handleUnitChange(u.id)}
-                                            className={`py-2.5 rounded-xl border-2 font-bold text-xs transition-all cursor-pointer ${
-                                                modalUnit === u.id
-                                                    ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]'
-                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400'
-                                            }`}
-                                        >
-                                            {u.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Measurement amount */}
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                <span>{isOther ? 'Weight:' : 'Amount:'}</span>
-                                <span className="font-extrabold text-[#2ec4b6] uppercase">
-                                    {formatAmountUnit(modalAmount, isOther ? 'gram' : modalUnit)}
-                                </span>
-                            </div>
-                            <input
-                                type="range"
-                                min={unitConfig.min}
-                                max={unitConfig.max}
-                                step={unitConfig.step}
-                                value={modalAmount}
-                                onChange={(e) => setModalAmount(parseFloat(e.target.value))}
-                                className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
-                            />
-                            <button
-                                type="button"
-                                onClick={handleUseTypical}
-                                className="text-[11px] font-black text-[#2ec4b6] uppercase tracking-wider hover:underline cursor-pointer"
-                            >
-                                Not sure? Use typical portion
-                            </button>
-                        </div>
-
-                        {/* Live calorie preview */}
-                        <div className="flex justify-between items-center bg-slate-900/5 border-2 border-slate-900 rounded-xl p-3">
-                            <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Estimated energy</span>
-                            <span className="text-lg font-black text-[#20a396]">{previewKcal} kcal</span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex flex-col gap-2 pt-2">
-                            <button
-                                onClick={handleFormSubmit}
-                                disabled={!canSubmit}
-                                className="w-full py-3 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2ec4b6]"
-                            >
-                                {isEditing ? 'Save changes' : 'Log Meal'}
-                            </button>
-                            {!isEditing && !isCustomPeriod && (() => {
-                                const targetMeal = loggedMeals.find(m => m.mealName === selectedPeriod);
-                                if (targetMeal?.status === 'pending') {
-                                    return (
-                                        <button
-                                            type="button"
-                                            onClick={() => onSkip(targetMeal)}
-                                            className="w-full py-3 bg-amber-50 text-amber-800 border-2 border-amber-200 rounded-xl font-black hover:bg-amber-100 transition-all cursor-pointer text-center"
-                                        >
-                                            Skip Meal
-                                        </button>
-                                    );
-                                }
-                                return null;
-                            })()}
-                            {isEditing && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (editingMealId) {
-                                            onReset(editingMealId);
-                                        }
-                                    }}
-                                    className="w-full py-3 bg-red-50 text-red-500 border-2 border-red-200 rounded-xl font-black hover:bg-red-100 transition-all cursor-pointer"
-                                >
-                                    Undo Log
-                                </button>
+                                </motion.div>
                             )}
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="w-full py-3 border-2 border-slate-900 rounded-xl font-black text-slate-850 hover:bg-slate-50 transition-all cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
+                            <button type="button" onClick={() => setStep('amount')}
+                                className="w-full py-3.5 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer"
+                            >Next: Set amount →</button>
+                            <button type="button" onClick={onClose}
+                                className="w-full py-3 border-2 border-slate-200 rounded-xl font-black text-slate-500 hover:bg-slate-50 transition-all cursor-pointer text-sm"
+                            >Cancel</button>
+                        </motion.div>
+                    )}
+
+                    {/* ── Step 2: Amount / measurement ──────────────────────── */}
+                    {step === 'amount' && (
+                        <motion.div
+                            key="step-amount"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-5 text-left"
+                        >
+                            {isOther ? (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                            Calories on label <span className="font-bold normal-case">(kcal per 100 g)</span>
+                                        </label>
+                                        <input type="number" min={1} max={1000} value={customKcalPer100g || ''}
+                                            onChange={(e) => setCustomKcalPer100g(parseFloat(e.target.value) || 0)}
+                                            placeholder="e.g. 120"
+                                            className="w-full px-4 py-2.5 bg-white border-2 border-slate-900 rounded-xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none"
+                                        />
+                                        <p className="text-[10px] font-bold text-slate-400 mt-1.5 leading-relaxed">
+                                            Check the packaging for "kcal/100 g". Leave at 100 if unsure.
+                                        </p>
+                                    </div>
+                                    {/* No-scale estimator toggle */}
+                                    <button type="button" onClick={() => setShowEstimator(!showEstimator)}
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl text-xs font-black text-slate-600 hover:border-[#2ec4b6] hover:text-[#2ec4b6] transition-all cursor-pointer"
+                                    >
+                                        <span>🫙 No scale? Estimate by eye</span>
+                                        <span className="text-[10px]">{showEstimator ? '▲ hide' : '▼ show'}</span>
+                                    </button>
+                                    <AnimatePresence>
+                                    {showEstimator && (
+                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }} className="overflow-hidden"
+                                        >
+                                            <div className="p-4 bg-teal-50 border-2 border-teal-200 rounded-2xl space-y-3">
+                                                <p className="text-[10px] font-black text-teal-700 uppercase tracking-wider">
+                                                    Pick the closest household object to the portion size:
+                                                </p>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {PORTION_REFS.map((ref) => (
+                                                        <button key={ref.label} type="button"
+                                                            onClick={() => { setModalAmount(ref.grams); setShowEstimator(false); }}
+                                                            className={`flex flex-col items-center py-2.5 px-1 rounded-xl border-2 transition-all cursor-pointer text-center ${modalAmount === ref.grams ? 'bg-[#EEF9F8] border-teal-400 shadow-[1px_1px_0_0_rgba(15,23,42,1)]' : 'bg-white border-slate-200 hover:border-teal-300'}`}
+                                                        >
+                                                            <span className="text-xl leading-none mb-1">{ref.emoji}</span>
+                                                            <span className="text-[9px] font-black text-slate-700 leading-tight">{ref.label}</span>
+                                                            <span className="text-[9px] font-bold text-teal-600 mt-0.5">{ref.sublabel}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <p className="text-[9px] font-bold text-teal-600 leading-relaxed">
+                                                    💡 Place the food next to the object to compare. Tap to set the amount.
+                                                </p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                    </AnimatePresence>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Measure by</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {UNIT_OPTIONS.map((u) => (
+                                            <button key={u.id} type="button" onClick={() => handleUnitChange(u.id)}
+                                                className={`py-2.5 rounded-xl border-2 font-bold text-xs transition-all cursor-pointer ${modalUnit === u.id ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400'}`}
+                                            >{u.label}</button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Amount slider */}
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
+                                    <span>{isOther ? 'Weight:' : 'Amount:'}</span>
+                                    <span className="font-extrabold text-[#2ec4b6] uppercase">
+                                        {formatAmountUnit(modalAmount, isOther ? 'gram' : modalUnit)}
+                                    </span>
+                                </div>
+                                <input type="range" min={unitConfig.min} max={unitConfig.max} step={unitConfig.step} value={modalAmount}
+                                    onChange={(e) => setModalAmount(parseFloat(e.target.value))}
+                                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
+                                />
+                                <div className="flex items-center justify-between">
+                                    <button type="button" onClick={handleUseTypical}
+                                        className="text-[11px] font-black text-[#2ec4b6] uppercase tracking-wider hover:underline cursor-pointer"
+                                    >Not sure? Use typical portion</button>
+                                    {onAskWiz && (
+                                        <button type="button" onClick={() => { onAskWiz(buildWizQuestion()); onClose(); }}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFB870]/20 border border-[#FFB870] rounded-full text-[10px] font-black text-slate-700 hover:bg-[#FFB870]/40 transition-all cursor-pointer"
+                                        >
+                                            <Sparkles size={10} strokeWidth={2.5} className="text-amber-600" />
+                                            Ask Wiz
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Live calorie preview */}
+                            <div className="flex justify-between items-center bg-slate-900/5 border-2 border-slate-900 rounded-xl p-3">
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-wider">Estimated energy</span>
+                                <span className="text-lg font-black text-[#20a396]">{previewKcal} kcal</span>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button type="button" onClick={() => setStep('food')}
+                                    className="flex-1 py-3 border-2 border-slate-900 rounded-xl font-black text-slate-700 hover:bg-slate-50 transition-all cursor-pointer text-sm"
+                                >← Back</button>
+                                <button type="button" onClick={() => setStep('confirm')}
+                                    className="flex-[2] py-3 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer"
+                                >Review →</button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* ── Step 3: Confirm / summary ──────────────────────────── */}
+                    {step === 'confirm' && (
+                        <motion.div
+                            key="step-confirm"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-5 text-left"
+                        >
+                            <div className="bg-teal-50 border-2 border-teal-200 rounded-2xl p-5 space-y-3">
+                                <p className="text-[10px] font-black text-teal-700 uppercase tracking-wider mb-1">
+                                    Meal summary for {catName}
+                                </p>
+                                <div className="space-y-2 text-sm font-bold text-slate-700">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Meal</span>
+                                        <span className="text-slate-900 font-black">{initialMealName}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Food</span>
+                                        <span className="text-slate-900 font-black">
+                                            {isOther ? (customName.trim() || 'Other') : FOOD_CATALOG[modalFoodType]?.label}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Amount</span>
+                                        <span className="text-slate-900 font-black">
+                                            {formatAmountUnit(modalAmount, isOther ? 'gram' : modalUnit)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-teal-200">
+                                        <span className="text-slate-500">Energy</span>
+                                        <span className="text-[#20a396] font-black text-lg">{previewKcal} kcal</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                                <button onClick={handleFormSubmit}
+                                    className="w-full py-3.5 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer"
+                                >{isEditing ? '✓ Save changes' : '✓ Log Meal'}</button>
+
+                                {!isEditing && (() => {
+                                    const targetMeal = loggedMeals.find(m => m.mealName === initialMealName);
+                                    if (targetMeal?.status === 'pending') {
+                                        return (
+                                            <button type="button" onClick={() => onSkip(targetMeal)}
+                                                className="w-full py-3 bg-amber-50 text-amber-800 border-2 border-amber-200 rounded-xl font-black hover:bg-amber-100 transition-all cursor-pointer text-center"
+                                            >Skip Meal</button>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
+                                {isEditing && (
+                                    <button type="button" onClick={() => { if (editingMealId) onReset(editingMealId); }}
+                                        className="w-full py-3 bg-red-50 text-red-500 border-2 border-red-200 rounded-xl font-black hover:bg-red-100 transition-all cursor-pointer"
+                                    >Undo Log</button>
+                                )}
+
+                                <button type="button" onClick={() => setStep('amount')}
+                                    className="w-full py-3 border-2 border-slate-200 rounded-xl font-black text-slate-500 hover:bg-slate-50 transition-all cursor-pointer text-sm"
+                                >← Edit amount</button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    </AnimatePresence>
                 </motion.div>
             </div>
-
         </>
     );
 };
