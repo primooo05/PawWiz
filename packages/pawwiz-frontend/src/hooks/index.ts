@@ -26,6 +26,8 @@ export { useQuickLog } from './features/useQuickLog';
 export { useHealthTimeline } from './features/useHealthTimeline';
 export { useTimelineInsights } from './features/useTimelineInsights';
 export { useHealthExport } from './features/useHealthExport';
+export { useCatPregnancy } from './features/useCatPregnancy';
+export type { DailyLogPayload } from './features/useCatPregnancy';
 
 // UI hooks
 export { useFormValidation } from './ui/useFormValidation';

@@ -3,8 +3,8 @@
  * Aggregates HealthEvent records from all four EventSources:
  *   behavior, diet (meal logs + profile updates + water), pregnancy, heat
  *
- * Pregnancy and heat models do not yet exist in the Prisma schema —
- * those sources are silently skipped (no error entry is added).
+ * The heat model does not yet exist in the Prisma schema — that source is
+ * silently skipped (no error entry is added).
  */
 
 import { prisma } from '../lib/prisma.js';
@@ -290,11 +290,89 @@ class TimelineService {
       }
     }
 
-    // ── 3. Pregnancy source ─────────────────────────────────────────────────
-    // No PregnancyLog model exists in the current Prisma schema.
-    // This source is intentionally skipped until the model is added.
-    // When it is added, implement normalization here using eventType
-    // 'pregnancy_daily_log' / 'pregnancy_started'.
+    // ── 3. Pregnancy source (session starts + Flo-style daily logs) ─────────
+    if (!allowedSources || allowedSources.includes('pregnancy')) {
+      // 3a. Session starts
+      try {
+        const sessions = await prisma.pregnancySession.findMany({
+          where: { catId, createdAt: { gte: startDate, lte: endDate } },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        for (const session of sessions) {
+          const occurredAt = toIso(session.createdAt);
+          if (cursor && occurredAt >= toIso(cursor)) continue;
+
+          const due = session.expectedDeliveryDate.toISOString().split('T')[0];
+          allEvents.push({
+            id: `pregnancy-start-${session.id}`,
+            catId,
+            source: 'pregnancy',
+            eventType: 'pregnancy_started',
+            occurredAt,
+            title: 'Pregnancy tracking started',
+            description: truncate(`Expected delivery around ${due}`, 200),
+            metadata: {
+              sessionId: session.id,
+              matingDate: session.matingDate.toISOString(),
+              expectedDeliveryDate: session.expectedDeliveryDate.toISOString(),
+              status: session.status,
+            },
+          });
+        }
+      } catch (err) {
+        errors.push({
+          source: 'pregnancy',
+          message: `pregnancy_started: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+
+      // 3b. Daily logs
+      try {
+        const pregLogs = await prisma.pregnancyLog.findMany({
+          where: {
+            pregnancySession: { catId },
+            logDate: { gte: startDate, lte: endDate },
+          },
+          orderBy: { logDate: 'desc' },
+        });
+
+        for (const log of pregLogs) {
+          const occurredAt = toIso(log.logDate);
+          if (cursor && occurredAt >= toIso(cursor)) continue;
+
+          const chips = [...log.symptoms, ...log.moodBehavior];
+          const summary = chips.length > 0
+            ? chips.map((c) => c.replace(/_/g, ' ')).join(', ')
+            : 'No symptoms logged';
+
+          allEvents.push({
+            id: log.id,
+            catId,
+            source: 'pregnancy',
+            eventType: 'pregnancy_daily_log',
+            occurredAt,
+            title: truncate(`Week ${log.gestationWeek} daily log`, 80),
+            description: truncate(summary, 200),
+            metadata: {
+              gestationWeek: log.gestationWeek,
+              symptoms: log.symptoms,
+              moodBehavior: log.moodBehavior,
+              appetiteLevel: log.appetiteLevel,
+              energyLevel: log.energyLevel,
+              nestingObserved: log.nestingObserved,
+              weight: log.weight,
+              temp: log.temp,
+            },
+          });
+        }
+      } catch (err) {
+        errors.push({
+          source: 'pregnancy',
+          message: `pregnancy_daily_log: ${err instanceof Error ? err.message : String(err)}`,
+        });
+      }
+    }
 
     // ── 4. Heat source ──────────────────────────────────────────────────────
     // No HeatCycle model exists in the current Prisma schema.

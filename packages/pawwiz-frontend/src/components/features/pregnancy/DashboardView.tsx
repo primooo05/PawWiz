@@ -44,6 +44,8 @@ interface DashboardViewProps {
     elapsedDayForSelected?: number | null;
     hasVetWarningForSelected?: boolean;
     hasNauseaInEarlyWeeksForSelected?: boolean;
+    /** Whether today's pregnancy log has been submitted (from the backend session). */
+    loggedToday?: boolean;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -75,6 +77,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     elapsedDayForSelected = null,
     hasVetWarningForSelected = false,
     hasNauseaInEarlyWeeksForSelected = false,
+    loggedToday = false,
 }) => {
     const [isWeightPickerOpen, setIsWeightPickerOpen] = useState(false);
     const [isEduExpanded, setIsEduExpanded] = useState(true);
@@ -106,14 +109,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         catName
     );
 
-    const avatarDataList = profiles.map((p) => ({
-        id: p.id,
-        name: p.name,
-        src: p.photoUrl || undefined,
-        alt: p.name,
-        isActive: p.id === activeProfileId,
-        isNew: !p.isTracking,
-    }));
+    // Only female cats appear in the pregnancy-tracker switcher — male cats
+    // are not eligible and switching to one would land on a blocked state.
+    const avatarDataList = profiles
+        .filter((p) => p.gender === 'female')
+        .map((p) => ({
+            id: p.id,
+            name: p.name,
+            src: p.photoUrl || undefined,
+            alt: p.name,
+            isActive: p.id === activeProfileId,
+            isNew: !p.isTracking,
+            statusDot: p.id === activeProfileId
+                ? (loggedToday ? 'green' as const : 'amber' as const)
+                : null,
+        }));
 
     const activeSummaryDateStr = selectedDateStr || todayStr;
     const activeSummaryLog = logs[activeSummaryDateStr] || { symptoms: [], moods: [] };

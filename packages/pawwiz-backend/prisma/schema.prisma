@@ -95,6 +95,7 @@ model Cat {
   onboardingSessionId     String?                 @map("onboarding_session_id")
   onboardingSession       OnboardingSession?      @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
   healthTimelineInsights  HealthTimelineInsight[]
+  pregnancySessions       PregnancySession[]
 
   @@index([profileId])
   @@map("cats")
@@ -222,4 +223,73 @@ model BehaviorLog {
   @@index([behaviorType])
   @@index([createdAt])
   @@map("behavior_logs")
+}
+
+// ─── Cat Pregnancy Tracker (Flo-style daily logging) ─────────────────────────
+
+model PregnancySession {
+  id                   String         @id @default(cuid())
+  catId                String         @map("cat_id")
+  matingDate           DateTime       @map("mating_date")
+  status               String         @default("active") @map("status") // 'active' | 'completed'
+  expectedDeliveryDate DateTime       @map("expected_delivery_date")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  cat                  Cat                @relation(fields: [catId], references: [id], onDelete: Cascade)
+  pregnancyLogs        PregnancyLog[]
+  pregnancyInsights    PregnancyInsight[]
+
+  @@index([catId])
+  @@index([catId, status])
+  @@map("pregnancy_sessions")
+}
+
+model PregnancyLog {
+  id                 String   @id @default(cuid())
+  pregnancySessionId String   @map("pregnancy_session_id")
+
+  // ── Flo-style chip fields (primary input) ──────────────────────────────
+  symptoms           String[] @map("symptoms")       // validated against SYMPTOM_CHIPS
+  moodBehavior       String[] @map("mood_behavior")  // validated against MOOD_CHIPS
+  appetiteLevel      String?  @map("appetite_level")  // APPETITE_LEVELS enum (service-validated)
+  energyLevel        String?  @map("energy_level")    // ENERGY_LEVELS enum (service-validated)
+  nestingObserved    Boolean  @default(false) @map("nesting_observed")
+
+  // ── Numeric measurements (optional, secondary) ─────────────────────────
+  weight             Float?   @map("weight")
+  temp               Float?   @map("temp")
+
+  // ── Gestation context (computed server-side, denormalized for history) ──
+  gestationWeek      Int      @map("gestation_week")
+
+  // ── Notes (optional, secondary to chips; sanitized before storage) ─────
+  notes              String?  @map("notes")
+
+  logDate            DateTime @map("log_date")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  pregnancySession   PregnancySession @relation(fields: [pregnancySessionId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancySessionId])
+  @@index([gestationWeek])
+  @@map("pregnancy_logs")
+}
+
+model PregnancyInsight {
+  id                 String   @id @default(cuid())
+  pregnancySessionId String   @map("pregnancy_session_id")
+  insightType        String   @map("insight_type") // 'pattern_detected' | 'milestone_reached' | 'vet_reminder' | 'warning'
+  title              String   @map("title")
+  body               String   @map("body")
+  gestationWeek      Int      @map("gestation_week")
+  isRead             Boolean  @default(false) @map("is_read")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  pregnancySession   PregnancySession @relation(fields: [pregnancySessionId], references: [id], onDelete: Cascade)
+
+  @@index([pregnancySessionId])
+  @@index([pregnancySessionId, isRead])
+  @@map("pregnancy_insights")
 }
