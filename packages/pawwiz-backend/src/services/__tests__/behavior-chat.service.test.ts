@@ -69,7 +69,7 @@ describe('BehaviorChatService — createChat', () => {
 
     const result = await behaviorChatService.createChat('user-1', 'My chat');
 
-    expect(repo.createChat).toHaveBeenCalledWith({ supabaseUserId: 'user-1', title: 'My chat' });
+    expect(repo.createChat).toHaveBeenCalledWith({ supabaseUserId: 'user-1', catId: null, title: 'My chat' });
     expect(repo.addMessage).toHaveBeenCalledWith(
       expect.objectContaining({ chatId: 'new-chat-id', speaker: 'wiz' })
     );
