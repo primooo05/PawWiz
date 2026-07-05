@@ -219,6 +219,33 @@ const API_GROUPS: { group: string; endpoints: Endpoint[] }[] = [
       { method: 'GET', path: '/api/behavior/dashboard/insights', auth: 'jwt', desc: 'Aggregated behavior insights.' },
     ],
   },
+  {
+    group: 'Quick Log',
+    endpoints: [
+      { method: 'POST', path: '/api/quick-log/behavior', auth: 'jwt', desc: 'One-tap behavior log entry (rate-limited 60/5min per user).' },
+    ],
+  },
+  {
+    group: 'Health Timeline',
+    endpoints: [
+      { method: 'GET', path: '/api/timeline/:catId', auth: 'jwt', desc: 'Paginated timeline events for a cat (Zod-validated query).' },
+      { method: 'GET', path: '/api/timeline/:catId/insights', auth: 'jwt', desc: 'AI-generated health insights for a cat.' },
+      { method: 'POST', path: '/api/timeline/:catId/insights/refresh', auth: 'jwt', desc: 'Trigger on-demand insights regeneration.' },
+      { method: 'POST', path: '/api/timeline/:catId/export/pdf', auth: 'jwt', desc: 'Generate and stream a PDF health summary (rate-limited 5/min per user).' },
+    ],
+  },
+  {
+    group: 'Pregnancy Tracker',
+    endpoints: [
+      { method: 'POST', path: '/api/pregnancy/session/start', auth: 'jwt', desc: 'Start a new pregnancy tracking session for a cat.' },
+      { method: 'GET', path: '/api/pregnancy/session/active/:catId', auth: 'jwt', desc: 'Fetch the active pregnancy session for a cat.' },
+      { method: 'PATCH', path: '/api/pregnancy/session/:sessionId/complete', auth: 'jwt', desc: 'Mark a pregnancy session as completed (birth).' },
+      { method: 'POST', path: '/api/pregnancy/log', auth: 'jwt', desc: 'Upsert a Flo-style daily symptom/mood log (rate-limited 60/5min per user).' },
+      { method: 'GET', path: '/api/pregnancy/log/history/:sessionId', auth: 'jwt', desc: 'Fetch all daily logs for a pregnancy session.' },
+      { method: 'GET', path: '/api/pregnancy/insights/:sessionId', auth: 'jwt', desc: 'AI-generated pregnancy insight cards.' },
+      { method: 'PATCH', path: '/api/pregnancy/insights/:insightId/read', auth: 'jwt', desc: 'Mark a pregnancy insight as read.' },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<Endpoint['method'], string> = {
@@ -240,6 +267,8 @@ const TEST_LAYERS = [
   { name: 'Middleware', tool: 'Vitest', target: 'auth, honeypot, rate-limiter, sanitizer, validate', note: 'Isolated req/res behavior + 403/401/415 traps.' },
   { name: 'HTTP / API', tool: 'Supertest', target: 'Route handlers end-to-end', note: 'Status codes, payload shapes, error paths.' },
   { name: 'AI Failover', tool: 'Vitest (mock)', target: 'diet-optimization, behavior-decoder, vision', note: '3-tier Groq→Gemini→heuristic failover chains. Intentional dependency breakage.' },
+  { name: 'Timeline & PDF', tool: 'Vitest', target: 'timeline.service, insight.service, pdf.service', note: 'Event aggregation, insight generation, and serialization integrity.' },
+  { name: 'Pregnancy', tool: 'Vitest', target: 'pregnancy-session, pregnancy-log, pregnancy-insight', note: 'Flo-style logging lifecycle: upserts, gestation math, insight triggers.' },
   { name: 'Frontend', tool: 'Testing Library + fast-check', target: 'Hooks, forms, screens, pure calculations', note: 'Zod validation + accessible error states + diet math properties.' },
 ];
 
@@ -424,6 +453,7 @@ describe('Honeypot Middleware', () => {
             { name: 'profile.service.test.ts', path: 'services/__tests__/profile.service.test.ts', code: '' },
             { name: 'toxicity_cache.service.test.ts', path: 'services/__tests__/toxicity_cache.service.test.ts', code: '' },
             { name: 'vision.service.test.ts', path: 'services/__tests__/vision.service.test.ts', code: '' },
+            { name: 'timeline.service.test.ts', path: 'services/__tests__/timeline.service.test.ts', code: '' },
           ],
         },
         {
@@ -526,6 +556,7 @@ describe('validateStep3Otp', () => {
         { name: 'otp.screen.test.tsx', path: 'frontend/__tests__/otp.screen.test.tsx', code: '' },
         { name: 'useProfilePanel.test.ts', path: 'frontend/__tests__/useProfilePanel.test.ts', code: '' },
         { name: 'validation.test.tsx', path: 'frontend/__tests__/validation.test.tsx', code: '' },
+        { name: 'timeline-serialization.test.ts', path: 'frontend/__tests__/timeline-serialization.test.ts', code: '' },
       ],
     },
   ],
@@ -728,6 +759,24 @@ const HARDENING: { tag: string; title: string; detail: string }[] = [
     title: 'No route auth drift',
     detail:
       'Removed unauthenticated inline /api/diet & /api/behavior endpoints; AI routes now sit behind authMiddleware in the router layer.',
+  },
+  {
+    tag: 'A04',
+    title: 'User-keyed tracking limiter',
+    detail:
+      'Quick-log and pregnancy writes are rate-limited at 60/5min keyed on the JWT sub claim — blocks scripted spam without punishing users behind shared NATs.',
+  },
+  {
+    tag: 'A04',
+    title: 'PDF export throttle',
+    detail:
+      'Timeline PDF generation is capped at 5/min per authenticated user — prevents resource exhaustion on the compute-heavy export path.',
+  },
+  {
+    tag: 'A07',
+    title: 'Session-spam protection',
+    detail:
+      'Onboarding session creation limited to 3/hr per IP — neutralizes mass session creation and email-bombing vectors.',
   },
 ];
 
