@@ -92,10 +92,11 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     const feedingGuide = getFelineFeedingGuideDetails(activeLifeStage, weightInKg, foodPreference);
     const dailyCalories = feedingGuide.dailyCalories;
 
-    // Water target (kitten: approx. 70ml per kg; adult/senior: approx. 50ml per kg)
-    const waterTarget = activeLifeStage === 'kitten'
-        ? Math.round(weightInKg * 70)
-        : Math.round(weightInKg * 50);
+    // Water target: veterinary consensus is 50–60 ml/kg/day for all life stages.
+    // Kittens on wet food get significant moisture from food, so the same 60 ml/kg
+    // baseline applies — food moisture counts toward total intake.
+    // Source: Small Animal Clinical Nutrition 5th ed.; cats.com; Catster (vet-reviewed)
+    const waterTarget = Math.round(weightInKg * 60);
 
     const totalLoggedCalories = loggedMeals.reduce((sum, m) => sum + m.kcal, 0);
     const remainingCalories = Math.max(0, dailyCalories - totalLoggedCalories);
