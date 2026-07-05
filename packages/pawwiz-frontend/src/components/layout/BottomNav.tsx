@@ -1,9 +1,10 @@
 import React from 'react';
-import dietRecoIcon from '../../assets/diet-reco.png';
-import catBehaviorIcon from '../../assets/cat-behavior.png'
-import dashboardIcon from '../../assets/dashboard.png';
-import calendarIcon from '../../assets/calendar.png';
-import settingsIcon from '../../assets/settings.png';
+import { UtensilsCrossed, MessageCircle, LayoutDashboard, CalendarDays, Settings } from 'lucide-react';
+
+// Nav icons are now lucide-react components — zero HTTP requests vs the previous 5 PNG files
+// (each was ~300–416ms in dev, still an avoidable round-trip in production).
+// The CSS filter trick (brightness(0)/invert) that the PNGs relied on is replaced
+// with explicit Tailwind color classes that respect the active/inactive state directly.
 
 export type BottomNavItemKey = 'diet-reco' | 'behavior' | 'dashboard' | 'calendar' | 'settings';
 
@@ -16,14 +17,14 @@ export interface BottomNavProps {
 const NAV_ITEMS: Array<{
     key: BottomNavItemKey;
     label: string;
-    icon: string;
+    Icon: React.FC<{ className?: string }>;
 }> = [
-        { key: 'diet-reco', label: 'Diet', icon: dietRecoIcon },
-        { key: 'behavior', label: 'Cat Behavior', icon: catBehaviorIcon },
-        { key: 'dashboard', label: 'Dashboard', icon: dashboardIcon },
-        { key: 'calendar', label: 'Calendar', icon: calendarIcon },
-        { key: 'settings', label: 'Settings', icon: settingsIcon },
-    ];
+    { key: 'diet-reco',  label: 'Diet',         Icon: UtensilsCrossed },
+    { key: 'behavior',   label: 'Cat Behavior',  Icon: MessageCircle  },
+    { key: 'dashboard',  label: 'Dashboard',     Icon: LayoutDashboard },
+    { key: 'calendar',   label: 'Calendar',      Icon: CalendarDays   },
+    { key: 'settings',   label: 'Settings',      Icon: Settings       },
+];
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeItem = 'dashboard', onItemClick, className = '' }) => {
     return (
@@ -47,13 +48,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem = 'dashboard', onItemC
                                     : 'border-transparent bg-transparent hover:bg-black/10 translate-y-0 shadow-none w-12 sm:w-16 px-0 hover:w-32 hover:sm:w-48 hover:px-3 hover:sm:px-4'
                                 }`}
                         >
-                            <img
-                                src={item.icon}
-                                alt=""
-                                className="h-6 w-6 sm:h-8 sm:w-8 object-contain shrink-0"
-                                style={{
-                                    filter: isActive ? 'brightness(0)' : 'brightness(0) invert(1)',
-                                }}
+                            <item.Icon
+                                className={`h-6 w-6 sm:h-8 sm:w-8 shrink-0 ${isActive ? 'text-slate-900' : 'text-white'}`}
                             />
                             <span
                                 className={`overflow-hidden transition-all duration-300 ease-in-out whitespace-nowrap text-xs sm:text-sm font-extrabold ${isActive

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import BehaviorModal from '../../ui/modals/BehaviorModal';
-import naughtyCat from '../../../assets/Naughty_Cat.svg';
-import catScratch from '../../../assets/Cat_Scratch.svg';
+import NaughtyCat from '../../../assets/Naughty_Cat.svg?react';
+import CatScratch from '../../../assets/Cat_Scratch.svg?react';
 import { useScrollReveal } from '../../../hooks/ui/useScrollReveal';
 
 interface BehaviorSectionProps {
@@ -81,15 +81,13 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
 
           <div className="flex justify-center md:justify-end items-center select-none pointer-events-none pr-2">
             <div className="relative w-32 h-32 md:w-44 md:h-44 overflow-hidden flex items-center justify-center">
-              <img 
-                src={catScratch} 
-                alt="Scratch mark" 
-                className="absolute inset-0 w-full h-full object-contain scratch-mark" 
+              <CatScratch
+                aria-label="Scratch mark"
+                className="absolute inset-0 w-full h-full object-contain scratch-mark"
               />
-              <img 
-                src={naughtyCat} 
-                alt="Naughty cat" 
-                className="absolute inset-0 w-full h-full object-contain naughty-cat" 
+              <NaughtyCat
+                aria-label="Naughty cat"
+                className="absolute inset-0 w-full h-full object-contain naughty-cat"
               />
             </div>
           </div>

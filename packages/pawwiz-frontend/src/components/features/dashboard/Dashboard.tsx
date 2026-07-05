@@ -258,7 +258,7 @@ const Dashboard: React.FC = () => {
         color: TEAL,
         badge: `${Math.min(100, Math.round((waterNow / waterGoal) * 100))}%`,
         badgeBg: '#e6faf8',
-        badgeColor: '#0d7377',
+        badgeColor: '#2ec4b6',
       });
     }
 
@@ -446,7 +446,7 @@ const Dashboard: React.FC = () => {
 
               <div className="bg-white border-4 border-[#1a1a1a] p-5 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#0d7377' }}>
+                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#2ec4b6' }}>
                     Behavior Trend
                   </h3>
                   <div className="flex flex-wrap gap-3">
@@ -517,7 +517,7 @@ const Dashboard: React.FC = () => {
 
             <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
               <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Water Today</p>
-              <p className="text-3xl font-black mt-1" style={{ color: '#0d7377' }}>
+              <p className="text-3xl font-black mt-1" style={{ color: '#2ec4b6' }}>
                 {waterNow}
                 <span className="text-lg"> ml</span>
               </p>
@@ -628,12 +628,12 @@ const Dashboard: React.FC = () => {
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-black uppercase">Status:</span>
                     <span
-                      className={`font-black uppercase px-2 py-1 rounded-lg ${
+                      className={`font-black uppercase px-2 py-1 rounded-lg border border-[#1a1a1a] ${
                         mergedStats.behavior?.healthStatus === 'healthy'
-                          ? 'bg-green-200 text-green-900'
+                          ? 'bg-[#d4f5e9] text-[#0d6b3f]'
                           : mergedStats.behavior?.healthStatus === 'needs_attention'
-                            ? 'bg-yellow-200 text-yellow-900'
-                            : 'bg-red-200 text-red-900'
+                            ? 'bg-[#fff3cc] text-[#7a5800]'
+                            : 'bg-[#fde0e0] text-[#8b1a1a]'
                       }`}
                     >
                       {mergedStats.behavior?.healthStatus?.replace('_', ' ') || 'Unknown'}
@@ -702,18 +702,18 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
               <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: ORANGE }}>
+                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#2ec4b6' }}>
                     Calorie Intake vs RER Target
                   </h3>
                   {perMealTarget !== undefined && (
                     <span className="text-xs font-black text-[#555]">Target ~{perMealTarget} kcal/meal</span>
                   )}
                 </div>
-                <LineChart labels={mealLabels} values={mealKcals} target={perMealTarget} color={ORANGE} height={240} />
+                <LineChart labels={mealLabels} values={mealKcals} target={perMealTarget} color="#2ec4b6" height={240} />
               </div>
 
               <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
-                <h3 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: '#0d7377' }}>
+                <h3 className="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: '#2ec4b6' }}>
                   <Droplet className="w-4 h-4" strokeWidth={3} /> Hydration — Today vs Goal
                 </h3>
                 <StackedBarChart

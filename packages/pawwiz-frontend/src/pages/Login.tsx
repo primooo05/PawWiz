@@ -5,7 +5,7 @@ import Navbar from '../components/layout/Navbar';
 import { useLogin } from '../hooks/auth/useLogin';
 import { useForgotPassword } from '../hooks/auth/useForgotPassword';
 import { TextField } from '../components/ui/forms/TextField';
-import catsLogin from '../assets/Cats_Login.svg';
+import CatsLogin from '../assets/Cats_Login.svg?react';
 
 const LOGIN_LABEL_CLASS = 'italic text-[#a0aec0] text-lg font-bold';
 
@@ -86,11 +86,9 @@ export default function Login() {
           </div>
 
           {/* Illustration — desktop only; mobile version rendered below the form */}
-          <img
-            src={catsLogin}
-            alt="Cats Mascot Login"
+          <CatsLogin
+            aria-hidden="true"
             className="hidden lg:block w-full max-w-lg object-contain select-none pointer-events-none self-start lg:scale-115 lg:-translate-y-10 z-0"
-            draggable={false}
           />
         </div>
 
@@ -249,12 +247,9 @@ export default function Login() {
           )}
 
           {/* Illustration — mobile only, sits below the submit button */}
-          <img
-            src={catsLogin}
-            alt=""
+          <CatsLogin
             aria-hidden="true"
             className="lg:hidden w-full max-w-xs sm:max-w-sm object-contain select-none pointer-events-none mx-auto mt-8"
-            draggable={false}
           />
         </div>
 

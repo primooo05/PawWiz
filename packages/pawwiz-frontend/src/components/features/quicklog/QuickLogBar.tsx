@@ -297,14 +297,14 @@ const QuickLogBar: React.FC<QuickLogBarProps> = ({
         <div>
           <h3
             className="text-[11px] font-black uppercase tracking-widest mb-3"
-            style={{ color: '#0d7377' }}
+            style={{ color: '#2ec4b6' }}
           >
             Water
           </h3>
           <div className="border-3 border-[#1a1a1a] rounded-xl p-4 flex flex-col items-center justify-center h-[calc(100%-1.75rem)]">
             <div className="flex items-center gap-2 mb-3">
               <Droplet className="w-5 h-5" strokeWidth={3} style={{ color: TEAL }} />
-              <span className="text-2xl font-black" style={{ color: '#0d7377' }}>
+              <span className="text-2xl font-black" style={{ color: '#2ec4b6' }}>
                 {waterIntake}
                 <span className="text-sm"> ml</span>
               </span>
