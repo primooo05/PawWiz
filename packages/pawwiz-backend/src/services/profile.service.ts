@@ -129,9 +129,12 @@ class ProfileService {
 
     let profile = await profileRepository.findBySupabaseUserId(supabaseUserId);
 
-    if (profile && email) {
+    // Only query onboarding when the profile still carries the placeholder cat
+    // name ('Aki'). Once the profile has real data this branch is never entered,
+    // eliminating a redundant ILIKE scan on every authenticated request.
+    if (profile && email && profile.catName === 'Aki') {
       const onboardingSession = await onboardingRepository.findLatestByEmail(email);
-      if (onboardingSession && profile.catName === 'Aki' && onboardingSession.catName && onboardingSession.catName !== 'Aki') {
+      if (onboardingSession?.catName && onboardingSession.catName !== 'Aki') {
         profile = await profileRepository.update(profile.id, {
           displayName: onboardingSession.ownerName || profile.displayName,
           catName: onboardingSession.catName,
