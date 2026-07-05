@@ -38,6 +38,33 @@ export async function createBehaviorLog(input: CreateBehaviorLogInput): Promise<
 }
 
 /**
+ * Find the most recent log of a given behavior type for a user since a cutoff.
+ * Used by the Quick Log dedup guard to collapse rapid identical taps into a
+ * single logged event (prevents double-counting in the dashboard analytics).
+ */
+export async function findRecentByTypeForUser(
+  supabaseUserId: string,
+  behaviorType: string,
+  since: Date,
+  catId?: string
+): Promise<BehaviorLog | null> {
+  const whereClause: any = {
+    supabaseUserId,
+    behaviorType,
+    createdAt: { gte: since },
+  };
+
+  if (catId) {
+    whereClause.catId = catId;
+  }
+
+  return prisma.behaviorLog.findFirst({
+    where: whereClause,
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+/**
  * Get all behavior logs for a user's cat
  */
 export async function getBehaviorLogsForUser(

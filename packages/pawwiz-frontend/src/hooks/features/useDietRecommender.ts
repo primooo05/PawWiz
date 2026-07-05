@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { API_BASE } from '../../lib/config.js';
-
+import { calculateKcal, type FoodType, type MealUnit } from '../../lib/foods';
 
 export interface MealLog {
     id: string;
     mealName: string; // 'Breakfast' | 'Lunch' | 'Dinner'
-    foodType?: 'dry' | 'wet' | 'mixed';
+    foodType?: string; // catalog id (see FoodType) or a custom food name
     amount?: number;
-    unit?: 'spoon' | 'cup';
+    unit?: MealUnit;
     kcal: number;
     status: 'pending' | 'logged' | 'skipped';
     timestamp?: string;
@@ -97,22 +97,16 @@ export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult' | 'senior', age:
     }
 };
 
+/**
+ * Calories for a logged meal. Delegates to the shared food catalog, which
+ * computes grams (from the food + amount + unit) × caloric density. Unit
+ * defaults to 'spoon' for backward compatibility with older call sites.
+ */
 export const calculateMealCalories = (
-    foodType: 'dry' | 'wet' | 'mixed',
+    foodType: FoodType,
     amount: number,
-    unit?: 'spoon' | 'cup'
-): number => {
-    if (foodType === 'dry') {
-        return Math.round(amount * 25);
-    } else if (foodType === 'wet') {
-        return Math.round(amount * 15);
-    } else {
-        // Mixed: 50% dry, 50% wet
-        const dryAmount = amount / 2;
-        const wetAmount = amount / 2;
-        return Math.round(dryAmount * 25 + wetAmount * 15);
-    }
-};
+    unit: MealUnit = 'spoon'
+): number => calculateKcal(foodType, amount, unit);
 
 export const useDietRecommender = () => {
     const [profiles, setProfiles] = useState<CatProfile[]>(() => {
@@ -400,6 +394,47 @@ export const useDietRecommender = () => {
             }
         };
 
+        // Edit an existing cat's profile (identity + diet fields) — used by Settings
+        const updateProfile = async (
+            id: string,
+            data: Partial<Omit<CatProfile, 'id' | 'loggedMeals'>>
+        ) => {
+            // Optimistic local update
+            setProfiles(prev => {
+                const updated = prev.map(p => (p.id === id ? { ...p, ...data } : p));
+                saveProfilesToStorage(updated);
+                return updated;
+            });
+            if (id === activeProfileId) {
+                const merged = profiles.find(p => p.id === id);
+                if (merged) syncStatesToSetup({ ...merged, ...data } as CatProfile);
+            }
+
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${id}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify(data),
+                });
+                if (res.ok) {
+                    const serverProf = await res.json();
+                    setProfiles(prev => {
+                        const synced = prev.map(p => (p.id === id ? serverProf : p));
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
+                    if (id === activeProfileId) {
+                        syncStatesToSetup(serverProf);
+                    }
+                    return serverProf;
+                }
+                throw new Error('Failed to update profile on server');
+            } catch (e) {
+                console.error('Failed to update profile', e);
+            }
+        };
+
         const handleStartDietTracking = async () => {
             setIsTracking(true); // Optimistic UI update
 
@@ -493,12 +528,16 @@ export const useDietRecommender = () => {
 
         const addMeal = async (
             mealId: string,
-            foodType: 'dry' | 'wet' | 'mixed',
+            foodType: string,
             amount: number,
-            unit: 'spoon' | 'cup',
-            timestamp?: string
+            unit: MealUnit,
+            timestamp?: string,
+            kcalOverride?: number
         ) => {
-            const kcal = calculateMealCalories(foodType, amount, unit);
+            // Prefer the caller-supplied kcal (the modal already computed it,
+            // including custom foods priced from their label). Fall back to the
+            // catalog calculation for legacy call sites.
+            const kcal = kcalOverride ?? calculateMealCalories(foodType as FoodType, amount, unit);
 
             // Optimistic UI update
             setProfiles(prevProfiles => prevProfiles.map(p => {
@@ -794,6 +833,7 @@ export const useDietRecommender = () => {
             switchProfile,
             createNewProfile,
             deleteProfile,
+            updateProfile,
             catName,
             setCatName,
             gender,

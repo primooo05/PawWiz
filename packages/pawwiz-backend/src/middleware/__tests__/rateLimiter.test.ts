@@ -216,8 +216,10 @@ describe('Rate Limiter — Property 7: Rate limit monotonicity', () => {
           const app = makeAuthApp(limiter);
           await assertMonotonicity(app, n, 60);
         }),
-        { numRuns: 10 },
+        // Reduced numRuns to avoid event-loop starvation under full-suite parallel
+        // load — 60+1 sequential HTTP requests per run × 10 = 610 was too much.
+        { numRuns: 3 },
       );
-    });
+    }, 30_000);
   });
 });

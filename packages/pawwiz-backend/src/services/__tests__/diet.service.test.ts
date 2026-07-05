@@ -145,10 +145,13 @@ describe('Diet Service', () => {
       breed: null,
       marking: null,
       age: undefined,
+      photoUrl: null,
+      updatedAt: expect.any(Date),
+      successDays: [],
       loggedMeals: [
-        { id: '1', mealName: 'Breakfast', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined },
-        { id: '2', mealName: 'Lunch', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined },
-        { id: '3', mealName: 'Dinner', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined },
+        { id: '1', mealName: 'Breakfast', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined, updatedAt: expect.any(Date) },
+        { id: '2', mealName: 'Lunch', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined, updatedAt: expect.any(Date) },
+        { id: '3', mealName: 'Dinner', kcal: 0, status: 'pending', foodType: undefined, amount: undefined, unit: undefined, timestamp: undefined, updatedAt: expect.any(Date) },
       ],
     });
   });

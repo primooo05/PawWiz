@@ -1,5 +1,6 @@
 import React from 'react';
 import catClean2 from '../../../assets/Cat_Clean2.svg';
+import { TextField } from '../../ui/forms/TextField';
 
 interface OnboardingScreenOtpProps {
   active: boolean;
@@ -65,7 +66,7 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
 
       {/* 3. Inputs */}
       <div className="md:col-start-1 md:row-start-2 flex flex-col justify-center items-center md:items-start text-center md:text-left space-y-6 w-full max-w-md">
-        <input
+        <TextField
           type="text"
           inputMode="numeric"
           maxLength={6}
@@ -74,9 +75,10 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
           value={otpCode}
           onChange={(e) => setOtpCode(e.target.value)}
           placeholder="Enter 6-digit code"
-          className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40 text-center text-2xl tracking-[0.3em]"
+          className="text-center text-2xl tracking-[0.3em] placeholder:tracking-normal placeholder:text-lg"
           disabled={isTyping || !active}
           aria-label="OTP verification code"
+          reserveErrorSpace={false}
         />
         <button
           type="button"
@@ -85,7 +87,7 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
           className={`text-sm font-bold transition-colors ${
             cooldownRemaining > 0 || isTyping || !active
               ? 'text-slate-400 cursor-not-allowed opacity-60'
-              : 'text-[#30c290] hover:text-[#1b9e91] cursor-pointer'
+              : 'text-[#2ec4b6] hover:text-[#1b9e91] cursor-pointer'
           } bg-transparent border-none`}
           aria-label={cooldownRemaining > 0 ? `Resend code available in ${cooldownRemaining} seconds` : 'Resend code'}
         >

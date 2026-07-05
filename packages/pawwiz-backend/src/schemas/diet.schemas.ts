@@ -35,9 +35,11 @@ export const updateDietProfileSchema = z.object({
 });
 
 export const updateDietMealLogSchema = z.object({
-  foodType: z.enum(['dry', 'wet', 'mixed']).nullable().optional(),
+  // foodType accepts catalog ids (dry/wet/mixed/chicken/…) OR a free-text custom
+  // food name, so it is validated as a bounded string rather than a fixed enum.
+  foodType: z.string().max(60).nullable().optional(),
   amount: z.number().nonnegative().nullable().optional(),
-  unit: z.enum(['spoon', 'cup']).nullable().optional(),
+  unit: z.enum(['spoon', 'cup', 'gram']).nullable().optional(),
   kcal: z.number().nonnegative().optional(),
   status: z.enum(['pending', 'logged', 'skipped']),
   timestamp: z.string().nullable().optional(),

@@ -22,11 +22,34 @@ export interface CreateMessageData {
 
 export type ChatWithMessages = BehaviorChat & { messages: BehaviorMessage[] };
 
+/** Title used for the hidden, per-user chat that anchors one-tap Quick Log entries. */
+export const QUICK_LOG_CHAT_TITLE = 'Quick Logs';
+
 class BehaviorChatRepository {
-  /** Get all chats for a user (ordered newest first, messages ordered by creation) */
+  /**
+   * Find (or lazily create) the dedicated "Quick Logs" chat for a user.
+   * Quick-logged behaviors need a parent BehaviorChat (BehaviorLog.chatId is
+   * required + cascades), so we anchor them all to a single reserved chat per
+   * user instead of polluting the user's real conversation list.
+   */
+  async findOrCreateQuickLogChat(supabaseUserId: string): Promise<BehaviorChat> {
+    const existing = await prisma.behaviorChat.findFirst({
+      where: { supabaseUserId, title: QUICK_LOG_CHAT_TITLE },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (existing) return existing;
+
+    return prisma.behaviorChat.create({
+      data: { supabaseUserId, title: QUICK_LOG_CHAT_TITLE },
+    });
+  }
+
+  /** Get all chats for a user (ordered newest first, messages ordered by creation).
+   *  Excludes the reserved "Quick Logs" anchor chat — it holds one-tap behavior
+   *  entries, not a real conversation, so it never surfaces in the chat list. */
   async findAllByUser(supabaseUserId: string): Promise<ChatWithMessages[]> {
     return prisma.behaviorChat.findMany({
-      where: { supabaseUserId },
+      where: { supabaseUserId, title: { not: QUICK_LOG_CHAT_TITLE } },
       include: {
         messages: { orderBy: { createdAt: 'asc' } },
       },

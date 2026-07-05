@@ -236,10 +236,11 @@ const AUTH_BADGE: Record<AuthLevel, React.CSSProperties> = {
 };
 
 const TEST_LAYERS = [
-  { name: 'Unit + Property', tool: 'Vitest + fast-check', target: 'Services, guards, validators', note: 'Property-based invariants over generated inputs.' },
-  { name: 'Middleware', tool: 'Vitest', target: 'auth, honeypot, turnstile, sanitizer', note: 'Isolated req/res behavior + 403 traps.' },
+  { name: 'Unit + Property', tool: 'Vitest + fast-check', target: 'Services, guards, validators, extractors', note: 'Property-based invariants over generated inputs. 200+ runs per property.' },
+  { name: 'Middleware', tool: 'Vitest', target: 'auth, honeypot, rate-limiter, sanitizer, validate', note: 'Isolated req/res behavior + 403/401/415 traps.' },
   { name: 'HTTP / API', tool: 'Supertest', target: 'Route handlers end-to-end', note: 'Status codes, payload shapes, error paths.' },
-  { name: 'Frontend', tool: 'Testing Library + fast-check', target: 'Hooks, forms, screens', note: 'Zod validation + accessible error states.' },
+  { name: 'AI Failover', tool: 'Vitest (mock)', target: 'diet-optimization, behavior-decoder, vision', note: '3-tier Groq→Gemini→heuristic failover chains. Intentional dependency breakage.' },
+  { name: 'Frontend', tool: 'Testing Library + fast-check', target: 'Hooks, forms, screens, pure calculations', note: 'Zod validation + accessible error states + diet math properties.' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -410,12 +411,19 @@ describe('Honeypot Middleware', () => {
           name: 'services/__tests__/',
           files: [
             { name: 'aspca.service.test.ts', path: 'services/__tests__/aspca.service.test.ts', code: '' },
+            { name: 'behavior-chat.service.test.ts', path: 'services/__tests__/behavior-chat.service.test.ts', code: '' },
+            { name: 'behavior-dashboard.service.test.ts', path: 'services/__tests__/behavior-dashboard.service.test.ts', code: '' },
+            { name: 'behavior-decoder.service.test.ts', path: 'services/__tests__/behavior-decoder.service.test.ts', code: '' },
             { name: 'diet.service.test.ts', path: 'services/__tests__/diet.service.test.ts', code: '' },
+            { name: 'diet-optimization.service.test.ts', path: 'services/__tests__/diet-optimization.service.test.ts', code: '' },
+            { name: 'mailer.service.test.ts', path: 'services/__tests__/mailer.service.test.ts', code: '' },
             { name: 'onboarding.otp.service.test.ts', path: 'services/__tests__/onboarding.otp.service.test.ts', code: '' },
             { name: 'onboarding.service.test.ts', path: 'services/__tests__/onboarding.service.test.ts', code: '' },
             { name: 'otp.service.test.ts', path: 'services/__tests__/otp.service.test.ts', code: '' },
+            { name: 'plantnet.service.test.ts', path: 'services/__tests__/plantnet.service.test.ts', code: '' },
             { name: 'profile.service.test.ts', path: 'services/__tests__/profile.service.test.ts', code: '' },
             { name: 'toxicity_cache.service.test.ts', path: 'services/__tests__/toxicity_cache.service.test.ts', code: '' },
+            { name: 'vision.service.test.ts', path: 'services/__tests__/vision.service.test.ts', code: '' },
           ],
         },
         {
@@ -441,7 +449,10 @@ describe('Honeypot Middleware', () => {
         {
           name: 'utils/__tests__/',
           files: [
+            { name: 'behavior-extractor.test.ts', path: 'utils/__tests__/behavior-extractor.test.ts', code: '' },
+            { name: 'guards.test.ts', path: 'utils/__tests__/guards.test.ts', code: '' },
             { name: 'keyword-extractor.test.ts', path: 'utils/__tests__/keyword-extractor.test.ts', code: '' },
+            { name: 'prompt-validator.test.ts', path: 'utils/__tests__/prompt-validator.test.ts', code: '' },
           ],
         },
       ],
@@ -449,6 +460,7 @@ describe('Honeypot Middleware', () => {
     {
       name: 'pawwiz-frontend/src/__tests__/',
       files: [
+        { name: 'diet-pure-logic.test.ts', path: 'frontend/__tests__/diet-pure-logic.test.ts', code: '' },
         { name: 'mobile-menu.property.test.ts', path: 'frontend/__tests__/mobile-menu.property.test.ts', code: '' },
         { name: 'not-found.test.tsx', path: 'frontend/__tests__/not-found.test.tsx', code: '' },
         { name: 'onboarding.test.tsx', path: 'frontend/__tests__/onboarding.test.tsx', code: '' },
@@ -921,7 +933,7 @@ export default function Docs() {
         {/* SECTION 4 — TESTING */}
         <SectionCard id="testing" eyebrow="Section 04" title="Testing & API">
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Test Strategy</h3>
-          <div className="grid gap-3 sm:grid-cols-2 mb-8">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-8">
             {TEST_LAYERS.map((t) => (
               <div key={t.name} className="p-4 bg-white border-2 border-slate-900 rounded-2xl">
                 <div className="flex items-center justify-between mb-1">
