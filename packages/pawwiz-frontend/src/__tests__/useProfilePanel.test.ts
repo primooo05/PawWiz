@@ -9,12 +9,15 @@ vi.mock('../lib/supabase.js', () => ({
     auth: {
       getSession: vi.fn(),
       refreshSession: vi.fn(),
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
+      })),
     },
   },
 }));
 
 import { supabase } from '../lib/supabase.js';
-import { useProfilePanel } from '../hooks/features/useProfilePanel.js';
+import { useProfilePanel, invalidateProfileCache } from '../hooks/features/useProfilePanel.js';
 
 // **Validates: Requirements 7.2**
 describe('useProfilePanel', () => {
@@ -31,6 +34,7 @@ describe('useProfilePanel', () => {
     });
 
     afterEach(() => {
+      invalidateProfileCache();
       vi.unstubAllGlobals();
       cleanup();
     });
@@ -57,11 +61,13 @@ describe('useProfilePanel', () => {
             }));
 
             try {
+              invalidateProfileCache();
               const { result } = renderHook(() => useProfilePanel(optimisticData));
               await act(async () => { });
               expect(result.current.profile).toEqual(serverData);
             } finally {
               cleanup();
+              invalidateProfileCache();
               vi.unstubAllGlobals();
             }
           }
@@ -88,11 +94,13 @@ describe('useProfilePanel', () => {
             }));
 
             try {
+              invalidateProfileCache();
               const { result } = renderHook(() => useProfilePanel());
               await act(async () => { });
               expect(result.current.profile).toEqual(serverData);
             } finally {
               cleanup();
+              invalidateProfileCache();
               vi.unstubAllGlobals();
             }
           }
