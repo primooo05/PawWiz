@@ -1,5 +1,6 @@
 import React from 'react';
 import catScreen3 from '../../../assets/Cat_Screen3.svg';
+import { TextField } from '../../ui/forms/TextField';
 
 interface OnboardingScreen3Props {
   active: boolean;
@@ -77,21 +78,22 @@ export const OnboardingScreen3: React.FC<OnboardingScreen3Props> = ({
           );
         })}
 
-        {/* Custom Input */}
-        <div className="pt-2 flex flex-col items-center md:items-start space-y-2 w-full">
-          <label className="text-xs md:text-sm text-slate-400 font-semibold italic pl-1">
-            Too many to count
-          </label>
-          <input
+        {/* Custom Input — branded pill field (matches Login) */}
+        <div className="pt-2 w-full">
+          <TextField
+            id="custom-cats-count"
+            name="customCatsCount"
+            label="Too many to count?"
             type="text"
+            inputMode="numeric"
             value={customCatsCount}
             onChange={(e) => {
               setCustomCatsCount(e.target.value);
               setCatsCount(''); // Clear button selection if typing custom
             }}
             placeholder="Specify e.g., 4"
-            className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
             disabled={isTyping || !active}
+            reserveErrorSpace={false}
           />
         </div>
       </div>

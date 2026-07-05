@@ -107,7 +107,7 @@ export interface DietAdviceCatContext {
   age: number;
   weight: number;
   isKg: boolean;
-  foodPreference: 'dry' | 'wet' | 'mixed';
+  foodPreference: 'dry' | 'wet' | 'mixed' | 'chicken' | 'chicken_thigh' | 'fish' | 'egg' | 'other';
   isSpayedNeutered: boolean;
   dailyCalories: number;
   totalLoggedCalories: number;

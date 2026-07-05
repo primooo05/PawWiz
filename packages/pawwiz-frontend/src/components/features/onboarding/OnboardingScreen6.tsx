@@ -84,7 +84,7 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
           Cat Added!
         </label>
         <div className="flex flex-col gap-4 w-full">
-          <div className="w-full py-4 px-6 rounded-2xl bg-[#30c290] text-white font-extrabold text-lg md:text-xl text-center shadow-[0_4px_0_0_#209f93] select-none">
+          <div className="w-full py-4 px-6 rounded-2xl bg-[#2ec4b6] text-white font-extrabold text-lg md:text-xl text-center shadow-[0_4px_0_0_#209f93] select-none">
             {catName}
           </div>
           {showAddMore && (
@@ -92,7 +92,7 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
               type="button"
               onClick={handleAddOtherBabies}
               disabled={isTyping || !active}
-              className="w-full py-4 px-6 rounded-2xl bg-white hover:bg-slate-50 border-2 border-[#30c290] text-[#30c290] font-extrabold text-lg md:text-xl cursor-pointer transition-all duration-200 shadow-[0_4px_0_0_#30c290] active:shadow-none active:translate-y-[4px] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 rounded-2xl bg-white hover:bg-slate-50 border-2 border-[#2ec4b6] text-[#2ec4b6] font-extrabold text-lg md:text-xl cursor-pointer transition-all duration-200 shadow-[0_4px_0_0_#2ec4b6] active:shadow-none active:translate-y-[4px] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               + Add other babies
             </button>
@@ -100,7 +100,7 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
         </div>
       </div>
 
-      {/* 3. Bottom Actions Overlay */}
+      {/* Bottom Actions Overlay */}
       <div className="w-full md:absolute md:bottom-2 left-0 flex flex-col items-center gap-4 z-0 mt-6 md:mt-0 md:col-span-2">
         <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
           <button

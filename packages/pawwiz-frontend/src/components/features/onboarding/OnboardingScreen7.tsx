@@ -274,7 +274,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
       </div>
 
       {/* 2. Password Fields */}
-      <div className={`md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
+      <div className={`md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex'-col justify-center items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
         <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
@@ -288,7 +288,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter Password"
-            className="w-full px-5 py-3.5 pr-12 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
+            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
             disabled={isTyping || !active}
             autoComplete="new-password"
           />

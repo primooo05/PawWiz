@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getAgeBracketInfo } from '../../../hooks/features/useDietRecommender';
 import type { CatProfile } from '../../../hooks/features/useDietRecommender';
+import type { FoodType } from '../../../lib/foods';
 import { supabase } from '../../../lib/supabase';
 import { API_BASE } from '../../../lib/config.js';
 import AnimatedAvatarGroup from '../../ui/smoothui/animated-avatar-group';
 import { useNavigate } from 'react-router-dom';
+import { Baby, Cat, Crown } from 'lucide-react';
 
 interface DietSetupViewProps {
     catName: string;
@@ -19,8 +21,8 @@ interface DietSetupViewProps {
     setWeight: (w: number) => void;
     isKg: boolean;
     toggleUnit: (toKg: boolean) => void;
-    foodPreference: 'dry' | 'wet' | 'mixed';
-    setFoodPreference: (pref: 'dry' | 'wet' | 'mixed') => void;
+    foodPreference: FoodType;
+    setFoodPreference: (pref: FoodType) => void;
     isSpayedNeutered: boolean;
     setIsSpayedNeutered: (val: boolean) => void;
     onSubmit: (e: React.FormEvent) => void;
@@ -40,6 +42,10 @@ interface DietSetupModalProps extends DietSetupViewProps {
     onClose?: () => void;
 }
 
+interface DietSetupContentProps extends DietSetupViewProps {
+    onClose?: () => void;
+}
+
 export const DietSetupView: React.FC<DietSetupViewProps> = (props) => {
     return <DietSetupContent {...props} />;
 };
@@ -50,39 +56,22 @@ export const DietSetupModal: React.FC<DietSetupModalProps> = ({ isOpen, onClose,
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
             {/* Backdrop */}
-            <div 
+            <div
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                 onClick={onClose}
             />
-            
-            {/* Modal Content */}
-            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                <div className="relative">
-                    {/* Close button */}
-                    {onClose && (
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="absolute -top-2 -right-2 z-10 w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-800 transition-colors shadow-lg"
-                            aria-label="Close"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    )}
-                    
-                    <DietSetupContent {...props} />
-                </div>
+
+            {/* Modal Content: constant width, capped to viewport to avoid horizontal scroll */}
+            <div className="relative w-[640px] max-w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto overflow-x-hidden">
+                <DietSetupContent {...props} onClose={onClose} />
             </div>
         </div>
     );
 };
 
-const DietSetupContent: React.FC<DietSetupViewProps> = ({
+const DietSetupContent: React.FC<DietSetupContentProps> = ({
     catName,
     setCatName,
-    gender,
     setGender,
     lifeStage,
     setLifeStage,
@@ -106,13 +95,13 @@ const DietSetupContent: React.FC<DietSetupViewProps> = ({
     displayName,
     setDisplayName,
     isLoading = false,
+    onClose,
 }) => {
     const navigate = useNavigate();
     const ageBracketDetails = getAgeBracketInfo(lifeStage, age);
 
     const [onboardedCat, setOnboardedCat] = useState<{ name: string; gender: 'male' | 'female'; lifeStage: 'kitten' | 'adult' | 'senior' } | null>(null);
     const [selectedCatId, setSelectedCatId] = useState<string>('onboarding');
-    const [isEditingName, setIsEditingName] = useState<boolean>(false);
 
     // Fetch user profile from backend on mount to auto-fill onboarding details
     useEffect(() => {
@@ -167,21 +156,54 @@ const DietSetupContent: React.FC<DietSetupViewProps> = ({
         };
     }, [setCatName, setGender, setLifeStage]);
 
-    // Sync default age value when changing lifeStage
-    const handleLifeStageChange = (stage: 'kitten' | 'adult' | 'senior') => {
-        setLifeStage(stage);
-        if (stage === 'kitten') {
-            setAge(3); // default 3 months
-        } else if (stage === 'senior') {
-            setAge(10); // default 10 years
-        } else {
-            setAge(3); // default 3 years
+    const weightInKg = isKg ? weight : weight * 0.45359237;
+
+    const getWeightVerdict = (): string => {
+        if (lifeStage === 'kitten') {
+            if (weightInKg < 1.0) return 'Lightweight / Small';
+            if (weightInKg <= 3.0) return 'Average / Ideal';
+            return 'Overweight / Large';
         }
+        if (weightInKg < 3.5) return 'Lightweight / Thin';
+        if (weightInKg <= 5.0) return 'Average / Ideal';
+        return 'Overweight / Obese';
     };
 
+    const getWeightNote = (): string => {
+        if (lifeStage === 'kitten') {
+            if (weightInKg < 1.0) return 'Under 1.0 kg (2.2 lbs) — Often under 2 months old; never restrict calories.';
+            if (weightInKg <= 3.0) return '1.0 – 3.0 kg (2.2 – 6.6 lbs) — Standard growing kitten range.';
+            return 'Over 3.0 kg (6.6 lbs) — Large breed (e.g., Maine Coon) or older kitten.';
+        }
+        if (lifeStage === 'adult') {
+            if (weightInKg < 3.5) return 'Under 3.5 kg (7.7 lbs) — Ribs easily felt; needs a slight calorie increase.';
+            if (weightInKg <= 5.0) return '3.5 – 5.0 kg (7.7 – 11.0 lbs) — Well-proportioned; visible waist behind the ribs.';
+            return 'Over 5.0 kg (11.0 lbs) — No visible waist; fat pad on belly covers ribs.';
+        }
+        if (weightInKg < 3.5) return 'Under 3.5 kg (7.7 lbs) — High risk for muscle wasting; needs calorie boost.';
+        if (weightInKg <= 5.0) return '3.5 – 5.0 kg (7.7 – 11.0 lbs) — Well-proportioned; visible waist behind the ribs.';
+        return 'Over 5.0 kg (11.0 lbs) — No visible waist; fat pad on belly covers ribs.';
+    };
+
+    const lifeStageLabel = lifeStage.charAt(0).toUpperCase() + lifeStage.slice(1);
+    const LifeStageIcon = lifeStage === 'kitten' ? Baby : lifeStage === 'senior' ? Crown : Cat;
+
     return (
-        <div className="max-w-2xl mx-auto mt-8 p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[6px_6px_0_0_rgba(15,23,42,1)] text-center">
-            <div className="text-4xl mb-4"></div>
+        <div className={`relative p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[6px_6px_0_0_rgba(15,23,42,1)] text-center ${onClose ? 'w-full' : 'max-w-2xl mx-auto mt-8'}`}>
+            {/* Close button (inside the card) */}
+            {onClose && (
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="absolute top-4 right-4 z-10 w-9 h-9 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center transition-colors cursor-pointer"
+                    aria-label="Close"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            )}
+
             <h2 className="text-2xl font-black mb-2 text-slate-900 uppercase tracking-tight">Diet Setup</h2>
             <p className="text-slate-500 mb-6 text-xs font-bold uppercase tracking-wider">
                 Establish your cat's profile to calculate portion recommendations.
@@ -260,69 +282,38 @@ const DietSetupContent: React.FC<DietSetupViewProps> = ({
                             </button>
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setSelectedCatId('new');
-                                    setCatName('');
-                                    setGender('male');
-                                    setLifeStage('adult');
-                                }}
-                                className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center ${selectedCatId === 'new' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                                    }`}
+                                onClick={() => navigate('/settings', { state: { openAddCat: true } })}
+                                className="flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer text-center text-slate-500 hover:text-slate-800"
                             >
                                 Set up a new cat
                             </button>
                         </div>
                     </div>
                 )}
-                {/* 1. Cat Name Input */}
+
+                {/* 1. Cat's Name — fixed, read-only. Cat identity is managed via the
+                    "Edit Profile" action in Settings, not here. */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Cat's Name
                     </label>
-                    <div className="relative flex items-center">
-                        <input
-                            type="text"
-                            value={catName}
-                            onChange={(e) => setCatName(e.target.value)}
-                            placeholder="Aki"
-                            required
-                            disabled={!isEditingName}
-                            className={`w-full pr-12 px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl font-bold text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-300 disabled:cursor-not-allowed`}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setIsEditingName(!isEditingName)}
-                            className="absolute right-3.5 p-1 text-slate-400 hover:scale-110 active:scale-95 transition-transform cursor-pointer"
-                            style={{ color: '#2ec4b6' }}
-                            title="Edit Name"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                            </svg>
-                        </button>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl">
+                        <span className="font-black text-sm text-slate-700 truncate">{catName || '—'}</span>
+                        <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-wide">From cat profile</span>
                     </div>
                 </div>
 
-                {/* 2. Gender Selection */}
+                {/* 2. Life Stage — read-only display (sourced from the cat profile) */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
-                        Gender
+                        Life Stage
                     </label>
-                    <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit opacity-60 cursor-not-allowed" title="Gender is set via cat profile and cannot be changed here">
-                        <button
-                            type="button"
-                            disabled
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${gender === 'male' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
-                        >
-                            Male
-                        </button>
-                        <button
-                            type="button"
-                            disabled
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${gender === 'female' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
-                        >
-                            Female
-                        </button>
+                    <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl">
+                        <span className="flex items-center justify-center w-8 h-8 bg-[#2ec4b6] text-white rounded-lg">
+                            <LifeStageIcon className="w-4 h-4" strokeWidth={2.75} />
+                        </span>
+                        <span className="font-black text-sm text-slate-700 capitalize">{lifeStageLabel}</span>
+                        <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-wide">From cat profile</span>
                     </div>
                 </div>
 
@@ -364,74 +355,9 @@ const DietSetupContent: React.FC<DietSetupViewProps> = ({
                         onChange={(e) => setWeight(parseFloat(e.target.value))}
                         className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
                     />
-                    
-                    {/* Weight Assessment Preview */}
-                    <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl animate-fadeIn mt-3">
-                        <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider">Weight Assessment Preview</span>
-                        <p className="text-sm font-black text-teal-900 mt-1">
-                            {lifeStage.charAt(0).toUpperCase() + lifeStage.slice(1)}: {(() => {
-                                const weightInKg = isKg ? weight : weight * 0.45359237;
-                                if (lifeStage === 'kitten') {
-                                    if (weightInKg < 1.0) return 'Lightweight / Small';
-                                    if (weightInKg <= 3.0) return 'Average / Ideal';
-                                    return 'Overweight / Large';
-                                } else {
-                                    if (weightInKg < 3.5) return 'Lightweight / Thin';
-                                    if (weightInKg <= 5.0) return 'Average / Ideal';
-                                    return 'Overweight / Obese';
-                                }
-                            })()}
-                        </p>
-                        <p className="text-[10px] text-teal-700 font-medium mt-1 leading-relaxed">
-                            {(() => {
-                                const weightInKg = isKg ? weight : weight * 0.45359237;
-                                if (lifeStage === 'kitten') {
-                                    if (weightInKg < 1.0) return 'Under 1.0 kg (2.2 lbs) — Often under 2 months old; never restrict calories.';
-                                    if (weightInKg <= 3.0) return '1.0 – 3.0 kg (2.2 – 6.6 lbs) — Standard growing kitten range.';
-                                    return 'Over 3.0 kg (6.6 lbs) — Large breed (e.g., Maine Coon) or older kitten.';
-                                } else if (lifeStage === 'adult') {
-                                    if (weightInKg < 3.5) return 'Under 3.5 kg (7.7 lbs) — Ribs easily felt; needs a slight calorie increase.';
-                                    if (weightInKg <= 5.0) return '3.5 – 5.0 kg (7.7 – 11.0 lbs) — Well-proportioned; visible waist behind the ribs.';
-                                    return 'Over 5.0 kg (11.0 lbs) — No visible waist; fat pad on belly covers ribs.';
-                                } else {
-                                    if (weightInKg < 3.5) return 'Under 3.5 kg (7.7 lbs) — High risk for muscle wasting; needs calorie boost.';
-                                    if (weightInKg <= 5.0) return '3.5 – 5.0 kg (7.7 – 11.0 lbs) — Well-proportioned; visible waist behind the ribs.';
-                                    return 'Over 5.0 kg (11.0 lbs) — No visible waist; fat pad on belly covers ribs.';
-                                }
-                            })()}
-                        </p>
-                    </div>
-                </div>                 {/* 4. Life Stage Selection */}
-                <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
-                        Life Stage
-                    </label>
-                    <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit opacity-60 cursor-not-allowed" title="Life stage is set via cat profile and cannot be changed here">
-                        <button
-                            type="button"
-                            disabled
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${lifeStage === 'kitten' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
-                        >
-                            Kitten
-                        </button>
-                        <button
-                            type="button"
-                            disabled
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${lifeStage === 'adult' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
-                        >
-                            Adult
-                        </button>
-                        <button
-                            type="button"
-                            disabled
-                            className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors ${lifeStage === 'senior' ? 'bg-[#2ec4b6] text-white shadow-sm' : 'text-slate-400'}`}
-                        >
-                            Senior
-                        </button>
-                    </div>
                 </div>
 
-                {/* 5. Age Slider */}
+                {/* 4. Age Slider */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
                         <span>Age:</span>
@@ -450,38 +376,61 @@ const DietSetupContent: React.FC<DietSetupViewProps> = ({
                     />
                 </div>
 
-                {/* Age Bracket Preview */}
-                <div className="col-span-1 md:col-span-2 p-4 bg-teal-50/70 border border-teal-100 rounded-2xl animate-fadeIn">
-                    <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider">Feeding Guide Preview</span>
-                    <p className="text-sm font-black text-teal-900 mt-1">{ageBracketDetails.bracket}</p>
-                    <p className="text-[10px] text-teal-700 font-medium mt-1 leading-relaxed">
-                        {ageBracketDetails.recommendedFood} — {ageBracketDetails.frequency}
-                    </p>
+                {/* Preview row: Weight Assessment (left) + Feeding Guide (right) */}
+                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Weight Assessment Preview */}
+                    <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl animate-fadeIn">
+                        <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider">Weight Assessment Preview</span>
+                        <p className="text-sm font-black text-teal-900 mt-1">
+                            {lifeStageLabel}: {getWeightVerdict()}
+                        </p>
+                        <p className="text-[10px] text-teal-700 font-medium mt-1 leading-relaxed">
+                            {getWeightNote()}
+                        </p>
+                    </div>
+
+                    {/* Feeding Guide Preview */}
+                    <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl animate-fadeIn">
+                        <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider">Feeding Guide Preview</span>
+                        <p className="text-sm font-black text-teal-900 mt-1">{ageBracketDetails.bracket}</p>
+                        <p className="text-[10px] text-teal-700 font-medium mt-1 leading-relaxed">
+                            {ageBracketDetails.recommendedFood} — {ageBracketDetails.frequency}
+                        </p>
+                    </div>
                 </div>
 
-                {/* 6. Food Preference */}
-                <div>
+                {/* 5. Food Preference */}
+                <div className="col-span-1 md:col-span-2">
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Food Type Preference
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                        {(['dry', 'wet', 'mixed'] as const).map((pref) => (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {([
+                            { id: 'dry',           label: 'Dry Kibble' },
+                            { id: 'wet',           label: 'Wet Food' },
+                            { id: 'mixed',         label: 'Mixed' },
+                            { id: 'chicken',       label: 'Chicken Breast' },
+                            { id: 'chicken_thigh', label: 'Chicken Thigh' },
+                            { id: 'fish',          label: 'Fish / Salmon' },
+                            { id: 'egg',           label: 'Cooked Egg' },
+                            { id: 'other',         label: 'Other / Custom' },
+                        ] as const).map(({ id, label }) => (
                             <button
-                                key={pref}
+                                key={id}
                                 type="button"
-                                onClick={() => setFoodPreference(pref)}
-                                className={`py-3 rounded-xl border-2 font-bold text-xs capitalize transition-all cursor-pointer ${foodPreference === pref
+                                onClick={() => setFoodPreference(id)}
+                                className={`py-3 px-2 rounded-xl border-2 font-bold text-xs text-center transition-all cursor-pointer ${foodPreference === id
                                     ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]'
                                     : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-slate-200'
                                     }`}
                             >
-                                {pref}
+                                {label}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* 7. Spayed/Neutered */}
+                {/* 6. Spayed/Neutered */}
                 <div>
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Spayed or Neutered?

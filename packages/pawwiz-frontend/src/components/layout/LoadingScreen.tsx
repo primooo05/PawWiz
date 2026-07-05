@@ -17,46 +17,29 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     const [progress, setProgress] = useState(0);
 
     useEffect(() => {
-        const startTime = Date.now();
-        const intervalTime = 50; // Update progress every 50ms
+        const intervalTime = 30; // Update progress every 30ms
+        const totalSteps = durationMs / intervalTime;
+        const increment = 100 / totalSteps;
         let timeoutId: ReturnType<typeof setTimeout>;
-        let completed = false;
-
-        const complete = () => {
-            if (completed) return;
-            completed = true;
-            clearInterval(timer);
-            setProgress(100);
-            if (onComplete) {
-                // Small delay to let user see 100% progress
-                timeoutId = setTimeout(onComplete, 200);
-            }
-        };
 
         const timer = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const next = Math.min((elapsed / durationMs) * 100, 100);
-            setProgress(next);
-            if (next >= 100) {
-                complete();
-            }
-        }, intervalTime);
-
-        // If the tab was hidden and is now visible again, catch up immediately
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                const elapsed = Date.now() - startTime;
-                if (elapsed >= durationMs) {
-                    complete();
+            setProgress((prev) => {
+                const next = prev + increment;
+                if (next >= 100) {
+                    clearInterval(timer);
+                    if (onComplete) {
+                        // Small delay to let user see 100% progress
+                        timeoutId = setTimeout(onComplete, 200);
+                    }
+                    return 100;
                 }
-            }
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+                return next;
+            });
+        }, intervalTime);
 
         return () => {
             clearInterval(timer);
             if (timeoutId) clearTimeout(timeoutId);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [durationMs, onComplete]);
 
