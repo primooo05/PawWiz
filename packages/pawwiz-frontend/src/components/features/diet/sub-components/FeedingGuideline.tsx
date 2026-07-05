@@ -77,13 +77,6 @@ export const FeedingGuideline: React.FC<FeedingGuidelineProps> = ({
                         <span className="font-black text-slate-900 leading-none">{guide.frequency}</span>
                     </div>
                 </div>
-                <div className="flex items-start gap-2.5 p-2.5 bg-amber-50/50 border border-amber-100 rounded-xl">
-                    <span className="text-sm mt-0.5">💡</span>
-                    <div>
-                        <strong className="text-amber-900 font-extrabold block text-[9px] uppercase tracking-wider leading-none mb-1">Measurement Tip</strong>
-                        <span className="font-black text-slate-900 leading-snug">0.25 spoon = ~1 tsp &bull; 0.50 spoon = ~1.5 tsp &bull; 0.75 spoon = ~2 tsp</span>
-                    </div>
-                </div>
             </div>
 
             {/* Info Modal: full feeding + hydration guideline explainer */}
@@ -123,7 +116,6 @@ export const FeedingGuideline: React.FC<FeedingGuidelineProps> = ({
                                         <ul className="list-disc list-inside space-y-1 font-bold leading-relaxed">
                                             <li>Daily portions are calculated from your cat's weight, life stage, and food preference.</li>
                                             <li>Split total daily food across the recommended feeding frequency rather than one large meal.</li>
-                                            <li>0.25 spoon &asymp; 1 tsp &bull; 0.50 spoon &asymp; 1.5 tsp &bull; 0.75 spoon &asymp; 2 tsp.</li>
                                             <li>Re-check portions whenever weight, age bracket, or food type changes.</li>
                                         </ul>
                                     </div>

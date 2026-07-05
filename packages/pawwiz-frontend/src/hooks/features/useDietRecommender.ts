@@ -400,6 +400,47 @@ export const useDietRecommender = () => {
             }
         };
 
+        const updateProfile = async (id: string, updates: Partial<Omit<CatProfile, 'id' | 'loggedMeals'>>) => {
+            // Optimistic UI update
+            setProfiles(prevProfiles => {
+                const updated = prevProfiles.map(p => p.id === id ? { ...p, ...updates } : p);
+                saveProfilesToStorage(updated);
+                return updated;
+            });
+
+            // If the updated profile is the active one, sync states
+            if (id === activeProfileId) {
+                const currentActive = profiles.find(p => p.id === id);
+                if (currentActive) {
+                    syncStatesToSetup({ ...currentActive, ...updates });
+                }
+            }
+
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${id}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify(updates),
+                });
+                if (res.ok) {
+                    const serverProf = await res.json();
+                    setProfiles(prev => {
+                        const synced = prev.map(p => p.id === id ? serverProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
+                    if (id === activeProfileId) {
+                        syncStatesToSetup(serverProf);
+                    }
+                    return serverProf;
+                }
+            } catch (e) {
+                console.error('Failed to update profile on backend', e);
+            }
+        };
+
+
         const handleStartDietTracking = async () => {
             setIsTracking(true); // Optimistic UI update
 
@@ -794,6 +835,7 @@ export const useDietRecommender = () => {
             switchProfile,
             createNewProfile,
             deleteProfile,
+            updateProfile,
             catName,
             setCatName,
             gender,

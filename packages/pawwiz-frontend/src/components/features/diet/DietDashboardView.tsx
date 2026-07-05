@@ -3,14 +3,14 @@ import { getFelineFeedingGuideDetails } from '../../../hooks/features/useDietRec
 import type { AgeBracketDetails, MealLog, CatProfile } from '../../../hooks/features/useDietRecommender';
 import ConfirmationDialog from '../../ui/modals/ConfirmationDialog';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, CheckCircle2, Calendar, Award } from 'lucide-react';
 
-// Import subcomponents
 import ProfileCard from './sub-components/ProfileCard';
 import MealsTracker from './sub-components/MealsTracker';
-import MonthCalendar from './sub-components/MonthCalendar';
+import WeekCalendar from './sub-components/WeekCalendar';
 import FeedingGuideline from './sub-components/FeedingGuideline';
 import CalorieTracker from './sub-components/CalorieTracker';
+import WaterTracker from './sub-components/WaterTracker';
 import MealLogModal from './sub-components/MealLogModal';
 import DietAdvisorModal from './sub-components/DietAdvisorModal';
 import AnimatedAvatarGroup from '../../ui/smoothui/animated-avatar-group';
@@ -92,11 +92,10 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     const feedingGuide = getFelineFeedingGuideDetails(activeLifeStage, weightInKg, foodPreference);
     const dailyCalories = feedingGuide.dailyCalories;
 
-    // Water target: veterinary consensus is 50–60 ml/kg/day for all life stages.
-    // Kittens on wet food get significant moisture from food, so the same 60 ml/kg
-    // baseline applies — food moisture counts toward total intake.
-    // Source: Small Animal Clinical Nutrition 5th ed.; cats.com; Catster (vet-reviewed)
-    const waterTarget = Math.round(weightInKg * 60);
+    // Water target: kitten: ~70ml per kg; adult/senior: ~50ml per kg
+    const waterTarget = activeLifeStage === 'kitten'
+        ? Math.round(weightInKg * 70)
+        : Math.round(weightInKg * 50);
 
     const totalLoggedCalories = loggedMeals.reduce((sum, m) => sum + m.kcal, 0);
     const remainingCalories = Math.max(0, dailyCalories - totalLoggedCalories);
@@ -224,9 +223,23 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 
     const mealsLoggedToday = loggedMeals.filter(m => m.status === 'logged').length;
     const mealsPendingToday = loggedMeals.filter(m => m.status === 'pending').length;
+    const mealsSkippedToday = loggedMeals.filter(m => m.status === 'skipped').length;
+
+    const successDaysList = React.useMemo(() => {
+        const localDays = (() => {
+            try {
+                return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
+            } catch (e) {
+                return [];
+            }
+        })();
+        const currentProfile = profiles.find(p => p.id === activeProfileId);
+        const dbDays = currentProfile?.successDays || [];
+        return Array.from(new Set([...localDays, ...dbDays]));
+    }, [activeProfileId, profiles, loggedMeals]);
 
     return (
-        <div className="flex flex-col gap-8 w-full flex-grow text-slate-800">
+        <div className="flex flex-col gap-8 w-full flex-grow text-slate-800 max-w-7xl mx-auto pb-28 px-4 sm:px-6 lg:px-8">
             {/* Header Greeting Row */}
             <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -244,43 +257,49 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                 </div>
             </div>
 
-            {/* Layout Grid — three independent columns grouped by relevance:
-                Col 1 = identity + reference (Profile, Feeding Guideline) — stacked in
-                        its own flex column so it never shifts when Col 2 resizes.
-                Col 2 = today's activity (Meals, Calorie summary underneath)
-                Col 3 = the month calendar, spanning the full column height,
-                        with every week besides the current one dimmed out */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr_1.1fr] gap-8 items-start flex-grow">
-                {/* Column 1: Profile + Feeding Guideline, self-contained so its
-                    position is fixed regardless of how tall the Meals column gets. */}
-                <div className="flex flex-col gap-4">
-                    <motion.div
-                        key={`profile-${activeProfileId}`}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: "easeOut" }}
-                    >
-                        <ProfileCard
-                            catName={catName}
-                            displayName={displayName}
-                            gender={gender}
-                            weight={weight}
-                            isKg={isKg}
-                            foodPreference={foodPreference}
-                            isSpayedNeutered={isSpayedNeutered}
-                            activeLifeStage={activeLifeStage}
-                            lifeStage={lifeStage}
-                            age={age}
-                            onEditProfile={() => setIsConfirmResetOpen(true)}
-                            photoUrl={activePhotoUrl}
-                        />
-                    </motion.div>
+            {/* Week Calendar (Full Width at Top) */}
+            <motion.div
+                key={`calendar-${activeProfileId}`}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.02 }}
+                className="w-full"
+            >
+                <WeekCalendar successDays={successDaysList} />
+            </motion.div>
 
+            {/* ROW 1: Cat Profile card (left, ~35%) | Feeding Guideline + Calorie Tracker (right, ~65%) */}
+            <div className="grid grid-cols-1 lg:grid-cols-[3.5fr_6.5fr] gap-8 items-stretch w-full">
+                <motion.div
+                    key={`profile-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="flex flex-col"
+                >
+                    <ProfileCard
+                        catName={catName}
+                        displayName={displayName}
+                        gender={gender}
+                        weight={weight}
+                        isKg={isKg}
+                        foodPreference={foodPreference}
+                        isSpayedNeutered={isSpayedNeutered}
+                        activeLifeStage={activeLifeStage}
+                        lifeStage={lifeStage}
+                        age={age}
+                        onEditProfile={() => setIsConfirmResetOpen(true)}
+                        photoUrl={activePhotoUrl}
+                    />
+                </motion.div>
+
+                <div className="flex flex-col gap-6 justify-between h-full">
                     <motion.div
                         key={`guideline-${activeProfileId}`}
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+                        className="flex-grow"
                     >
                         <FeedingGuideline
                             lifeStage={activeLifeStage}
@@ -289,61 +308,92 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                             foodPreference={foodPreference}
                         />
                     </motion.div>
-                </div>
-
-                {/* Column 2: Meals tracker. */}
-                <div className="flex flex-col gap-8">
-                    <motion.div
-                        key={`tracker-${activeProfileId}`}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
-                    >
-                        <MealsTracker
-                            loggedMeals={loggedMeals}
-                            waterIntake={waterIntake}
-                            waterTarget={waterTarget}
-                            addWater={addWater}
-                            resetWater={resetWater}
-                            onAddMeal={handleAddMealClick}
-                            onEditMeal={handleEditMealClick}
-                            onUndoSkip={(mealId) => resetMealLog(mealId)}
-                            catName={catName}
-                        />
-                    </motion.div>
-                </div>
-
-                {/* Column 3: Month calendar + Calorie summary. */}
-                <div className="flex flex-col gap-8">
-                    <motion.div
-                        key={`calendar-${activeProfileId}`}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.2 }}
-                    >
-                        <MonthCalendar successDays={React.useMemo(() => {
-                            const localDays = (() => {
-                                try {
-                                    return JSON.parse(localStorage.getItem(`diet_success_days_${activeProfileId}`) || '[]');
-                                } catch (e) {
-                                    return [];
-                                }
-                            })();
-                            const currentProfile = profiles.find(p => p.id === activeProfileId);
-                            const dbDays = currentProfile?.successDays || [];
-                            return Array.from(new Set([...localDays, ...dbDays]));
-                        }, [activeProfileId, profiles, loggedMeals])} />
-                    </motion.div>
 
                     <motion.div
                         key={`calorie-${activeProfileId}`}
                         initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.15 }}
+                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
                     >
                         <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
                     </motion.div>
                 </div>
+            </div>
+
+            {/* ROW 2: MEALS SECTION — keep stacked vertical layout */}
+            <div className="w-full max-w-3xl">
+                <motion.div
+                    key={`tracker-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.15 }}
+                >
+                    <MealsTracker
+                        loggedMeals={loggedMeals}
+                        onAddMeal={handleAddMealClick}
+                        onEditMeal={handleEditMealClick}
+                        onUndoSkip={(mealId) => resetMealLog(mealId)}
+                        catName={catName}
+                    />
+                </motion.div>
+            </div>
+
+            {/* ROW 3: Water intake bar (full width) */}
+            <div className="w-full">
+                <motion.div
+                    key={`water-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.2 }}
+                >
+                    <WaterTracker
+                        waterIntake={waterIntake}
+                        waterTarget={waterTarget}
+                        addWater={addWater}
+                        resetWater={resetWater}
+                        catName={catName}
+                    />
+                </motion.div>
+            </div>
+
+            {/* BOTTOM / ROW 4: Summary */}
+            <div className="w-full mt-4">
+                {/* Meals Summary Card */}
+                <motion.div
+                    key={`summary-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.25 }}
+                    className="p-6 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] w-full"
+                >
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="w-1.5 h-1.5 bg-[#ffb870] rotate-45" />
+                            <span className="text-[10px] font-black tracking-widest text-[#ffb870] uppercase">Today's Summary</span>
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-4">
+                            Diet Overview
+                        </h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                                <div className="flex items-center gap-2.5">
+                                    <CheckCircle2 className="w-5 h-5 text-teal-500" />
+                                    <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Logged Meals</span>
+                                </div>
+                                <span className="text-sm font-black text-slate-900">{mealsLoggedToday} / {loggedMeals.length}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                                <div className="flex items-center gap-2.5">
+                                    <Calendar className="w-5 h-5 text-blue-500" />
+                                    <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Remaining Meals</span>
+                                </div>
+                                <span className="text-sm font-black text-slate-900">{mealsPendingToday} pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
             </div>
 
             {/* Dialogs */}
@@ -404,7 +454,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                 loggedMeals={loggedMeals}
             />
 
-            {/* Floating Ask AI button — bottom-right, opens the Diet Advisor chat modal */}
+            {/* Floating Ask AI button */}
             <button
                 type="button"
                 onClick={() => setIsAskAiOpen(true)}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Cat, Download, Loader2 } from 'lucide-react';
-import pawWizLogo from '../../../../assets/PawWiz_Logo.png';
+import { Cat, Download, Loader2, RefreshCw } from 'lucide-react';
+import pawWizTextLogo from '../../../../assets/PawWiz_Text_logo.png';
 
 interface ProfileCardProps {
     catName: string;
@@ -23,45 +23,61 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     gender,
     weight,
     isKg,
-    foodPreference,
-    isSpayedNeutered,
     activeLifeStage,
     lifeStage,
     age,
     onEditProfile,
     photoUrl,
 }) => {
-    const cardRef = useRef<HTMLDivElement>(null);
+    const frontRef = useRef<HTMLDivElement>(null);
+    const backRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = useState(false);
     const [downloadError, setDownloadError] = useState(false);
     const [isPhotoLoading, setIsPhotoLoading] = useState(!!photoUrl);
     const [hasPhotoError, setHasPhotoError] = useState(false);
+    const [isFlipped, setIsFlipped] = useState(false);
 
-    // Reset loading/error state whenever the photo URL changes (e.g. switching cats,
-    // or a fresh signed URL coming back from Supabase Storage after an upload).
     useEffect(() => {
         setIsPhotoLoading(!!photoUrl);
         setHasPhotoError(false);
     }, [photoUrl]);
 
-    const ageLabel = `${age} ${lifeStage === 'kitten' ? (age === 1 ? 'MO' : 'MOS') : (age === 1 ? 'YR' : 'YRS')}`;
-    const foodLabel = foodPreference === 'dry' ? 'KIBBLES' : foodPreference === 'wet' ? 'WET FOOD' : 'MIXED';
+    const ageLabel = `${age} ${lifeStage === 'kitten' ? (age === 1 ? 'Month' : 'Months') : (age === 1 ? 'Year' : 'Years')}`;
+    const weightLabel = `${weight.toFixed(1)} ${isKg ? 'kg' : 'lbs'}`;
 
-    const handleDownload = async () => {
-        if (!cardRef.current) return;
+    const handleDownload = async (e: React.MouseEvent) => {
+        e.stopPropagation(); // Avoid triggering card flip on button click
+        if (!frontRef.current || !backRef.current) return;
         setIsDownloading(true);
         setDownloadError(false);
         try {
             const { toPng } = await import('html-to-image');
-            const dataUrl = await toPng(cardRef.current, {
+
+            // 1. Download Front View
+            const frontDataUrl = await toPng(frontRef.current, {
                 cacheBust: true,
                 pixelRatio: 2,
-                backgroundColor: '#F7F1E1',
+                backgroundColor: '#ffffff',
             });
-            const link = document.createElement('a');
-            link.download = `${catName || 'cat'}-profile-card.png`;
-            link.href = dataUrl;
-            link.click();
+            const linkFront = document.createElement('a');
+            linkFront.download = `${catName || 'cat'}-profile-front.png`;
+            linkFront.href = frontDataUrl;
+            linkFront.click();
+
+            // Tiny delay to guarantee both downloads execute smoothly in browsers
+            await new Promise((resolve) => setTimeout(resolve, 250));
+
+            // 2. Download Back View
+            const backDataUrl = await toPng(backRef.current, {
+                cacheBust: true,
+                pixelRatio: 2,
+                backgroundColor: '#ffffff',
+            });
+            const linkBack = document.createElement('a');
+            linkBack.download = `${catName || 'cat'}-profile-back.png`;
+            linkBack.href = backDataUrl;
+            linkBack.click();
+
         } catch (err) {
             console.error('Failed to generate profile card image', err);
             setDownloadError(true);
@@ -71,17 +87,59 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
     };
 
     return (
-        <div className="w-full flex flex-col">
+        <div className="w-full h-full flex flex-col">
+            {/* Styles for flipping card */}
+            <style>{`
+                .flip-card {
+                    perspective: 1000px;
+                }
+                .flip-card-inner {
+                    position: relative;
+                    width: 100%;
+                    height: 100%;
+                    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                    transform-style: preserve-3d;
+                }
+                .flip-card.flipped .flip-card-inner {
+                    transform: rotateY(180deg);
+                }
+                .flip-card-front, .flip-card-back {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+                    border-radius: 1.5rem;
+                }
+                .flip-card-back {
+                    transform: rotateY(180deg);
+                }
+            `}</style>
+
             {/* Action bar — excluded from the downloaded image */}
             <div className="w-full flex justify-between items-center mb-4">
                 <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Cat Profile</h2>
                 <div className="flex items-center gap-3">
                     <button
                         type="button"
-                        onClick={onEditProfile}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEditProfile();
+                        }}
                         className="text-xs font-black text-[#30c290] hover:text-[#20a396] cursor-pointer active:scale-95 transition-transform"
                     >
                         Edit Profile
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsFlipped(prev => !prev);
+                        }}
+                        className="flex items-center gap-1 text-xs font-black text-slate-500 hover:text-slate-800 cursor-pointer active:scale-95 transition-transform"
+                    >
+                        <RefreshCw size={13} />
+                        Flip Card
                     </button>
                     <button
                         type="button"
@@ -106,124 +164,108 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 </p>
             )}
 
-            {/* Capture zone — ID-card style, exported as PNG */}
+            {/* Flippable Container */}
             <div
-                ref={cardRef}
-                className="relative w-full bg-[#F7F1E1] border-2 border-slate-900 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,1)] p-5 overflow-hidden"
+                className={`flip-card w-full cursor-pointer ${isFlipped ? 'flipped' : ''}`}
+                onClick={() => setIsFlipped(prev => !prev)}
+                style={{ height: '240px' }}
             >
-                {/* faint background pattern for texture */}
-                <div
-                    className="absolute inset-0 opacity-[0.05] pointer-events-none"
-                    style={{
-                        backgroundImage:
-                            'repeating-linear-gradient(45deg, #0f172a 0, #0f172a 1px, transparent 1px, transparent 14px)',
-                    }}
-                />
+                <div className="flip-card-inner w-full h-full relative">
 
-                {/* Header bar */}
-                <div className="relative flex items-baseline justify-between pb-2 mb-3 border-b-2 border-[#30c290]">
-                    <span className="text-lg font-black text-[#30c290] uppercase tracking-wide">PawWiz</span>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest underline">
-                        Pet License
-                    </span>
-                </div>
+                    {/* FRONT VIEW */}
+                    <div ref={frontRef} className="flip-card-front absolute inset-0 bg-white border-2 border-slate-900 shadow-[4px_4px_0_0_rgba(15,23,42,1)] overflow-hidden flex flex-col">
+                        {/* Header */}
+                        <div className="px-5 py-2.5 border-b-2 border-slate-900 flex items-center">
+                            <img src={pawWizTextLogo} alt="Paw Wiz" className="h-6 object-contain" />
+                        </div>
 
-                {/* Main content: photo + details */}
-                <div className="relative flex gap-4">
-                    {/* Photo box */}
-                    <div className="relative w-24 h-28 sm:w-28 sm:h-32 flex-shrink-0 bg-[#30c290] border-2 border-slate-900 rounded-md flex items-center justify-center overflow-hidden">
-                        {photoUrl && !hasPhotoError ? (
-                            <>
-                                <img
-                                    src={photoUrl}
-                                    alt={catName}
-                                    crossOrigin="anonymous"
-                                    onLoad={() => setIsPhotoLoading(false)}
-                                    onError={() => {
-                                        setIsPhotoLoading(false);
-                                        setHasPhotoError(true);
-                                    }}
-                                    className={`w-full h-full object-cover transition-opacity duration-300 ${
-                                        isPhotoLoading ? 'opacity-0' : 'opacity-100'
-                                    }`}
-                                />
-                                {isPhotoLoading && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-[#30c290]">
-                                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-                                        <Loader2 size={22} className="text-white/80 animate-spin" />
+                        {/* Content Body: Flexbox for left text and right image */}
+                        <div className="flex-grow flex items-center justify-between px-5 py-2.5 gap-4 relative">
+                            <div className="flex flex-col gap-2">
+                                {[
+                                    { label: 'Cat name:', value: catName },
+                                    { label: 'Sex:', value: gender },
+                                    { label: 'Age:', value: ageLabel },
+                                    { label: 'Weight:', value: weightLabel },
+                                    { label: 'Stage:', value: activeLifeStage },
+                                ].map((item) => (
+                                    <div key={item.label} className="grid grid-cols-[90px_1fr] gap-2 text-xs font-bold uppercase">
+                                        <span className="text-[#30c290] font-black">{item.label}</span>
+                                        <span className="text-slate-900 font-extrabold">{item.value}</span>
                                     </div>
+                                ))}
+                            </div>
+
+                            {/* Right Image Container */}
+                            <div className="w-32 h-32 shrink-0 bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-[3px_3px_0_0_rgba(15,23,42,1)] relative z-10">
+                                {photoUrl && !hasPhotoError ? (
+                                    <>
+                                        <img
+                                            src={photoUrl}
+                                            alt={catName}
+                                            crossOrigin="anonymous"
+                                            onLoad={() => setIsPhotoLoading(false)}
+                                            onError={() => {
+                                                setIsPhotoLoading(false);
+                                                setHasPhotoError(true);
+                                            }}
+                                            className={`w-full h-full object-cover transition-opacity duration-300 ${isPhotoLoading ? 'opacity-0' : 'opacity-100'
+                                                }`}
+                                        />
+                                        {isPhotoLoading && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-[#30c290]">
+                                                <Loader2 size={20} className="text-white animate-spin" />
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <Cat size={44} className="text-slate-400 stroke-[1.5]" />
                                 )}
-                            </>
-                        ) : (
-                            <Cat size={48} className="text-white stroke-[1.5]" />
-                        )}
-                    </div>
+                            </div>
 
-                    {/* Details */}
-                    <div className="flex-1 flex flex-col justify-center gap-1 text-[11px] sm:text-xs font-bold text-slate-800 leading-tight">
-                        <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-16 shrink-0">NAME:</span>
-                            <span className="uppercase truncate">{catName}</span>
+                            {/* Front Checkerboard strip under the image */}
+                            <div className="absolute right-5 bottom-0 w-32 h-8 grid grid-cols-4 grid-rows-2 pointer-events-none overflow-hidden">
+                                {Array.from({ length: 8 }).map((_, i) => {
+                                    const row = Math.floor(i / 4);
+                                    const col = i % 4;
+                                    const isGreen = (row + col) % 2 === 0;
+                                    return <div key={i} className={isGreen ? "bg-[#30c290]" : ""} />;
+                                })}
+                            </div>
                         </div>
-                        <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-16 shrink-0">SEX:</span>
-                            <span className="uppercase">{gender === 'female' ? 'F' : 'M'}</span>
-                        </div>
-                        <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-16 shrink-0">AGE:</span>
-                            <span className="uppercase">{ageLabel}</span>
-                        </div>
-                        <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-16 shrink-0">WT:</span>
-                            <span className="uppercase">{weight.toFixed(1)} {isKg ? 'KG' : 'LBS'}</span>
-                        </div>
-                        <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-16 shrink-0">CLASS:</span>
-                            <span className="uppercase">{activeLifeStage}</span>
-                        </div>
-                        <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-16 shrink-0">DIET:</span>
-                            <span className="uppercase">{foodLabel}</span>
-                        </div>
-                        <div className="flex gap-1.5">
-                            <span className="text-[#30c290] font-black w-16 shrink-0">NEUTERED:</span>
-                            <span className="uppercase">{isSpayedNeutered ? 'YES' : 'NO'}</span>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Footer: signature + barcode */}
-                <div className="relative mt-4 pt-3 border-t border-slate-900/20 flex items-end justify-between gap-3">
-                    <div className="flex flex-col">
-                        <span
-                            className="text-2xl text-slate-800 leading-none"
-                            style={{ fontFamily: "'Caveat', cursive" }}
-                        >
-                            {displayName || 'Owner'}
-                        </span>
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                            Owner signature
-                        </span>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1">
-                        {/* mock barcode */}
-                        <div className="flex items-end gap-[1.5px] h-6" aria-hidden="true">
-                            {[3, 1, 2, 1, 3, 1, 1, 2, 3, 1, 2, 1, 1, 3, 2, 1, 1, 2].map((w, i) => (
-                                <span
-                                    key={i}
-                                    className="bg-slate-900"
-                                    style={{ width: `${w}px`, height: '100%' }}
-                                />
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-1 opacity-70">
-                            <img src={pawWizLogo} alt="" className="h-3 w-auto object-contain" />
-                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                                pawwiz.app
+                        {/* Footer */}
+                        <div className="px-5 py-2 border-t-2 border-slate-900 text-center flex flex-col items-center justify-center gap-1">
+                            <span
+                                className="text-xl text-slate-800 leading-none"
+                                style={{ fontFamily: "'Caveat', 'Brush Script MT', 'Reenie Beanie', cursive" }}
+                            >
+                                {displayName || 'Owner'}
+                            </span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                                {displayName ? `[${catName}'s Owner]` : 'Owner Signature'}
                             </span>
                         </div>
                     </div>
+
+                    {/* BACK VIEW */}
+                    <div ref={backRef} className="flip-card-back absolute inset-0 bg-white border-2 border-slate-900 shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex items-center justify-center relative overflow-hidden rounded-3xl">
+                        <img src={pawWizTextLogo} alt="Paw Wiz" className="h-12 object-contain" />
+
+                        {/* Seamless L-shaped Checkerboard Pattern (Single Container, Perfect Squares) */}
+                        <div className="absolute right-0 bottom-0 top-0 w-24 grid grid-cols-4 auto-rows-[24px] content-end pointer-events-none overflow-hidden rounded-r-3xl">
+                            {Array.from({ length: 80 }).map((_, i) => {
+                                const rowFromTop = Math.floor(i / 4);
+                                const col = i % 4;
+                                // Map row relative to bottom row (row index 0 is bottom-most row)
+                                const rowFromBottom = 19 - rowFromTop;
+
+                                const isGreen = (rowFromBottom + col) % 2 === 0 && (col >= 2 || rowFromBottom < 2);
+                                return <div key={i} className={isGreen ? "bg-[#30c290]" : ""} style={{ width: '24px', height: '24px' }} />;
+                            })}
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
