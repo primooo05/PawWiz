@@ -1,13 +1,16 @@
-import { Outlet, useLocation, Link } from 'react-router-dom';
+import { useLocation, useOutlet, Link } from 'react-router-dom';
+import { AnimatePresence } from 'motion/react';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ReturnToTop from './components/layout/ReturnToTop';
+import PageTransition from './components/layout/PageTransition';
 import { useScrollToTop } from './hooks/ui/useScrollToTop';
 import pawWizText from './assets/PawWiz_Text_logo.png';
 
 export default function App() {
   useScrollToTop();
   const location = useLocation();
+  const outlet = useOutlet();
   const isLandingPage = location.pathname === '/';
   const isLoginPage = location.pathname === '/login';
   const hideHeader = location.pathname === '/diet-recommender' || 
@@ -38,7 +41,11 @@ export default function App() {
           <Navbar />
         ) : null}
         <main className={hideHeader ? 'flex-grow pt-0' : 'flex-grow'}>
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <PageTransition routeKey={location.pathname}>
+              {outlet}
+            </PageTransition>
+          </AnimatePresence>
         </main>
         <ReturnToTop />
         {isLandingPage && <Footer />}
