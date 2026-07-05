@@ -32,6 +32,9 @@ kiro-cli.exe
 .env.*
 # ...but keep the committed env template so the project runs without Infisical
 !.env.example
+
+# HAR files — contain live tokens, cookies, and session data
+*.har
 .tokensave
 .agents
 .codegraph
