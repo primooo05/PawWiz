@@ -121,7 +121,13 @@ class DietAdvisorService {
 
 Owner's question: ${question}
 
-Answer the owner's question about their cat's diet recommendation using the profile data above as ground truth. Be specific — reference actual numbers (calories, weight, water) when relevant. Keep the tone warm and practical, like a knowledgeable friend, not a lecture. If the question needs veterinary attention beyond general nutrition advice, say so and recommend a vet visit.`;
+Answer the owner's question about their cat's diet recommendation using the profile data above as ground truth. Be specific — reference actual numbers (calories, weight, water) when relevant. Keep the tone warm and practical, like a knowledgeable friend, not a lecture.
+
+Format your response as:
+1. A short 1–2 sentence direct answer to the question.
+2. A line reading exactly "**What to do:**" followed by 2–5 bullet points, each starting with "• ", giving concrete, actionable guidance the owner can follow (specific amounts, timing, or steps — not vague advice).
+
+Only include the "**What to do:**" section when there is real actionable guidance to give (skip it for purely factual questions like "what breed is best for X"). If the question needs veterinary attention beyond general nutrition advice, add one bullet recommending a vet visit rather than a separate paragraph.`;
   }
 
   /**
@@ -133,7 +139,13 @@ Answer the owner's question about their cat's diet recommendation using the prof
     const remaining = Math.max(0, catProfile.dailyCalories - catProfile.totalLoggedCalories);
     const waterRemaining = Math.max(0, catProfile.waterTarget - catProfile.waterIntake);
 
-    const text = `I can't reach the AI assistant right now, but here's what I can tell you from ${catProfile.catName}'s profile: target is ${catProfile.dailyCalories} kcal/day, with ${catProfile.totalLoggedCalories} kcal logged so far (${remaining} kcal remaining across ${catProfile.mealsPendingToday} pending meal${catProfile.mealsPendingToday === 1 ? '' : 's'}). Water intake is ${catProfile.waterIntake} ml of a ${catProfile.waterTarget} ml target (${waterRemaining} ml to go). Try asking again in a moment for a more detailed answer! 🐾`;
+    const text = `I can't reach the AI assistant right now, but here's what I can tell you from ${catProfile.catName}'s profile:
+
+**What to do:**
+• Daily target is ${catProfile.dailyCalories} kcal — ${catProfile.totalLoggedCalories} kcal logged so far, ${remaining} kcal remaining.
+• ${catProfile.mealsPendingToday} meal${catProfile.mealsPendingToday === 1 ? '' : 's'} still pending today — space them out to hit the remaining calories.
+• Water intake is ${catProfile.waterIntake} ml of a ${catProfile.waterTarget} ml target — offer ${waterRemaining} ml more if ${catProfile.catName} hasn't hit it yet.
+• Try asking again in a moment for a more detailed, AI-generated answer.`;
 
     return { type: 'conversational', text };
   }
