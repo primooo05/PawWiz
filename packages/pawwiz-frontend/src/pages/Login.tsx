@@ -89,7 +89,7 @@ export default function Login() {
           <img
             src={catsLogin}
             alt="Cats Mascot Login"
-            className="hidden lg:block w-full max-w-lg object-contain select-none pointer-events-none self-start lg:scale-125 lg:-translate-y-10 z-0"
+            className="hidden lg:block w-full max-w-lg object-contain select-none pointer-events-none self-start lg:scale-115 lg:-translate-y-10 z-0"
             draggable={false}
           />
         </div>
