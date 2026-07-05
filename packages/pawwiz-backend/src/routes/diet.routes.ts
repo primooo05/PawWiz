@@ -8,6 +8,7 @@ import {
   updateDietProfile,
   deleteDietProfile,
   updateDietMealLog,
+  createDietMealLog,
   updateWaterIntake,
   updateAvatar,
   uploadAvatarFile,
@@ -36,6 +37,7 @@ dietRouter.post('/profiles', createDietProfile);
 dietRouter.put('/profiles/:id', updateDietProfile);
 dietRouter.delete('/profiles/:id', deleteDietProfile);
 dietRouter.put('/profiles/:id/meals/:mealId', updateDietMealLog);
+dietRouter.post('/profiles/:id/meals', createDietMealLog);
 dietRouter.put('/profiles/:id/water', trackingWriteLimiter, updateWaterIntake);
 dietRouter.patch('/profiles/:id/avatar', updateAvatar);
 dietRouter.post('/profiles/:id/avatar/upload', upload.single('file'), uploadAvatarFile);

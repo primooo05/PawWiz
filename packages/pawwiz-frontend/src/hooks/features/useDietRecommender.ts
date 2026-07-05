@@ -17,6 +17,7 @@ export interface MealLog {
 
 export interface CatProfile {
     id: string;
+    catId?: string | null;
     name: string;
     gender: 'male' | 'female';
     lifeStage: 'kitten' | 'adult' | 'senior';
@@ -98,15 +99,20 @@ export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult' | 'senior', age:
 };
 
 /**
- * Calories for a logged meal. Delegates to the shared food catalog, which
- * computes grams (from the food + amount + unit) × caloric density. Unit
- * defaults to 'spoon' for backward compatibility with older call sites.
+ * Legacy calorie helper — now delegates to the shared food catalog's
+ * calculateKcal() so the full FoodType catalog (chicken, fish, custom, etc.)
+ * and all MealUnits (spoon/cup/gram) are supported, not just dry/wet/mixed.
  */
 export const calculateMealCalories = (
-    foodType: FoodType,
+    foodType: FoodType | string,
     amount: number,
-    unit: MealUnit = 'spoon'
-): number => calculateKcal(foodType, amount, unit);
+    unit?: MealUnit
+): number => {
+    const knownFood = (Object.prototype.hasOwnProperty.call({
+        dry: 1, wet: 1, mixed: 1, chicken: 1, chicken_thigh: 1, fish: 1, egg: 1, other: 1,
+    }, foodType) ? foodType : 'other') as FoodType;
+    return calculateKcal(knownFood, amount, unit ?? 'spoon');
+};
 
 export const useDietRecommender = () => {
     const [profiles, setProfiles] = useState<CatProfile[]>(() => {
@@ -435,6 +441,7 @@ export const useDietRecommender = () => {
             }
         };
 
+
         const handleStartDietTracking = async () => {
             setIsTracking(true); // Optimistic UI update
 
@@ -532,12 +539,13 @@ export const useDietRecommender = () => {
             amount: number,
             unit: MealUnit,
             timestamp?: string,
-            kcalOverride?: number
+            kcalOverride?: number,
+            mealNameOverride?: string
         ) => {
             // Prefer the caller-supplied kcal (the modal already computed it,
             // including custom foods priced from their label). Fall back to the
             // catalog calculation for legacy call sites.
-            const kcal = kcalOverride ?? calculateMealCalories(foodType as FoodType, amount, unit);
+            const kcal = kcalOverride ?? calculateMealCalories(foodType, amount, unit);
 
             // Optimistic UI update
             setProfiles(prevProfiles => prevProfiles.map(p => {
@@ -546,6 +554,7 @@ export const useDietRecommender = () => {
                         if (m.id === mealId) {
                             return {
                                 ...m,
+                                mealName: mealNameOverride ?? m.mealName,
                                 foodType,
                                 amount,
                                 unit,
@@ -567,6 +576,50 @@ export const useDietRecommender = () => {
                     method: 'PUT',
                     headers,
                     body: JSON.stringify({
+                        foodType,
+                        amount,
+                        unit,
+                        kcal,
+                        status: 'logged',
+                        timestamp,
+                        ...(mealNameOverride ? { mealName: mealNameOverride } : {}),
+                    }),
+                });
+                if (res.ok) {
+                    const updatedProf = await res.json();
+                    setProfiles(prevProfiles => {
+                        const synced = prevProfiles.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(synced);
+                        return synced;
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        /**
+         * Log a meal under a custom period name (e.g. "Midnight Snack") that
+         * isn't one of the 3 standard Breakfast/Lunch/Dinner slots. Creates a
+         * brand-new meal log row via POST rather than updating a fixed 1/2/3 id.
+         */
+        const addCustomMeal = async (
+            mealName: string,
+            foodType: string,
+            amount: number,
+            unit: MealUnit,
+            timestamp?: string,
+            kcalOverride?: number
+        ) => {
+            const kcal = kcalOverride ?? calculateMealCalories(foodType as FoodType, amount, unit);
+
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}/meals`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        mealName,
                         foodType,
                         amount,
                         unit,
@@ -858,6 +911,7 @@ export const useDietRecommender = () => {
             handleResetDietTracking,
             toggleUnit,
             addMeal,
+            addCustomMeal,
             skipMeal,
             resetMealLog,
             addWater,

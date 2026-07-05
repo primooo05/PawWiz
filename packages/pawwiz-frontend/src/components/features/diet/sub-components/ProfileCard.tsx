@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Cat, Download, Loader2, RefreshCw } from 'lucide-react';
 import pawWizTextLogo from '../../../../assets/PawWiz_Text_logo.png';
+import type { FoodType } from '../../../../lib/foods';
 
 interface ProfileCardProps {
     catName: string;
@@ -8,7 +9,7 @@ interface ProfileCardProps {
     gender: 'male' | 'female';
     weight: number;
     isKg: boolean;
-    foodPreference: 'dry' | 'wet' | 'mixed';
+    foodPreference: FoodType;
     isSpayedNeutered: boolean;
     activeLifeStage: 'kitten' | 'adult' | 'senior';
     lifeStage: 'kitten' | 'adult' | 'senior';
@@ -117,9 +118,17 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
             `}</style>
 
             {/* Action bar — excluded from the downloaded image */}
-            <div className="w-full flex justify-between items-center mb-4">
-                <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Cat Profile</h2>
-                <div className="flex items-center gap-3">
+            {/* flex-wrap (not a sm: breakpoint) so the buttons drop to their own
+                line whenever the *container* is narrow — this component renders
+                inside both a full-width column (Diet Recommender) and a
+                max-w-md column (Dashboard), and viewport-based breakpoints alone
+                caused the buttons to overlap the title in the narrower context. */}
+            <div className="w-full flex flex-wrap items-start justify-between mb-4 gap-3">
+                <div className="border-l-4 border-[#1a1a1a] pl-4 min-w-0 shrink-0">
+                    <h2 className="text-2xl md:text-3xl font-black tracking-wider text-slate-900 uppercase whitespace-nowrap">Cat Profile</h2>
+                    <p className="text-sm text-[#555] mt-2 font-bold">Your cat's saved details</p>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <button
                         type="button"
                         onClick={(e) => {
@@ -197,7 +206,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                             </div>
 
                             {/* Right Image Container */}
-                            <div className="w-32 h-32 shrink-0 bg-white border-2 border-slate-900 rounded-3xl overflow-hidden shadow-[3px_3px_0_0_rgba(15,23,42,1)] relative z-10">
+                            <div className="w-32 h-32 shrink-0 bg-white border-2 border-slate-900 rounded-3xl overflow-hidden  relative z-10">
                                 {photoUrl && !hasPhotoError ? (
                                     <>
                                         <img

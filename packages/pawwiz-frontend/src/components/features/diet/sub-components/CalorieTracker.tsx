@@ -33,7 +33,7 @@ export const CalorieTracker: React.FC<CalorieTrackerProps> = ({
     }, [targetPercent]);
 
     return (
-        <div className="p-6 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col gap-4 w-full transition-all">
+        <div className="h-full p-6 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col gap-5 transition-all">
             {targetPercent >= 100 && (
                 <div className="bg-[#40C48E]/10 border border-[#40C48E] text-[#1b5c3e] rounded-2xl p-3 text-xs font-black text-center flex items-center justify-center gap-2">
                     Meal tracking complete! {catName} thanks you for the extra love today!
@@ -45,27 +45,34 @@ export const CalorieTracker: React.FC<CalorieTrackerProps> = ({
                 <span className="text-[10px] font-black tracking-widest text-[#2ec4b6] uppercase">Calorie Tracker</span>
             </div>
 
-            <div className="flex items-center gap-6">
+            {/* Fills remaining vertical space so the card matches the Meals column height */}
+            <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center">
                 {/* Donut Chart */}
                 <div
-                    className="w-24 h-24 rounded-full border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(15,23,42,1)] relative flex items-center justify-center flex-shrink-0"
+                    className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(15,23,42,1)] relative flex items-center justify-center flex-shrink-0"
                     style={{
                         background: `conic-gradient(#2ec4b6 0% ${animatedPercent}%, #f1f5f9 ${animatedPercent}% 100%)`
                     }}
                 >
-                    <div className="w-16 h-16 bg-white rounded-full flex flex-col items-center justify-center border border-slate-200">
-                        <span className="text-xs font-black text-slate-800 leading-none">{Math.round(animatedPercent)}%</span>
-                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Eaten</span>
+                    <div className="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] bg-white rounded-full flex flex-col items-center justify-center border border-slate-200">
+                        <span className="text-lg font-black text-slate-800 leading-none">{Math.round(animatedPercent)}%</span>
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Eaten</span>
                     </div>
                 </div>
 
                 {/* Details values */}
-                <div className="space-y-1">
+                <div className="flex flex-col items-center gap-1.5 w-full">
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Daily Target</p>
-                    <p className="text-lg font-black text-slate-950 leading-tight">{dailyCalories} kcal</p>
-                    <div className="text-[10px] text-slate-500 font-bold space-y-0.5 mt-1">
-                        <p>Logged: {totalLoggedCalories} kcal</p>
-                        <p>Remaining: {remainingCalories} kcal</p>
+                    <p className="text-2xl font-black text-slate-950 leading-tight">{dailyCalories} kcal</p>
+                    <div className="flex items-center gap-2 w-full mt-2 pt-3 border-t border-slate-100">
+                        <div className="flex-1 bg-slate-50 rounded-xl py-2.5">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Logged</p>
+                            <p className="text-sm font-black text-slate-800">{totalLoggedCalories} kcal</p>
+                        </div>
+                        <div className="flex-1 bg-slate-50 rounded-xl py-2.5">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Left</p>
+                            <p className="text-sm font-black text-slate-800">{remainingCalories} kcal</p>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { getFelineFeedingGuideDetails } from '../../../hooks/features/useDietRecommender';
-import type { AgeBracketDetails, MealLog, CatProfile } from '../../../hooks/features/useDietRecommender';
+import type { MealLog, CatProfile } from '../../../hooks/features/useDietRecommender';
 import type { FoodType, MealUnit } from '../../../lib/foods';
 import ConfirmationDialog from '../../ui/modals/ConfirmationDialog';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, CheckCircle2, Calendar, Award } from 'lucide-react';
+import { Sparkles, CheckCircle2, Calendar } from 'lucide-react';
 
-import ProfileCard from './sub-components/ProfileCard';
 import MealsTracker from './sub-components/MealsTracker';
 import WeekCalendar from './sub-components/WeekCalendar';
 import FeedingGuideline from './sub-components/FeedingGuideline';
@@ -26,16 +25,14 @@ interface DietDashboardViewProps {
     foodPreference: FoodType;
     isSpayedNeutered: boolean;
     activeLifeStage: 'kitten' | 'adult' | 'senior';
-    lifeStage: 'kitten' | 'adult' | 'senior';
     age: number;
-    ageBracketInfo: AgeBracketDetails;
-    onReset: () => void;
 
     profiles: CatProfile[];
     activeProfileId: string;
     switchProfile: (id: string) => void;
     createNewProfile: (name: string) => void;
-    addMeal: (mealId: string, foodType: string, amount: number, unit: MealUnit, timestamp?: string, kcal?: number) => void;
+    addMeal: (mealId: string, foodType: string, amount: number, unit: MealUnit, timestamp?: string, kcal?: number, mealNameOverride?: string) => void;
+    addCustomMeal: (mealName: string, foodType: string, amount: number, unit: MealUnit, timestamp?: string, kcal?: number) => void;
     skipMeal: (mealId: string) => void;
     resetMealLog: (mealId: string) => void;
     addWater: (amount: number) => void;
@@ -53,14 +50,12 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     foodPreference,
     isSpayedNeutered,
     activeLifeStage,
-    lifeStage,
     age,
-    onReset,
-
     profiles,
     activeProfileId,
     switchProfile,
     addMeal,
+    addCustomMeal,
     skipMeal,
     resetMealLog,
     addWater,
@@ -70,12 +65,11 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     displayName,
 }) => {
     const navigate = useNavigate();
-    const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
     const [isAskAiOpen, setIsAskAiOpen] = useState(false);
 
     // Modal state
     const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
-    const [modalMealName, setModalMealName] = useState<'Breakfast' | 'Lunch' | 'Dinner'>('Breakfast');
+    const [modalMealName, setModalMealName] = useState<string>('Breakfast');
     const [modalTimestamp, setModalTimestamp] = useState<string>('08:00');
     const [modalFoodType, setModalFoodType] = useState<FoodType>('dry');
     const [modalUnit, setModalUnit] = useState<MealUnit>('spoon');
@@ -115,19 +109,38 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
         }
     };
 
+    const STANDARD_MEAL_IDS: Record<string, string> = { Breakfast: '1', Lunch: '2', Dinner: '3' };
+
     const handleMealModalSubmit = (
-        mealName: 'Breakfast' | 'Lunch' | 'Dinner',
+        mealName: string,
         foodType: string,
         amount: number,
         unit: MealUnit,
         formattedTimestamp: string,
         kcal: number
     ) => {
-        const targetMealId = mealName === 'Breakfast' ? '1' : mealName === 'Lunch' ? '2' : '3';
-        if (isEditingMeal && editingMealId && editingMealId !== targetMealId) {
-            resetMealLog(editingMealId);
+        const targetMealId = STANDARD_MEAL_IDS[mealName];
+
+        if (isEditingMeal && editingMealId) {
+            // Editing an existing entry — update its row directly. If the meal
+            // period was switched to a *different* standard slot, free the old
+            // slot first. If it's still a custom period, pass mealName so a
+            // rename (e.g. "Midnight Snack" → "Late Snack") is saved too.
+            if (targetMealId && targetMealId !== editingMealId) {
+                resetMealLog(editingMealId);
+                addMeal(targetMealId, foodType, amount, unit, formattedTimestamp, kcal);
+            } else if (!targetMealId) {
+                addMeal(editingMealId, foodType, amount, unit, formattedTimestamp, kcal, mealName);
+            } else {
+                addMeal(editingMealId, foodType, amount, unit, formattedTimestamp, kcal);
+            }
+        } else if (targetMealId) {
+            // New log into a standard Breakfast/Lunch/Dinner slot
+            addMeal(targetMealId, foodType, amount, unit, formattedTimestamp, kcal);
+        } else {
+            // New log under a custom meal period (e.g. "Midnight Snack")
+            addCustomMeal(mealName, foodType, amount, unit, formattedTimestamp, kcal);
         }
-        addMeal(targetMealId, foodType, amount, unit, formattedTimestamp, kcal);
         setIsAddMealModalOpen(false);
     };
 
@@ -152,8 +165,8 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     };
 
     const handleEditMealClick = (meal: MealLog) => {
-        setModalMealName(meal.mealName as any);
-        setModalTimestamp(defaultTimeForMeal(meal.mealName as any, meal.timestamp ?? undefined));
+        setModalMealName(meal.mealName);
+        setModalTimestamp(defaultTimeForMeal(meal.mealName, meal.timestamp ?? undefined));
         setModalFoodType((meal.foodType as FoodType) ?? 'dry');
         setModalUnit((meal.unit as MealUnit) ?? 'spoon');
         setModalAmount(meal.amount || 3);
@@ -178,8 +191,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
         isActive: p.id === activeProfileId,
         isNew: !p.isTracking
     }));
-
-    const activePhotoUrl = profiles.find(p => p.id === activeProfileId)?.photoUrl;
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -255,60 +266,24 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                 <WeekCalendar successDays={successDaysList} />
             </motion.div>
 
-            {/* ROW 1: Cat Profile card (left, ~35%) | Feeding Guideline + Calorie Tracker (right, ~65%) */}
-            <div className="grid grid-cols-1 lg:grid-cols-[3.5fr_6.5fr] gap-8 items-stretch w-full">
-                <motion.div
-                    key={`profile-${activeProfileId}`}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: "easeOut" }}
-                    className="flex flex-col"
-                >
-                    <ProfileCard
-                        catName={catName}
-                        displayName={displayName}
-                        gender={gender}
-                        weight={weight}
-                        isKg={isKg}
-                        foodPreference={foodPreference}
-                        isSpayedNeutered={isSpayedNeutered}
-                        activeLifeStage={activeLifeStage}
-                        lifeStage={lifeStage}
-                        age={age}
-                        onEditProfile={() => setIsConfirmResetOpen(true)}
-                        photoUrl={activePhotoUrl}
-                    />
-                </motion.div>
+            {/* ROW 1: Feeding Guideline (full width) */}
+            <motion.div
+                key={`guideline-${activeProfileId}`}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+                className="w-full"
+            >
+                <FeedingGuideline
+                    lifeStage={activeLifeStage}
+                    weight={weight}
+                    isKg={isKg}
+                    foodPreference={foodPreference}
+                />
+            </motion.div>
 
-                <div className="flex flex-col gap-6 justify-between h-full">
-                    <motion.div
-                        key={`guideline-${activeProfileId}`}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
-                        className="flex-grow"
-                    >
-                        <FeedingGuideline
-                            lifeStage={activeLifeStage}
-                            weight={weight}
-                            isKg={isKg}
-                            foodPreference={foodPreference}
-                        />
-                    </motion.div>
-
-                    <motion.div
-                        key={`calorie-${activeProfileId}`}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
-                    >
-                        <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
-                    </motion.div>
-                </div>
-            </div>
-
-            {/* ROW 2: MEALS SECTION — keep stacked vertical layout */}
-            <div className="w-full max-w-3xl">
+            {/* ROW 2: Meals (left, larger) | Calorie Tracker (right, stretches to fill the row) */}
+            <div className="grid grid-cols-1 lg:grid-cols-[6.5fr_3.5fr] gap-8 items-stretch w-full">
                 <motion.div
                     key={`tracker-${activeProfileId}`}
                     initial={{ opacity: 0, y: 15 }}
@@ -322,6 +297,16 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                         onUndoSkip={(mealId) => resetMealLog(mealId)}
                         catName={catName}
                     />
+                </motion.div>
+
+                <motion.div
+                    key={`calorie-${activeProfileId}`}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
+                    className="h-full"
+                >
+                    <CalorieTracker dailyCalories={dailyCalories} totalLoggedCalories={totalLoggedCalories} catName={catName} />
                 </motion.div>
             </div>
 
@@ -384,19 +369,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
             </div>
 
             {/* Dialogs */}
-            <ConfirmationDialog
-                isOpen={isConfirmResetOpen}
-                title="Edit Diet Profile?"
-                message="Are you sure you want to edit your cat's diet profile? This will reset the recommendations."
-                confirmText="Edit"
-                cancelText="Cancel"
-                onConfirm={() => {
-                    setIsConfirmResetOpen(false);
-                    onReset();
-                }}
-                onCancel={() => setIsConfirmResetOpen(false)}
-            />
-
             <ConfirmationDialog
                 isOpen={isSkipConfirmOpen}
                 title={`Skip ${mealToSkip?.mealName}?`}

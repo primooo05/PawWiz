@@ -5,6 +5,7 @@ import {
   createDietProfileSchema,
   updateDietProfileSchema,
   updateDietMealLogSchema,
+  createDietMealLogSchema,
   updateWaterIntakeSchema,
   updateAvatarSchema,
 } from '../schemas/diet.schemas.js';
@@ -46,6 +47,15 @@ export const updateDietMealLog = withErrorHandling(async (req: Request, res: Res
   const parsed = updateDietMealLogSchema.parse(req.body);
   const profile = await dietService.updateMeal(supabaseUserId, id, mealId, parsed);
   res.json(profile);
+});
+
+/** Create a new meal log entry for a custom period (e.g. "Midnight Snack"). */
+export const createDietMealLog = withErrorHandling(async (req: Request, res: Response) => {
+  const supabaseUserId = (req as any).user?.sub;
+  const id = req.params.id as string;
+  const parsed = createDietMealLogSchema.parse(req.body);
+  const profile = await dietService.createCustomMeal(supabaseUserId, id, parsed);
+  res.status(201).json(profile);
 });
 
 export const updateWaterIntake = withErrorHandling(async (req: Request, res: Response) => {

@@ -395,6 +395,7 @@ const QuickLogBar: React.FC<QuickLogBarProps> = ({
         initialAmount={modalAmount}
         catName={catName}
         loggedMeals={meals}
+        showMealPeriodSelector={false}
       />
     </section>
   );

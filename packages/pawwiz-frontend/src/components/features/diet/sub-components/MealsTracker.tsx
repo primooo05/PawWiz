@@ -24,19 +24,23 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
     onUndoSkip,
     catName = 'Your cat',
 }) => {
-    const hasLoggedMeals = loggedMeals.some(m => m.status === 'logged' || m.status === 'skipped' || m.status === 'pending');
+    // Pending meals aren't rendered until the owner actually logs them via the
+    // (+) button — the list only shows meals that have been logged or skipped.
+    const visibleMeals = loggedMeals.filter(m => m.status === 'logged' || m.status === 'skipped');
+    const hasLoggedMeals = visibleMeals.length > 0;
 
-    // Which folder is currently expanded. Default to the first logged or first meal.
-    const [expandedMealId, setExpandedMealId] = useState<string | null>(loggedMeals[0]?.id ?? null);
+    // Which folder is currently expanded. Default to the first visible meal.
+    const [expandedMealId, setExpandedMealId] = useState<string | null>(visibleMeals[0]?.id ?? null);
     const [hoveredMealId, setHoveredMealId] = useState<string | null>(null);
 
     return (
         <div className="flex flex-col gap-6 w-full h-full">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
                 <h2 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">Meals</h2>
                 <button
                     onClick={onAddMeal}
-                    className="w-10 h-10 bg-[#2ec4b6] hover:bg-[#20a396] text-white border-2 border-slate-900 rounded-full flex items-center justify-center font-bold text-2xl shadow-[2px_2px_0_0_rgba(15,23,42,1)] hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                    aria-label="Add a meal"
+                    className="w-10 h-10 bg-[#2ec4b6] hover:bg-[#20a396] text-white border-2 border-slate-900 rounded-full flex items-center justify-center font-bold text-2xl shadow-[2px_2px_0_0_rgba(15,23,42,1)] hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex-shrink-0"
                 >
                     +
                 </button>
@@ -44,11 +48,11 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
 
             {!hasLoggedMeals ? (
                 <p className="text-xs font-bold text-slate-400 text-center py-10 bg-white border border-slate-200 rounded-[1.5rem] shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
-                    No meals logged today. Click (+) to start tracking.
+                    No meals logged today. Click (+) to add one.
                 </p>
             ) : (
                 <div className="flex flex-col pt-6 pb-4 w-full">
-                    {loggedMeals.map((meal, index) => {
+                    {visibleMeals.map((meal, index) => {
                         const isExpanded = meal.id === expandedMealId;
                         const isHovered = meal.id === hoveredMealId;
                         const colors = MEAL_COLORS[meal.mealName] || { bg: '#E2E8F0', text: '#475569' };
@@ -91,10 +95,10 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
                                     <div className="flex justify-between items-start gap-2">
                                         <div className="flex flex-col">
                                             <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">
-                                                {meal.timestamp || 'Pending'}
+                                                {meal.timestamp || '—'}
                                             </span>
                                             <span className="font-black text-slate-900 text-base leading-tight">
-                                                {meal.status === 'logged' ? 'Logged' : meal.status === 'skipped' ? 'Skipped' : 'Pending'}
+                                                {meal.status === 'logged' ? 'Logged' : 'Skipped'}
                                             </span>
                                         </div>
 
@@ -140,7 +144,7 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
                                                         <span className="text-[#20a396] font-black text-sm">{meal.kcal} kcal</span>
                                                     </div>
                                                 </>
-                                            ) : meal.status === 'skipped' ? (
+                                            ) : (
                                                 <div className="flex flex-col gap-2">
                                                     <p className="text-[11px] text-slate-500 italic">This meal was skipped.</p>
                                                     <button
@@ -151,18 +155,6 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
                                                         className="w-full py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 border-2 border-slate-900 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-colors"
                                                     >
                                                         Undo Skip
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col gap-2 pt-1">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onEditMeal(meal);
-                                                        }}
-                                                        className="w-full py-2 bg-[#2ec4b6] hover:bg-[#20a396] text-white border-2 border-slate-900 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
-                                                    >
-                                                        Log Meal
                                                     </button>
                                                 </div>
                                             )}

@@ -43,6 +43,22 @@ export const updateDietMealLogSchema = z.object({
   kcal: z.number().nonnegative().optional(),
   status: z.enum(['pending', 'logged', 'skipped']),
   timestamp: z.string().nullable().optional(),
+  // Only meaningful for custom meal periods (non-standard mealId row updates) —
+  // lets the owner rename e.g. "Midnight Snack" → "Late Snack" while editing.
+  // Ignored for the 3 standard Breakfast/Lunch/Dinner slots.
+  mealName: z.string().min(1).max(60).optional(),
+});
+
+// Creates a brand-new meal log row for a custom meal period (e.g. "Midnight
+// Snack") that isn't one of the 3 standard Breakfast/Lunch/Dinner slots.
+export const createDietMealLogSchema = z.object({
+  mealName: z.string().min(1).max(60),
+  foodType: z.string().max(60).nullable().optional(),
+  amount: z.number().nonnegative().nullable().optional(),
+  unit: z.enum(['spoon', 'cup', 'gram']).nullable().optional(),
+  kcal: z.number().nonnegative().optional(),
+  status: z.enum(['pending', 'logged', 'skipped']),
+  timestamp: z.string().nullable().optional(),
 });
 
 export const updateWaterIntakeSchema = z.object({

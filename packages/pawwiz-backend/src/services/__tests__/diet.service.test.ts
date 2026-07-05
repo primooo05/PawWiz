@@ -133,6 +133,7 @@ describe('Diet Service', () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({
       id: 'diet-profile-id',
+      catId: null,
       name: 'Aki',
       gender: 'Male',
       lifeStage: 'Kitten',

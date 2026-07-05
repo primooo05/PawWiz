@@ -23,6 +23,9 @@ export { usePlantScan } from './features/usePlantScan';
 export { useCatAvatarUpload } from './features/useCatAvatarUpload';
 export { useProfilePanel } from './features/useProfilePanel';
 export { useQuickLog } from './features/useQuickLog';
+export { useHealthTimeline } from './features/useHealthTimeline';
+export { useTimelineInsights } from './features/useTimelineInsights';
+export { useHealthExport } from './features/useHealthExport';
 
 // UI hooks
 export { useFormValidation } from './ui/useFormValidation';

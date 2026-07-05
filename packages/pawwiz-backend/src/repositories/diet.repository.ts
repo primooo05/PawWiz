@@ -38,6 +38,8 @@ export interface UpdateDietMealLogData {
   kcal?: number;
   status: string;
   timestamp?: string | null;
+  /** Rename target for updateMealLogById (custom meal periods only). */
+  mealName?: string;
 }
 
 /** Rolling window (days) for how much meal-log history we hydrate per profile. */
@@ -181,6 +183,53 @@ class DietRepository {
   async delete(id: string) {
     return prisma.dietProfile.delete({
       where: { id },
+    });
+  }
+
+  /**
+   * Create a brand-new meal log row for a custom meal period (e.g. "Midnight
+   * Snack") that isn't one of the 3 standard Breakfast/Lunch/Dinner slots.
+   * Standard meals reuse updateMealLog's find-or-create-for-today behavior;
+   * custom periods always get their own new row per log so multiple entries
+   * with the same custom name on the same day don't collide.
+   */
+  async createMealLog(dietProfileId: string, data: UpdateDietMealLogData & { mealName: string }) {
+    return prisma.dietMealLog.create({
+      data: {
+        dietProfileId,
+        mealName: data.mealName,
+        foodType: data.foodType ?? null,
+        amount: data.amount ?? null,
+        unit: data.unit ?? null,
+        kcal: data.kcal ?? 0,
+        status: data.status,
+        timestamp: data.timestamp ?? null,
+      },
+    });
+  }
+
+  /**
+   * Update a specific meal log row by its own id (used for custom meal
+   * periods, whose frontend "mealId" is the actual DietMealLog row id rather
+   * than the fixed 1/2/3 standard-slot mapping).
+   */
+  async updateMealLogById(dietProfileId: string, mealLogId: string, data: UpdateDietMealLogData) {
+    const mealLog = await prisma.dietMealLog.findFirst({
+      where: { id: mealLogId, dietProfileId },
+    });
+    if (!mealLog) return null;
+
+    return prisma.dietMealLog.update({
+      where: { id: mealLog.id },
+      data: {
+        mealName: data.mealName !== undefined ? data.mealName : mealLog.mealName,
+        foodType: data.foodType !== undefined ? data.foodType : mealLog.foodType,
+        amount: data.amount !== undefined ? data.amount : mealLog.amount,
+        unit: data.unit !== undefined ? data.unit : mealLog.unit,
+        kcal: data.kcal !== undefined ? data.kcal : mealLog.kcal,
+        status: data.status,
+        timestamp: data.timestamp !== undefined ? data.timestamp : mealLog.timestamp,
+      },
     });
   }
 

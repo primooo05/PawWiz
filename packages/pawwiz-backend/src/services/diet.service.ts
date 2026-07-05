@@ -64,6 +64,25 @@ function mapProfileToFrontend(profile: any) {
   // Sort: Breakfast (1), Lunch (2), Dinner (3)
   loggedMeals.sort((a: any, b: any) => a.id.localeCompare(b.id));
 
+  // Append any custom-period meals logged today (e.g. "Midnight Snack") —
+  // these use their DB row id directly since they aren't part of the fixed
+  // 1/2/3 mapping.
+  const customMeals = todayLogs
+    .filter((m: any) => !standardMeals.includes(m.mealName))
+    .map((m: any) => ({
+      id: m.id,
+      mealName: m.mealName,
+      foodType: m.foodType || undefined,
+      amount: m.amount !== null ? m.amount : undefined,
+      unit: m.unit || undefined,
+      kcal: m.kcal,
+      status: m.status,
+      timestamp: m.timestamp || undefined,
+      updatedAt: m.updatedAt,
+    }));
+
+  loggedMeals.push(...customMeals);
+
   // Compute successDays based on database records
   const logsByDate: Record<string, any[]> = {};
   (profile.mealLogs || []).forEach((m: any) => {
@@ -88,6 +107,7 @@ function mapProfileToFrontend(profile: any) {
 
   return {
     id: profile.id,
+    catId: profile.catId ?? null,
     name: profile.cat ? profile.cat.name : profile.profile.catName,
     gender: profile.cat ? profile.cat.sex : profile.profile.catSex,
     lifeStage: profile.cat ? profile.cat.lifeStage : profile.profile.catLifeStage,
@@ -163,9 +183,26 @@ class DietService {
     };
 
     const mealName = mealIdMap[mealId];
-    if (!mealName) throw AppError.badRequest('Invalid mealId. Must be 1, 2, or 3.');
+    if (mealName) {
+      // Standard meal slot (1/2/3) — find-or-create today's row for it.
+      await dietRepository.updateMealLog(profileId, mealName, data);
+    } else {
+      // Custom meal period (e.g. "Midnight Snack") — mealId is the actual
+      // DietMealLog row id, so update it directly.
+      await dietRepository.updateMealLogById(profileId, mealId, data);
+    }
 
-    await dietRepository.updateMealLog(profileId, mealName, data);
+    const updatedProfile = await dietRepository.findById(profileId);
+    return mapProfileToFrontend(updatedProfile);
+  }
+
+  /** Create a new meal log entry for a custom period (e.g. "Midnight Snack"). */
+  async createCustomMeal(supabaseUserId: string, profileId: string, data: any) {
+    const userProfileId = await this.getProfileIdOrThrow(supabaseUserId);
+    const existing = await dietRepository.findByIdAndProfileId(profileId, userProfileId);
+    if (!existing) throw AppError.notFound('Diet profile not found');
+
+    await dietRepository.createMealLog(profileId, data);
 
     const updatedProfile = await dietRepository.findById(profileId);
     return mapProfileToFrontend(updatedProfile);

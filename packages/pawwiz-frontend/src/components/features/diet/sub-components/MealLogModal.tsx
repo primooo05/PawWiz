@@ -19,7 +19,7 @@ interface MealLogModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (
-        mealName: 'Breakfast' | 'Lunch' | 'Dinner',
+        mealName: string,
         foodType: string,
         amount: number,
         unit: MealUnit,
@@ -30,17 +30,29 @@ interface MealLogModalProps {
     onReset: (mealId: string) => void;
     isEditing: boolean;
     editingMealId: string | null;
-    initialMealName: 'Breakfast' | 'Lunch' | 'Dinner';
+    initialMealName: string;
     initialTimestamp: string;
     initialFoodType: string;
     initialUnit: MealUnit;
     initialAmount: number;
     catName: string;
     loggedMeals: MealLog[];
+    /** Show the Breakfast / Lunch / Dinner / Other period picker. Hidden when
+     *  the caller already knows which meal slot is being logged (e.g. Quick
+     *  Log's dedicated per-meal buttons); shown for the general "Add Meal"
+     *  (+) flow where the period hasn't been chosen yet. Defaults to true. */
+    showMealPeriodSelector?: boolean;
 }
 
 const isKnownFood = (foodType: string): foodType is FoodType =>
     Object.prototype.hasOwnProperty.call(FOOD_CATALOG, foodType);
+
+const STANDARD_MEAL_PERIODS = ['Breakfast', 'Lunch', 'Dinner'] as const;
+type StandardMealPeriod = typeof STANDARD_MEAL_PERIODS[number];
+type MealPeriod = StandardMealPeriod | 'Other';
+
+const isStandardPeriod = (name: string): name is StandardMealPeriod =>
+    (STANDARD_MEAL_PERIODS as readonly string[]).includes(name);
 
 export const MealLogModal: React.FC<MealLogModalProps> = ({
     isOpen,
@@ -57,6 +69,7 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
     initialAmount,
     catName,
     loggedMeals,
+    showMealPeriodSelector = true,
 }) => {
     // Select value is always a catalog id or 'other'. A custom food name is held
     // separately so the <select> stays controlled.
@@ -65,6 +78,11 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
     const [customKcalPer100g, setCustomKcalPer100g] = useState<number>(100);
     const [modalUnit, setModalUnit] = useState<MealUnit>(initialUnit);
     const [modalAmount, setModalAmount] = useState<number>(initialAmount);
+
+    // Which meal period this entry belongs to. "Other" reveals a free-text
+    // label input (e.g. "Midnight Snack") instead of the fixed 3 options.
+    const [selectedPeriod, setSelectedPeriod] = useState<MealPeriod>('Breakfast');
+    const [customPeriodName, setCustomPeriodName] = useState<string>('');
 
     // Sync state when modal is opened. An unknown initialFoodType means the meal
     // was logged as a custom food — restore it into the "Other" path.
@@ -84,9 +102,22 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
             setModalUnit(initialUnit);
         }
         setModalAmount(initialAmount);
+
+        // Restore the meal period. A non-standard initialMealName means the
+        // meal was previously logged under a custom label — restore it into
+        // the "Other" path so editing shows the label back in the text input.
+        if (isStandardPeriod(initialMealName)) {
+            setSelectedPeriod(initialMealName);
+            setCustomPeriodName('');
+        } else {
+            setSelectedPeriod('Other');
+            setCustomPeriodName(initialMealName || '');
+        }
     }, [isOpen, initialMealName, initialTimestamp, initialFoodType, initialUnit, initialAmount]);
 
     const isOther = modalFoodType === 'other';
+    const isCustomPeriod = selectedPeriod === 'Other';
+    const effectiveMealName = isCustomPeriod ? customPeriodName.trim() : selectedPeriod;
     const unitConfig = getUnitConfig(isOther ? 'gram' : modalUnit);
     const previewKcal = isOther
         ? calculateCustomKcal(modalAmount, customKcalPer100g)
@@ -112,10 +143,13 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
         setModalAmount(typicalAmountInUnit(isOther ? 'other' : modalFoodType, isOther ? 'gram' : modalUnit));
     };
 
+    const canSubmit = !isCustomPeriod || customPeriodName.trim().length > 0;
+
     const handleFormSubmit = () => {
+        if (!canSubmit) return;
         const foodType = isOther ? (customName.trim() || 'Other') : modalFoodType;
         const unit = isOther ? 'gram' : modalUnit;
-        onSubmit(initialMealName, foodType, modalAmount, unit, initialTimestamp, previewKcal);
+        onSubmit(effectiveMealName || 'Other', foodType, modalAmount, unit, initialTimestamp, previewKcal);
     };
 
     if (!isOpen) return null;
@@ -138,11 +172,48 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                     className="bg-white border-2 border-slate-900 rounded-[2.5rem] max-w-sm w-full p-8 shadow-[6px_6px_0_0_rgba(15,23,42,1)] pointer-events-auto max-h-[90vh] overflow-y-auto"
                 >
                     <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">
-                        {isEditing ? `Edit ${initialMealName}` : `Log ${initialMealName}`}
+                        {isEditing
+                            ? `Edit ${effectiveMealName || initialMealName}`
+                            : showMealPeriodSelector
+                                ? 'Log a Meal'
+                                : `Log ${initialMealName}`}
                     </h3>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">Enter food details for {catName}</p>
 
                     <div className="space-y-6 text-left">
+                        {/* Meal period selector — Breakfast / Lunch / Dinner / Other */}
+                        {showMealPeriodSelector && (
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Meal period</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {([...STANDARD_MEAL_PERIODS, 'Other'] as MealPeriod[]).map((period) => (
+                                        <button
+                                            key={period}
+                                            type="button"
+                                            onClick={() => setSelectedPeriod(period)}
+                                            className={`py-2.5 rounded-xl border-2 font-bold text-xs transition-all cursor-pointer ${
+                                                selectedPeriod === period
+                                                    ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]'
+                                                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-400'
+                                            }`}
+                                        >
+                                            {period}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {isCustomPeriod && (
+                                    <input
+                                        type="text"
+                                        value={customPeriodName}
+                                        onChange={(e) => setCustomPeriodName(e.target.value)}
+                                        placeholder="e.g. Midnight Snack"
+                                        className="w-full mt-3 px-4 py-2.5 bg-slate-50 border-2 border-slate-900 rounded-xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white transition-colors"
+                                    />
+                                )}
+                            </div>
+                        )}
+
                         {/* Food selector */}
                         <div>
                             <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Food</label>
@@ -252,12 +323,13 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                         <div className="flex flex-col gap-2 pt-2">
                             <button
                                 onClick={handleFormSubmit}
-                                className="w-full py-3 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer"
+                                disabled={!canSubmit}
+                                className="w-full py-3 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2ec4b6]"
                             >
                                 {isEditing ? 'Save changes' : 'Log Meal'}
                             </button>
-                            {!isEditing && (() => {
-                                const targetMeal = loggedMeals.find(m => m.mealName === initialMealName);
+                            {!isEditing && !isCustomPeriod && (() => {
+                                const targetMeal = loggedMeals.find(m => m.mealName === selectedPeriod);
                                 if (targetMeal?.status === 'pending') {
                                     return (
                                         <button

@@ -5,13 +5,15 @@ import { API_BASE } from '../../../lib/config.js';
 import BottomNav from '../../layout/BottomNav.js';
 import GreetingHeader from '../../layout/GreetingHeader';
 import QuickLogBar from '../quicklog/QuickLogBar';
+import ProfileCard from '../diet/sub-components/ProfileCard.js';
 import { CircleWrapper } from '../../ui/CircleWrapper';
-import { StackedBarChart, DonutChart, LineChart } from './charts/Charts';
-import { Activity, Apple, Heart, BarChart3, Droplet } from 'lucide-react';
+import { StackedBarChart, DonutChartLabeled, LineChart } from './charts/Charts';
+import { Activity, Apple, Heart, BarChart3, Droplet, Stethoscope } from 'lucide-react';
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker.js';
 import { useDietRecommender, getAgeBracketInfo } from '../../../hooks/features/useDietRecommender';
 import { getTimeGreeting } from '../../../utils/greeting';
+import HealthInsightsWidget from './HealthInsightsWidget.js';
 
 // Neo-brutalist palette (shared with charts)
 const ORANGE = '#FF6B35';
@@ -63,11 +65,11 @@ const Dashboard: React.FC = () => {
   const { profile } = useProfilePanel();
   const pregnancy = usePregnancyTracker();
   const diet = useDietRecommender();
-  
+
   const [stats, setStats] = useState<DashboardStats>({});
   const [behaviorPatterns, setBehaviorPatterns] = useState<Array<{ type: string; frequency: number }>>([]);
   const [catName, setCatName] = useState<string>('Your Cat');
-  
+
   const [isTransitioning, setIsTransitioning] = useState(
     !!(location.state as { animateIn?: boolean })?.animateIn
   );
@@ -162,9 +164,9 @@ const Dashboard: React.FC = () => {
 
   // Count logged meals that are completed
   const completedMealsCount = diet.activeProfile
-    ? Object.values(diet.loggedMeals).filter((meal) => meal.status === 'logged').length
+    ? diet.loggedMeals.filter((meal) => meal.status === 'logged').length
     : 0;
-  const totalMealsCount = diet.activeProfile ? Object.keys(diet.loggedMeals).length : 3;
+  const totalMealsCount = diet.activeProfile ? diet.loggedMeals.length : 3;
 
   // --- Gender gating: pregnancy features require at least one female cat ---
   const femaleCats = diet.profiles.filter((p) => p.gender === 'female');
@@ -376,7 +378,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen w-full bg-[#F5F5F0] text-[#1a1a1a] font-sans pb-24 md:pb-12 relative overflow-hidden">
       <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
-      
+
       <div className={`transition-opacity duration-300 ${
         isTransitioning
           ? 'invisible opacity-0'
@@ -395,8 +397,28 @@ const Dashboard: React.FC = () => {
             className="mb-10"
           />
 
+          {/* Cat Profile Card */}
+          {diet.activeProfile && (
+            <div className="w-full max-w-md mb-12">
+              <ProfileCard
+                catName={diet.activeProfile.name}
+                displayName={profile?.displayName}
+                gender={diet.activeProfile.gender}
+                weight={diet.activeProfile.weight}
+                isKg={diet.activeProfile.isKg}
+                foodPreference={diet.activeProfile.foodPreference}
+                isSpayedNeutered={diet.activeProfile.isSpayedNeutered}
+                activeLifeStage={diet.activeProfile.lifeStage}
+                lifeStage={diet.activeProfile.lifeStage}
+                age={diet.activeProfile.age}
+                onEditProfile={() => navigate('/diet-recommender')}
+                photoUrl={diet.activeProfile.photoUrl}
+              />
+            </div>
+          )}
+
           {/* KPI Strip */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
             <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
               <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Meals Today</p>
               <p className="text-3xl font-black mt-1" style={{ color: ORANGE }}>
@@ -404,18 +426,46 @@ const Dashboard: React.FC = () => {
               </p>
               <p className="text-xs font-bold text-[#555] mt-1">logged</p>
             </div>
+
+            {/* Top Behavior — includes the composition legend + donut inline */}
             <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
               <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Top Behavior</p>
-              <p
-                className="text-3xl font-black mt-1 truncate"
-                style={{ color: dominantBehavior?.color ?? TEAL }}
-              >
-                {dominantBehavior ? dominantBehavior.name : '—'}
-              </p>
-              <p className="text-xs font-bold text-[#555] mt-1">
-                {dominantBehavior ? `${dominantShare}% of this week` : 'No logs yet'}
-              </p>
+              {behaviorComposition.length > 0 ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-lg font-black leading-tight truncate"
+                      style={{ color: dominantBehavior?.color ?? TEAL }}
+                    >
+                      {dominantBehavior ? dominantBehavior.name : '—'}
+                    </p>
+                    <p className="text-[11px] font-bold text-[#555] mt-0.5">
+                      {dominantBehavior ? `${dominantShare}% of this week` : 'No logs yet'}
+                    </p>
+                    <ul className="mt-2 space-y-0.5">
+                      {behaviorComposition.map((c) => (
+                        <li key={c.name} className="flex items-center gap-1.5 text-[10px] font-black">
+                          <span
+                            className="inline-block w-2.5 h-2.5 border border-[#1a1a1a] rounded-sm flex-shrink-0"
+                            style={{ backgroundColor: c.color }}
+                          />
+                          {c.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <DonutChartLabeled data={behaviorComposition} size={104} minLabelPercent={15} />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-3xl font-black mt-1" style={{ color: TEAL }}>—</p>
+                  <p className="text-xs font-bold text-[#555] mt-1">No logs yet</p>
+                </>
+              )}
             </div>
+
             <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
               <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Water Today</p>
               <p className="text-3xl font-black mt-1" style={{ color: '#0d7377' }}>
@@ -616,39 +666,24 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
-              <div className="lg:col-span-3 bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#0d7377' }}>
-                    Behavior Trend
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {behaviorTrend.series.map((s) => (
-                      <span key={s.name} className="flex items-center gap-1.5 text-xs font-black">
-                        <span
-                          className="inline-block w-3 h-3 border-2 border-[#1a1a1a] rounded-sm"
-                          style={{ backgroundColor: s.color }}
-                        />
-                        {s.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={260} />
-              </div>
-
-              <div className="lg:col-span-2 bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
-                <h3 className="text-xs font-black uppercase tracking-widest mb-4" style={{ color: '#0d7377' }}>
-                  Behavior Composition
+            <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#0d7377' }}>
+                  Behavior Trend
                 </h3>
-                {behaviorComposition.length > 0 ? (
-                  <DonutChart data={behaviorComposition} size={180} />
-                ) : (
-                  <p className="text-sm font-bold text-[#888] text-center py-10">
-                    No behaviors logged yet. Use Quick Log to start building your cat's mood mix.
-                  </p>
-                )}
+                <div className="flex flex-wrap gap-3">
+                  {behaviorTrend.series.map((s) => (
+                    <span key={s.name} className="flex items-center gap-1.5 text-xs font-black">
+                      <span
+                        className="inline-block w-3 h-3 border-2 border-[#1a1a1a] rounded-sm"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      {s.name}
+                    </span>
+                  ))}
+                </div>
               </div>
+              <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={260} />
             </div>
           </div>
 
@@ -842,6 +877,18 @@ const Dashboard: React.FC = () => {
             )}
           </div>
 
+          {/* Health Insights Section */}
+          {diet.activeProfile?.catId && (
+            <div className="mt-16">
+              <div className="border-l-4 border-[#1a1a1a] pl-4 mb-6">
+                <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
+                  <Stethoscope className="w-7 h-7" strokeWidth={3} /> HEALTH INSIGHTS
+                </h2>
+                <p className="text-sm text-[#555] mt-2 font-bold">AI-detected patterns across behavior, diet, and reproductive events</p>
+              </div>
+              <HealthInsightsWidget catId={diet.activeProfile.catId} />
+            </div>
+          )}
 
         </div>
       </div>

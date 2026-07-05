@@ -20,9 +20,11 @@ export const MEAL_TIME_DEFAULTS: Record<
 /**
  * Returns the best-guess 24h "HH:MM" timestamp for a meal:
  * - If a real saved 12h timestamp (e.g. "8:30am") exists, parse and return it.
- * - Otherwise return the canonical default for that meal name.
+ * - Otherwise return the canonical default for that meal name, falling back to
+ *   the current time for custom periods (e.g. "Midnight Snack") that aren't
+ *   one of the 3 standard slots.
  */
-export const defaultTimeForMeal = (mealName: MealName, savedTimestamp?: string): string => {
+export const defaultTimeForMeal = (mealName: string, savedTimestamp?: string): string => {
   if (savedTimestamp) {
     const match = savedTimestamp.match(/(\d+):(\d+)(am|pm)/i);
     if (match) {
@@ -34,5 +36,9 @@ export const defaultTimeForMeal = (mealName: MealName, savedTimestamp?: string):
       return `${String(h).padStart(2, '0')}:${m}`;
     }
   }
-  return MEAL_TIME_DEFAULTS[mealName].default;
+  if (mealName in MEAL_TIME_DEFAULTS) {
+    return MEAL_TIME_DEFAULTS[mealName as MealName].default;
+  }
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 };
