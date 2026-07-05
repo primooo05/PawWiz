@@ -1,8 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import dotenv from 'dotenv';
+import '../lib/env.js';
 import { DietOptimizeRequest, DietPlan, BehaviorDecodeRequest, BehaviorDecodeResponse } from '../types/shared.js';
-
-dotenv.config();
 
 const API_KEY = process.env.GEMINI_API_KEY || '';
 

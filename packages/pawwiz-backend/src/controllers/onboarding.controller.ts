@@ -31,7 +31,7 @@ export const startOnboarding = withErrorHandling(async (req: Request, res: Respo
  */
 export const getOnboardingSession = withErrorHandling(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const session = await onboardingService.getSession(id);
+  const session = await onboardingService.getSessionPublic(id);
   res.json(session);
 });
 

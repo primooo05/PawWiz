@@ -27,8 +27,11 @@ dist-ssr
 .kiro
 kiro-cli.exe
 
-# Infisical
+# Env / Infisical — never commit real secrets
+.env
 .env.*
+# ...but keep the committed env template so the project runs without Infisical
+!.env.example
 .tokensave
 .agents
 .codegraph

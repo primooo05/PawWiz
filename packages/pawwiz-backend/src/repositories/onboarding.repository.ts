@@ -15,6 +15,34 @@ class OnboardingRepository {
     return prisma.onboardingSession.findUnique({ where: { id } });
   }
 
+  /**
+   * Public projection for GET /session/:id — never exposes the OTP secret
+   * material (otpHash / otpExpiresAt / otpLastSentAt / otpAttempts). Returns
+   * only the fields the onboarding wizard needs to resume its state.
+   */
+  async findByIdPublic(id: string) {
+    return prisma.onboardingSession.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        step: true,
+        ownerName: true,
+        ownerEmail: true,
+        otpVerified: true,
+        catsCount: true,
+        customCatsCount: true,
+        catName: true,
+        catBreed: true,
+        catMarking: true,
+        catSex: true,
+        catLifeStage: true,
+        consumedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async create(): Promise<OnboardingSession> {
     return prisma.onboardingSession.create({
       data: {

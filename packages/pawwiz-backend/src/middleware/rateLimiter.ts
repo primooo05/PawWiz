@@ -1,9 +1,11 @@
 import rateLimit, { Options } from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 
-const keyGenerator = (req: Request) => {
-  return (req.headers['x-real-ip'] as string) || req.ip || 'unknown';
-};
+// Bind strictly to req.ip. With `app.set('trust proxy', 1)`, Express derives
+// req.ip from the single trusted proxy hop (nginx X-Forwarded-For). Reading the
+// raw `x-real-ip` header directly is spoofable by any client that reaches the
+// app without traversing the proxy, so it must not be used as a limiter key.
+const keyGenerator = (req: Request) => req.ip || 'unknown';
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -49,8 +51,7 @@ export const scanLimiter = rateLimit({
   limit: 20,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  keyGenerator: (req: Request) =>
-    (req.headers['x-real-ip'] as string) || req.ip || 'unknown',
+  keyGenerator,
   message: SCAN_429_MESSAGE,
   handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
     res.status(options.statusCode).json({ error: options.message });
@@ -63,8 +64,7 @@ export const scanIpLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  keyGenerator: (req: Request) =>
-    (req.headers['x-real-ip'] as string) || req.ip || 'unknown',
+  keyGenerator,
   message: SCAN_429_MESSAGE,
   handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
     res.status(options.statusCode).json({ error: options.message });
@@ -93,6 +93,37 @@ export const emailCheckLimiter = rateLimit({
   keyGenerator,
   handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
     res.status(options.statusCode).json({ error: 'Too many requests. Please wait before trying again.' });
+  },
+});
+
+/**
+ * OTP verification limiter: 5 attempts per 15 min per IP.
+ * Front-line defence against online OTP brute-forcing (complements the
+ * per-session lockout enforced in OnboardingService.verifyOtp).
+ */
+export const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator,
+  handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
+    res.status(options.statusCode).json({ error: 'Too many verification attempts. Please wait before trying again.' });
+  },
+});
+
+/**
+ * Onboarding-start limiter: 3 new sessions per hour per IP.
+ * Neutralises session-spam / email-bombing via mass session creation.
+ */
+export const onboardingStartLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 3,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator,
+  handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
+    res.status(options.statusCode).json({ error: 'Too many onboarding attempts. Please wait before trying again.' });
   },
 });
 

@@ -22,6 +22,7 @@ import { aspcaRepository } from '../repositories/aspca.repository.js';
 import { plantnetService } from './plantnet.service.js';
 import { searchPlantByName, type PerenualApiResult } from './perenual.js';
 import { scanPlantWithVision } from './gemini.js';
+import { groqClient } from '../repositories/groq.repository.js';
 import { logger } from '../utils/winston.js';
 import type { CacheRecord, ToxicityScanResult, PlantToxicityRecord } from '../types/shared.js';
 import type { Plant } from '@prisma/client';
@@ -314,8 +315,48 @@ class ToxicityCacheService {
         logger.info('[ToxicityCacheService] Filename hint too short for ASPCA lookup:', filenameHint);
       }
 
-      // Try Gemini Vision Model as the last fallback
-      logger.info('[ToxicityCacheService] Filename fallback missed. Trying Gemini Vision Model last fallback.');
+      // Try Groq Vision Model (primary AI vision fallback)
+      logger.info('[ToxicityCacheService] Filename fallback missed. Trying Groq Vision Model (primary AI fallback).');
+      try {
+        const groqResult = await groqClient.identifyPlantFromImage(
+          file.buffer.toString('base64'),
+          file.mimetype,
+        );
+        if (groqResult && groqResult.scientificName?.trim()) {
+          const rawGroqName = groqResult.scientificName;
+          const groqCleanedName = rawGroqName.trim().split(/\s+/).slice(0, 2).join(' ');
+
+          logger.info('[ToxicityCacheService] Groq Vision Model identified plant:', {
+            rawGroqName,
+            groqCleanedName,
+            confidence: groqResult.confidence,
+          });
+
+          // Query ASPCA (local db)
+          const aspcaRecord = await aspcaRepository.findByFuzzyMatch(groqCleanedName);
+          if (aspcaRecord !== null) {
+            const lowConfidenceWarning = groqResult.confidence < 0.6;
+            const actionRequired = lowConfidenceWarning
+              ? this.buildLowConfidenceActionRequired(rawGroqName)
+              : undefined;
+            logger.info('Image pipeline: ASPCA hit via Groq Vision Model fallback', {
+              groqCleanedName,
+              toxicity: aspcaRecord.isToxic,
+            });
+            return aspcaRecordToScanResult(aspcaRecord, groqResult.confidence, lowConfidenceWarning, actionRequired);
+          }
+          logger.info('[ToxicityCacheService] ASPCA fallback miss for Groq identified plant:', groqCleanedName);
+        }
+      } catch (groqErr) {
+        const gErr = groqErr as Error;
+        logger.warn('[ToxicityCacheService] Groq Vision Model fallback failed:', {
+          errorType: gErr.constructor.name,
+          reason: gErr.message,
+        });
+      }
+
+      // Try Gemini Vision Model (secondary AI vision fallback)
+      logger.info('[ToxicityCacheService] Groq fallback missed. Trying Gemini Vision Model (secondary AI fallback).');
       try {
         const geminiResult = await scanPlantWithVision(file.buffer);
         if (geminiResult && geminiResult.scientificName?.trim()) {

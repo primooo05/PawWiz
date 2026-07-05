@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CircleWrapper } from '../components/CircleWrapper';
-import { OnboardingScreen1 } from '../components/onboarding/OnboardingScreen1';
-import { OnboardingScreen2 } from '../components/onboarding/OnboardingScreen2';
-import { OnboardingScreenOtp } from '../components/onboarding/OnboardingScreenOtp';
-import { OnboardingScreen3 as OnboardingScreenCats } from '../components/onboarding/OnboardingScreen3';
-import { OnboardingScreen4 as OnboardingScreenCatDetails } from '../components/onboarding/OnboardingScreen4';
-import { OnboardingScreen5 as OnboardingScreenLifeStage } from '../components/onboarding/OnboardingScreen5';
-import { OnboardingScreen6 as OnboardingScreenCatAdded } from '../components/onboarding/OnboardingScreen6';
-import { OnboardingScreen7 as OnboardingScreenPassword } from '../components/onboarding/OnboardingScreen7';
-import { OnboardingGuard } from '../components/onboarding/OnboardingGuard';
+import { CircleWrapper } from '../components/ui/CircleWrapper';
+import { OnboardingScreen1 } from '../components/features/onboarding/OnboardingScreen1';
+import { OnboardingScreen2 } from '../components/features/onboarding/OnboardingScreen2';
+import { OnboardingScreenOtp } from '../components/features/onboarding/OnboardingScreenOtp';
+import { OnboardingScreen3 as OnboardingScreenCats } from '../components/features/onboarding/OnboardingScreen3';
+import { OnboardingScreen4 as OnboardingScreenCatDetails } from '../components/features/onboarding/OnboardingScreen4';
+import { OnboardingScreen5 as OnboardingScreenLifeStage } from '../components/features/onboarding/OnboardingScreen5';
+import { OnboardingScreen6 as OnboardingScreenCatAdded } from '../components/features/onboarding/OnboardingScreen6';
+import { OnboardingScreen7 as OnboardingScreenPassword } from '../components/features/onboarding/OnboardingScreen7';
+import { OnboardingGuard } from '../components/features/onboarding/OnboardingGuard';
 import { OnboardingProvider, useOnboardingContext } from '../context/OnboardingContext';
-import { useTypewriter } from '../hooks/useTypewriter';
+import { useTypewriter } from '../hooks/ui/useTypewriter';
 import {
   validateStep2,
   validateStep3Otp,
@@ -20,9 +20,9 @@ import {
   validateStep5 as validateStepLifeStage,
   validateStep7 as validateStepPassword,
   getResolvedCatsCount,
-} from '../hooks/useOnboardingValidation';
+} from '../hooks/onboarding/useOnboardingValidation';
 import { supabase } from '../lib/supabase';
-import { useOnboardingState, getStepMessage } from '../hooks/useOnboardingState';
+import { useOnboardingState, getStepMessage } from '../hooks/onboarding/useOnboardingState';
 
 export default function Onboarding() {
   return (
@@ -72,7 +72,6 @@ function OnboardingView() {
     sendOtp,
     verifyOtp,
     checkEmail,
-    resetSession,
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();

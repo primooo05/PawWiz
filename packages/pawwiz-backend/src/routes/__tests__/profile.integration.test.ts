@@ -65,7 +65,7 @@ const TEST_USER_ID = 'test-user-uuid-1234';
 const SESSION_ID = '550e8400-e29b-41d4-a716-446655440000';
 
 function makeToken(sub: string = TEST_USER_ID): string {
-  return jwt.sign({ sub, email: 'test@example.com' }, Buffer.from(JWT_SECRET), { algorithm: 'HS256', expiresIn: '1h' });
+  return jwt.sign({ sub, email: 'test@example.com' }, Buffer.from(JWT_SECRET), { algorithm: 'HS256', expiresIn: '1h', audience: 'authenticated' });
 }
 
 // ─── Minimal test app factory ───────────────────────────────────────────────
@@ -73,6 +73,9 @@ function makeToken(sub: string = TEST_USER_ID): string {
 // between different test suites. The rate-limiter test builds its own app.
 function buildApp(): express.Express {
   const app = express();
+  // Mirror production: a single trusted proxy hop (nginx). This makes req.ip —
+  // which the rate limiter now keys on — resolve from X-Forwarded-For.
+  app.set('trust proxy', 1);
   app.use(helmetMiddleware);
   app.use(express.json({ limit: '10mb' }));
   app.use(contentTypeMiddleware);
@@ -222,12 +225,14 @@ describe('POST /api/profile — 4th request within rate-limit window returns 429
   it('returns 429 with Retry-After header on the 4th request from the same IP', async () => {
     const token = makeToken();
     const testIp = '192.168.1.99';
-    // Make 3 requests that hit the limiter
+    // Make 3 requests that hit the limiter. Use X-Forwarded-For so req.ip (the
+    // limiter key, under trust proxy) is this distinct IP — isolating this
+    // suite's bucket from the other suites' default loopback address.
     for (let i = 0; i < 3; i++) {
       await request(rateLimitApp)
         .post('/api/profile')
         .set('Authorization', `Bearer ${token}`)
-        .set('X-Real-IP', testIp)
+        .set('X-Forwarded-For', testIp)
         .set('Content-Type', 'application/json')
         .send(validBody());
     }
@@ -236,7 +241,7 @@ describe('POST /api/profile — 4th request within rate-limit window returns 429
     const res = await request(rateLimitApp)
       .post('/api/profile')
       .set('Authorization', `Bearer ${token}`)
-      .set('X-Real-IP', testIp)
+      .set('X-Forwarded-For', testIp)
       .set('Content-Type', 'application/json')
       .send(validBody());
 

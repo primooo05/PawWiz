@@ -26,7 +26,15 @@ import { logger } from '../utils/winston.js';
 const RESET_REDIRECT_URL =
   process.env.PASSWORD_RESET_REDIRECT_URL || 'http://localhost:5173/reset-password';
 
+// Constant-time floor for the recovery handler. Both the "email exists" and
+// "email does not exist" paths are padded to at least this duration so an
+// attacker cannot infer account existence from response latency.
+const RECOVERY_MIN_RESPONSE_MS = 750;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export const postRequestRecovery = withErrorHandling(async (req: Request, res: Response) => {
+  const startedAt = Date.now();
   const { email } = recoverRequestSchema.parse(req.body);
 
   // Always return the same response to prevent email enumeration.
@@ -34,20 +42,14 @@ export const postRequestRecovery = withErrorHandling(async (req: Request, res: R
     message: 'If an account with that email exists, a password reset link has been sent.',
   };
 
-  // Look up the profile's display name for the email template (best-effort).
-  let ownerName = 'Cat Parent';
-  try {
-    const profile = await prisma.profile.findFirst({
-      where: {
-        // Supabase stores email on the auth.users side; we match via the
-        // supabaseUserId indirection using the admin API below.
-      },
-      select: { displayName: true },
-    });
-    if (profile?.displayName) ownerName = profile.displayName;
-  } catch {
-    // Non-fatal — fall back to generic greeting.
-  }
+  // Pad the elapsed time up to the constant-time floor before responding.
+  const respondConstantTime = async () => {
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < RECOVERY_MIN_RESPONSE_MS) {
+      await sleep(RECOVERY_MIN_RESPONSE_MS - elapsed);
+    }
+    res.json(GENERIC_RESPONSE);
+  };
 
   // Ask Supabase Admin to generate a one-time recovery link.
   // This will fail silently (from the client's perspective) if the email
@@ -61,20 +63,20 @@ export const postRequestRecovery = withErrorHandling(async (req: Request, res: R
   if (linkError || !linkData?.properties?.action_link) {
     // Log server-side but do NOT surface to client (enumeration prevention).
     logger.warn('[AuthController] Recovery link generation failed or email not found', {
-      email,
       error: linkError?.message,
     });
-    res.json(GENERIC_RESPONSE);
+    await respondConstantTime();
     return;
   }
 
   const resetLink = linkData.properties.action_link;
 
-  // Attempt to retrieve owner name via the Supabase user record.
+  // Resolve the owner's display name via the Supabase user record (best-effort).
+  let ownerName = 'Cat Parent';
   try {
     const supabaseUserId = linkData.user?.id;
     if (supabaseUserId) {
-      const profile = await prisma.profile.findFirst({
+      const profile = await prisma.profile.findUnique({
         where: { supabaseUserId },
         select: { displayName: true },
       });
@@ -93,5 +95,5 @@ export const postRequestRecovery = withErrorHandling(async (req: Request, res: R
     });
   }
 
-  res.json(GENERIC_RESPONSE);
+  await respondConstantTime();
 });

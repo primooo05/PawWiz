@@ -5,7 +5,7 @@
  * Singleton Pattern — exported as a single instance.
  *
  * Security: PLANTNET_API_KEY is read at call time and never logged.
- * Timeout: 15-second AbortController guard prevents server memory hold on slow responses.
+ * Timeout: 30-second AbortController guard prevents server memory hold on slow responses.
  */
 
 import { AppError } from '../utils/errors.js';
@@ -79,7 +79,7 @@ class PlantNetRepository {
       return (await response.json()) as PlantNetApiResponse;
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
-        throw AppError.internal('PlantNet API request timed out after 15 seconds.');
+        throw AppError.internal('PlantNet API request timed out after 30 seconds.');
       }
       // Re-throw AppErrors as-is; wrap unknown errors.
       if (err instanceof AppError) throw err;

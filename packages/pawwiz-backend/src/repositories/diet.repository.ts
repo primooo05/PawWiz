@@ -40,6 +40,22 @@ export interface UpdateDietMealLogData {
   timestamp?: string | null;
 }
 
+/** Rolling window (days) for how much meal-log history we hydrate per profile. */
+const MEAL_LOG_WINDOW_DAYS = 7;
+
+/** Start of the bounded meal-log window (UTC midnight, N days ago). */
+function mealLogWindowStart(): Date {
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - (MEAL_LOG_WINDOW_DAYS - 1));
+  return start;
+}
+
+/** Bounded meal-log include so profile reads never hydrate unbounded history. */
+function recentMealLogsInclude() {
+  return { where: { createdAt: { gte: mealLogWindowStart() } } };
+}
+
 class DietRepository {
   async findManyByProfileId(profileId: string) {
     return prisma.dietProfile.findMany({
@@ -55,7 +71,7 @@ class DietRepository {
           }
         },
         cat: true,
-        mealLogs: true,
+        mealLogs: recentMealLogsInclude(),
       }
     });
   }
@@ -66,7 +82,7 @@ class DietRepository {
       include: {
         profile: true,
         cat: true,
-        mealLogs: true,
+        mealLogs: recentMealLogsInclude(),
       },
     });
   }
@@ -77,80 +93,88 @@ class DietRepository {
       include: {
         profile: true,
         cat: true,
-        mealLogs: true,
+        mealLogs: recentMealLogsInclude(),
       },
     });
   }
 
   async create(profileId: string, data: CreateDietProfileData) {
-    const cat = await prisma.cat.create({
-      data: {
-        profileId,
-        name: data.name,
-        sex: data.gender,
-        lifeStage: data.lifeStage,
-        age: data.age,
-        breed: data.breed,
-        marking: data.marking,
-      }
-    });
+    // Atomic: the Cat and its DietProfile (+ seed meal logs) are created in one
+    // transaction so a partial failure cannot leave an orphaned Cat behind.
+    return prisma.$transaction(async (tx) => {
+      const cat = await tx.cat.create({
+        data: {
+          profileId,
+          name: data.name,
+          sex: data.gender,
+          lifeStage: data.lifeStage,
+          age: data.age,
+          breed: data.breed,
+          marking: data.marking,
+        }
+      });
 
-    return prisma.dietProfile.create({
-      data: {
-        profileId,
-        catId: cat.id,
-        weight: data.weight,
-        isKg: data.isKg,
-        foodPreference: data.foodPreference,
-        isSpayedNeutered: data.isSpayedNeutered,
-        isTracking: data.isTracking ?? false,
-        waterIntake: data.waterIntake ?? 0,
-        mealLogs: {
-          create: [
-            { mealName: 'Breakfast', status: 'pending', kcal: 0 },
-            { mealName: 'Lunch', status: 'pending', kcal: 0 },
-            { mealName: 'Dinner', status: 'pending', kcal: 0 },
-          ],
+      return tx.dietProfile.create({
+        data: {
+          profileId,
+          catId: cat.id,
+          weight: data.weight,
+          isKg: data.isKg,
+          foodPreference: data.foodPreference,
+          isSpayedNeutered: data.isSpayedNeutered,
+          isTracking: data.isTracking ?? false,
+          waterIntake: data.waterIntake ?? 0,
+          mealLogs: {
+            create: [
+              { mealName: 'Breakfast', status: 'pending', kcal: 0 },
+              { mealName: 'Lunch', status: 'pending', kcal: 0 },
+              { mealName: 'Dinner', status: 'pending', kcal: 0 },
+            ],
+          },
         },
-      },
-      include: {
-        profile: true,
-        cat: true,
-        mealLogs: true,
-      },
+        include: {
+          profile: true,
+          cat: true,
+          mealLogs: recentMealLogsInclude(),
+        },
+      });
     });
   }
 
   async update(id: string, data: UpdateDietProfileData) {
     const { name, gender, lifeStage, age, breed, marking, ...dietData } = data;
 
-    const dietProfile = await prisma.dietProfile.findUnique({
-      where: { id },
-      select: { catId: true },
-    });
+    // Atomic: the linked Cat update and the DietProfile update either both
+    // commit or both roll back.
+    return prisma.$transaction(async (tx) => {
+      const dietProfile = await tx.dietProfile.findUnique({
+        where: { id },
+        select: { catId: true },
+      });
 
-    if (dietProfile?.catId && (name !== undefined || gender !== undefined || lifeStage !== undefined || age !== undefined || breed !== undefined || marking !== undefined)) {
-      await prisma.cat.update({
-        where: { id: dietProfile.catId },
-        data: {
-          name,
-          sex: gender,
-          lifeStage,
-          age,
-          breed,
-          marking,
+      if (dietProfile?.catId && (name !== undefined || gender !== undefined || lifeStage !== undefined || age !== undefined || breed !== undefined || marking !== undefined)) {
+        await tx.cat.update({
+          where: { id: dietProfile.catId },
+          data: {
+            name,
+            sex: gender,
+            lifeStage,
+            age,
+            breed,
+            marking,
+          },
+        });
+      }
+
+      return tx.dietProfile.update({
+        where: { id },
+        data: dietData,
+        include: {
+          profile: true,
+          cat: true,
+          mealLogs: recentMealLogsInclude(),
         },
       });
-    }
-
-    return prisma.dietProfile.update({
-      where: { id },
-      data: dietData,
-      include: {
-        profile: true,
-        cat: true,
-        mealLogs: true,
-      },
     });
   }
 

@@ -22,6 +22,7 @@ const makeSession = (overrides: Record<string, unknown> = {}) => ({
   otpExpiresAt: null,
   otpVerified: false,
   otpLastSentAt: null,
+  otpAttempts: 0,
   catsCount: null,
   customCatsCount: null,
   catName: null,

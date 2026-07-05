@@ -19,6 +19,18 @@ declare global {
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 
+// Supabase issues tokens with issuer `${SUPABASE_URL}/auth/v1` and audience
+// `authenticated`. Validating these claims closes the door on tokens minted
+// for other projects/audiences being replayed against this API.
+const EXPECTED_ISSUER = supabaseUrl ? `${supabaseUrl}/auth/v1` : undefined;
+const EXPECTED_AUDIENCE = 'authenticated';
+
+const verifyOptions = (algorithms: jwt.Algorithm[]): jwt.VerifyOptions => ({
+  algorithms,
+  audience: EXPECTED_AUDIENCE,
+  ...(EXPECTED_ISSUER ? { issuer: EXPECTED_ISSUER } : {}),
+});
+
 const client = supabaseUrl
   ? jwksClient({
       jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
@@ -62,7 +74,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
           }
         });
       });
-      decoded = jwt.verify(token, key, { algorithms: ['ES256'] }) as jwt.JwtPayload;
+      decoded = jwt.verify(token, key, verifyOptions(['ES256'])) as jwt.JwtPayload;
     } else {
       // Fallback to legacy symmetric HS256
       const secret = process.env.SUPABASE_JWT_SECRET;
@@ -70,7 +82,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         throw new Error('SUPABASE_JWT_SECRET is not configured');
       }
       const secretBuffer = Buffer.from(secret, 'base64');
-      decoded = jwt.verify(token, secretBuffer, { algorithms: ['HS256'] }) as jwt.JwtPayload;
+      decoded = jwt.verify(token, secretBuffer, verifyOptions(['HS256'])) as jwt.JwtPayload;
     }
 
     if (!decoded.sub) {

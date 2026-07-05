@@ -6,12 +6,13 @@ import NotFound from './pages/NotFound';
 import Onboarding from './pages/Onboarding';
 import Settings from './pages/Settings';
 import ResetPassword from './pages/ResetPassword';
-import CatPregnancyTracker from './components/pregnancy-tracker/PregnancyTracker';
-import CatHeatTracker from './components/heat-tracker/CatHeatTracker';
-import DietRecommender from './components/diet-recommender/DietRecommender';
-import BehaviorChat from './components/behavior-chat/BehaviorChat';
-import BehaviorDashboard from './components/behavior-chat/BehaviorDashboard';
-import Dashboard from './components/user-dashboard/Dashboard';
+import Docs from './pages/Docs';
+import CatPregnancyTracker from './components/features/pregnancy/PregnancyTracker';
+import CatHeatTracker from './components/features/heat/CatHeatTracker';
+import DietRecommender from './components/features/diet/DietRecommender';
+import BehaviorChat from './components/features/behavior/BehaviorChat';
+import BehaviorDashboard from './components/features/behavior/BehaviorDashboard';
+import Dashboard from './components/features/dashboard/Dashboard';
 
 export function Router() {
   return (
@@ -28,6 +29,7 @@ export function Router() {
         <Route path="/diet-recommender" element={<DietRecommender />} />
         <Route path="/behavior-chat" element={<BehaviorChat />} />
         <Route path="/behavior-dashboard" element={<BehaviorDashboard />} />
+        <Route path="/docs" element={<Docs />} />
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="/onboarding" element={<Onboarding />} />

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useOnboarding } from '../hooks/useOnboarding';
+import { useOnboarding } from '../hooks/onboarding/useOnboarding';
 
 /**
  * OnboardingContext provides only the SHARED session-level state

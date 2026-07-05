@@ -1,6 +1,6 @@
 # PawWiz Monorepo 
 
-High-precision, mobile-first feline utility platform for plant toxicity verification, diet optimization, and behavioral decoding.
+High-precision, mobile-first feline utility platform for plant toxicity verification, diet optimization, pregnancy tracking, and behavioral decoding.
 
 ---
 
@@ -8,9 +8,10 @@ High-precision, mobile-first feline utility platform for plant toxicity verifica
 
 PawWiz is architected as a decoupled monorepo managed via native **npm workspaces** using **TypeScript** across the full network boundary:
 
-- **Frontend (`packages/pawwiz-frontend`)**: React + Vite + Tailwind CSS v4.
-- **Backend (`packages/pawwiz-backend`)**: Node.js (Express) + TypeScript + Gemini 3.5 Pipeline (`@google/genai`).
-- **ASPCA Verification Loop**: Deterministic database interceptor to eliminate AI hallucinations on plant toxicity scanning.
+- **Frontend (`packages/pawwiz-frontend`)**: React 19 + Vite + Tailwind CSS v4, Supabase Auth client.
+- **Backend (`packages/pawwiz-backend`)**: Node.js (Express 5) + TypeScript + Prisma 7 (PostgreSQL).
+- **AI pipeline**: Groq (Llama 3.3 70B) as the primary model for behavior decoding and conversational text, with Google **Gemini 2.5 Flash** (`@google/genai`) as the multimodal/text fallback and for plant vision + diet enrichment. A deterministic heuristic fallback keeps every feature working when AI keys are absent.
+- **ASPCA Verification Loop**: Deterministic database interceptor that treats the local ASPCA dataset as ground truth to eliminate AI hallucinations on plant toxicity scanning.
 
 ---
 
@@ -36,19 +37,40 @@ This automatically links the workspaces and installs all dependencies for both t
 
 ### Step 2: Configure Environment Variables & Secrets
 
-This project uses **Infisical** for secret management. Secrets are injected at runtime; **do not** use local `.env` files.
+You can supply secrets in **either** of two ways. A local `.env` file is the simplest for local development; **Infisical** is optional and mainly used for shared/hosted environments.
 
-1. Ensure the Infisical CLI is installed.
-2. Initialize and authenticate with your project context.
-3. Secrets (like `DATABASE_URL`, `DIRECT_URL`, and `GEMINI_API_KEY`) will automatically inject during runtime commands.
+#### Option A — Local `.env` file (recommended for local dev)
+
+A single `.env` at the repo root serves **both** packages:
+- The backend loads the nearest `.env` walking up from its working directory (`src/lib/env.ts`), and Prisma tooling does the same (`prisma.config.ts`).
+- The frontend reads the same root `.env` via Vite (`envDir` points at the repo root); only `VITE_`-prefixed variables are exposed to the browser.
+
+```bash
+# Copy the template and fill in the values
+cp .env.example .env        # macOS/Linux
+copy .env.example .env      # Windows cmd
+```
+
+Optional AI/integration keys (`GEMINI_API_KEY`, `GROQ_API_KEY`, `PLANTNET_API_KEY`, `PERENUAL_API_KEY`, Gmail) can be left blank — the app falls back to mocks/heuristics when they are absent.
+
+#### Option B — Infisical (optional)
+
+If you prefer centrally managed secrets:
+1. Install the Infisical CLI and authenticate with your project context.
+2. Run commands under `infisical run --` (see the Infisical-prefixed scripts below). Injected variables take precedence over any `.env` file.
 
 ---
 
 ### Step 3: Run Database Migrations
 
-For schema migrations, PgBouncer (port `6543`) in transaction mode cannot be used. We must connect directly to port `5432`. A utility script is provided at the root:
+For schema migrations, PgBouncer (port `6543`) in transaction mode cannot be used, so we connect directly to port `5432` (`DIRECT_URL`).
 
-```cmd
+```bash
+# Local .env — no Infisical
+npm run prisma:deploy -w packages/pawwiz-backend   # apply existing migrations
+npm run prisma:migrate -w packages/pawwiz-backend  # create + apply a new migration
+
+# Or, with Infisical (Windows helper that forces DIRECT_URL)
 migrate.bat <migration_name>
 ```
 
@@ -56,8 +78,13 @@ migrate.bat <migration_name>
 
 ### Step 4: Run the Development Servers
 
-To run both the backend Express server and the frontend Vite server concurrently with Infisical secrets, run in the **root** folder:
+To run the backend Express server and the frontend Vite server concurrently, from the **root** folder:
+
 ```bash
+# Local .env — no Infisical
+npm run dev:local
+
+# Or, injecting secrets via Infisical
 npm run dev
 ```
 
@@ -67,7 +94,7 @@ This launches:
 
 ---
 
-### Step 4: Build for Production
+### Step 5: Build for Production
 
 To compile both packages for production:
 ```bash

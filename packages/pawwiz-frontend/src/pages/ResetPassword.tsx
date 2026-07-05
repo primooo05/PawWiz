@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CircleWrapper } from '../components/CircleWrapper';
-import Navbar from '../components/Navbar';
-import { useResetPassword } from '../hooks/useResetPassword';
+import { CircleWrapper } from '../components/ui/CircleWrapper';
+import Navbar from '../components/layout/Navbar';
+import { useResetPassword } from '../hooks/auth/useResetPassword';
 import catsLogin from '../assets/Cats_Login.svg';
 
 export default function ResetPassword() {

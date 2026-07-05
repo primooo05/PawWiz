@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import fc from 'fast-check';
 import { renderHook, act } from '@testing-library/react';
 import { render, screen, cleanup } from '@testing-library/react';
-import { useFormValidation } from '../hooks/useFormValidation.js';
-import { FormField } from '../components/forms/FormField.js';
+import { useFormValidation } from '../hooks/ui/useFormValidation.js';
+import { FormField } from '../components/ui/forms/FormField.js';
 import { z } from 'zod';
 
 const testSchema = z.object({

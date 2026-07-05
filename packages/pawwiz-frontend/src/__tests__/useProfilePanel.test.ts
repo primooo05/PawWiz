@@ -14,7 +14,7 @@ vi.mock('../lib/supabase.js', () => ({
 }));
 
 import { supabase } from '../lib/supabase.js';
-import { useProfilePanel } from '../hooks/useProfilePanel.js';
+import { useProfilePanel } from '../hooks/features/useProfilePanel.js';
 
 // **Validates: Requirements 7.2**
 describe('useProfilePanel', () => {

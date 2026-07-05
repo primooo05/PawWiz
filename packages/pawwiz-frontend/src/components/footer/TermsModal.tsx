@@ -1,4 +1,4 @@
-import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { useBodyScrollLock } from '../../hooks/ui/useBodyScrollLock';
 
 interface TermsModalProps {
   isOpen: boolean;
