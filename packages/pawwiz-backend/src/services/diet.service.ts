@@ -88,6 +88,7 @@ function mapProfileToFrontend(profile: any) {
 
   return {
     id: profile.id,
+    catId: profile.catId ?? null,
     name: profile.cat ? profile.cat.name : profile.profile.catName,
     gender: profile.cat ? profile.cat.sex : profile.profile.catSex,
     lifeStage: profile.cat ? profile.cat.lifeStage : profile.profile.catLifeStage,

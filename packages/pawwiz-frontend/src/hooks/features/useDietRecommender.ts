@@ -17,6 +17,7 @@ export interface MealLog {
 
 export interface CatProfile {
     id: string;
+    catId?: string | null;
     name: string;
     gender: 'male' | 'female';
     lifeStage: 'kitten' | 'adult' | 'senior';
