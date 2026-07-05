@@ -8,10 +8,12 @@ import type { Request, Response } from 'express';
 import { withErrorHandling } from './base.controller.js';
 import { behaviorChatService } from '../services/behavior-chat.service.js';
 
-/** GET /api/behavior/chats — List all chat sessions */
+/** GET /api/behavior/chats — List chat sessions, optionally filtered by catId query param */
 export const getChats = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub as string;
-  const chats = await behaviorChatService.getChats(supabaseUserId);
+  // ?catId=<id> scopes the list to a specific cat; omitting it returns all user chats.
+  const catId = (req.query.catId as string | undefined) || null;
+  const chats = await behaviorChatService.getChats(supabaseUserId, catId);
   res.json({ chats });
 });
 
@@ -26,8 +28,8 @@ export const getChat = withErrorHandling(async (req: Request, res: Response) => 
 /** POST /api/behavior/chats — Create a new chat session */
 export const createChat = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub as string;
-  const { title } = req.body;
-  const chat = await behaviorChatService.createChat(supabaseUserId, title);
+  const { title, catId } = req.body;
+  const chat = await behaviorChatService.createChat(supabaseUserId, title, catId ?? null);
   res.status(201).json(chat);
 });
 

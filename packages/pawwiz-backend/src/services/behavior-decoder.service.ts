@@ -141,6 +141,29 @@ class BehaviorDecoderService {
       };
     }
 
+    // ── Follow-up gate (runs before conversational routing) ─────────────────
+    // A message that matches a recognisable behavioral topic (eating, hiding,
+    // meowing, etc.) and is short (≤ 10 words) should always receive targeted
+    // follow-up chips — even when there is prior conversation history.
+    // This must run *before* the isConversational check so that thin behavioral
+    // openers ("My cat is not eating") are never swallowed by the conversational
+    // route, which would silently drop the suggestion chips.
+    const followUpEarly = generateFollowUp(request.vocalDescription);
+    if (followUpEarly.needsFollowUp) {
+      const wordCount = request.vocalDescription.trim().split(/\s+/).length;
+      if (wordCount <= 10) {
+        logger.info('[BehaviorDecoder] Follow-up triggered (early gate) for behavioral topic', {
+          vocalDescription: request.vocalDescription,
+          wordCount,
+        });
+        return {
+          type: 'followup',
+          question: followUpEarly.question,
+          suggestedPrompts: followUpEarly.suggestedPrompts,
+        };
+      }
+    }
+
     // Conversational follow-up — the message references a prior exchange.
     // Route through a plain-text prompt so the AI answers naturally instead of
     // re-running a structured behavior decode.
@@ -217,15 +240,18 @@ class BehaviorDecoderService {
     }
 
     // Check for curiosity-driven follow-up — message has a recognizable topic
-    // but not enough detail for a confident behavioral decode. Send a targeted
-    // question with fresh chips instead of forwarding sparse context to the AI.
+    // but not enough detail for a confident behavioral decode.
+    // NOTE: the early gate above already handles the short-message case
+    // (≤ 10 words). This block catches longer messages that are still
+    // topic-matched but just barely over the threshold — kept for safety.
     const followUp = generateFollowUp(request.vocalDescription);
     if (followUp.needsFollowUp) {
-      // Only trigger follow-up when context is thin (≤ 10 words). Longer
-      // messages have enough detail to attempt a real AI decode.
+      // Only re-trigger for messages that slipped through (> 10 words is
+      // already handled by the AI decode path, so this is effectively a no-op
+      // in normal flow — it guards against edge-cases only).
       const wordCount = request.vocalDescription.trim().split(/\s+/).length;
       if (wordCount <= 10) {
-        logger.info('[BehaviorDecoder] Follow-up triggered for structured-but-thin prompt', {
+        logger.info('[BehaviorDecoder] Follow-up triggered (secondary gate)', {
           vocalDescription: request.vocalDescription,
           wordCount,
         });
@@ -296,10 +322,15 @@ class BehaviorDecoderService {
 
   /**
    * Build the behavior decode prompt from request data.
+   * Includes cat profile context when provided for personalised decoding.
    * Includes conversation history when present so the AI can answer follow-ups
    * in context. Shared across all AI providers.
    */
   private buildPrompt(request: BehaviorDecodeRequest): string {
+    const catSection = request.catContext
+      ? `\nCat profile: ${request.catContext.name}${request.catContext.breed ? ` (${request.catContext.breed})` : ''}, ${request.catContext.sex ?? 'unknown sex'}, ${request.catContext.lifeStage ?? 'adult'}${request.catContext.age ? `, ${request.catContext.age} ${request.catContext.lifeStage === 'kitten' ? 'months' : 'years'} old` : ''}.\n`
+      : '';
+
     const historySection =
       request.conversationHistory && request.conversationHistory.length > 0
         ? `\nConversation so far:\n${request.conversationHistory
@@ -307,12 +338,12 @@ class BehaviorDecoderService {
             .join('\n')}\n`
         : '';
 
-    return `Decode the following feline behavioral state.${historySection}
+    return `Decode the following feline behavioral state.${catSection}${historySection}
 Current message: ${request.vocalDescription}
 Body Language Signs: ${request.bodyLanguageSigns.join(', ')}
 Context: ${request.context}
 
-${historySection ? 'Use the conversation history above to answer follow-up questions in context. ' : ''}Analyze vocal signals, tail position, eye dilation, and ear positions. Return a detailed behavior decode response as JSON with these fields:
+${historySection ? 'Use the conversation history above to answer follow-up questions in context. ' : ''}${catSection ? `Use the cat profile above to personalise your analysis (e.g. kitten vs. senior behaviours differ). ` : ''}Analyze vocal signals, tail position, eye dilation, and ear positions. Return a detailed behavior decode response as JSON with these fields:
 - vocalAnalysis (string): Analysis of the vocal signals
 - bodyLanguageAnalysis (string): Analysis of the body language
 - decodedMeaning (string): Overall interpretation of the behavior
@@ -325,8 +356,13 @@ ${historySection ? 'Use the conversation history above to answer follow-up quest
    * Build a plain-text conversational prompt for follow-up questions.
    * Strips markdown formatting from Wiz history so the AI reasons against
    * clean text rather than its own rendering syntax.
+   * Includes cat context when provided for personalised answers.
    */
   private buildConversationalPrompt(request: BehaviorDecodeRequest): string {
+    const catLine = request.catContext
+      ? `\nCat: ${request.catContext.name}${request.catContext.breed ? ` (${request.catContext.breed})` : ''}, ${request.catContext.sex ?? 'unknown sex'}, ${request.catContext.lifeStage ?? 'adult'}${request.catContext.age ? `, ${request.catContext.age} ${request.catContext.lifeStage === 'kitten' ? 'months' : 'years'} old` : ''}.\n`
+      : '';
+
     const history = (request.conversationHistory ?? [])
       .map((t) => {
         const role = t.role === 'user' ? 'Owner' : 'Wiz';
@@ -335,7 +371,7 @@ ${historySection ? 'Use the conversation history above to answer follow-up quest
       })
       .join('\n');
 
-    return `Previous conversation:
+    return `${catLine}Previous conversation:
 ${history}
 
 Owner's new message: ${request.vocalDescription}

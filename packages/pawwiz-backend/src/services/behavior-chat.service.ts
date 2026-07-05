@@ -15,10 +15,10 @@ import { AppError } from '../utils/errors.js';
 import { logger } from '../utils/winston.js';
 
 class BehaviorChatService {
-  /** Get all chat sessions for the authenticated user */
-  async getChats(supabaseUserId: string): Promise<ChatWithMessages[]> {
-    logger.info('[BehaviorChat] Fetching all chats', { supabaseUserId });
-    return behaviorChatRepository.findAllByUser(supabaseUserId);
+  /** Get all chat sessions for the authenticated user, optionally scoped to a cat */
+  async getChats(supabaseUserId: string, catId?: string | null): Promise<ChatWithMessages[]> {
+    logger.info('[BehaviorChat] Fetching chats', { supabaseUserId, catId: catId ?? 'all' });
+    return behaviorChatRepository.findAllByUser(supabaseUserId, catId ?? undefined);
   }
 
   /** Get a single chat by ID (with ownership check) */
@@ -34,11 +34,12 @@ class BehaviorChatService {
     return chat;
   }
 
-  /** Create a new chat session */
-  async createChat(supabaseUserId: string, title?: string) {
-    logger.info('[BehaviorChat] Creating new chat', { supabaseUserId, title });
+  /** Create a new chat session, scoped to a specific cat when catId is provided */
+  async createChat(supabaseUserId: string, title?: string, catId?: string | null) {
+    logger.info('[BehaviorChat] Creating new chat', { supabaseUserId, title, catId: catId ?? null });
     const chat = await behaviorChatRepository.createChat({
       supabaseUserId,
+      catId: catId ?? null,
       title,
     });
 
@@ -64,9 +65,12 @@ class BehaviorChatService {
 
     // Extract and log behaviors from user messages
     if (data.speaker === 'user') {
-      // Non-blocking behavior extraction — errors don't fail message creation
+      // Non-blocking behavior extraction — errors don't fail message creation.
+      // Fetch the chat upfront so we can attach catId to each BehaviorLog.
       setImmediate(async () => {
         try {
+          const parentChat = await behaviorChatRepository.findById(data.chatId);
+          const catId = (parentChat as any)?.catId ?? null;
           const extractedBehaviors = extractBehaviors(data.text);
           
           for (const behavior of extractedBehaviors) {
@@ -74,6 +78,7 @@ class BehaviorChatService {
               await createBehaviorLog({
                 chatId: data.chatId,
                 supabaseUserId,
+                catId: catId ?? undefined,
                 behaviorType: behavior.type,
                 intensity: behavior.intensity,
                 description: behavior.description,
@@ -93,6 +98,7 @@ class BehaviorChatService {
             logger.debug('[BehaviorChat] Extracted behaviors', {
               supabaseUserId,
               chatId: data.chatId,
+              catId: catId ?? null,
               count: extractedBehaviors.length,
               types: extractedBehaviors.map(b => b.type),
             });

@@ -75,6 +75,15 @@ export interface DietPlan {
   dietRationale: string;
 }
 
+/** Optional cat profile snapshot used to personalize behavior decoding. */
+export interface BehaviorCatContext {
+  name: string;
+  sex?: string;       // 'male' | 'female'
+  lifeStage?: string; // 'kitten' | 'adult' | 'senior'
+  breed?: string | null;
+  age?: number | null; // years (or months for kittens)
+}
+
 export interface BehaviorDecodeRequest {
   vocalDescription: string;
   bodyLanguageSigns: string[]; // e.g., "tail twitching", "pupils dilated", "ears back"
@@ -82,6 +91,8 @@ export interface BehaviorDecodeRequest {
   /** Recent conversation turns passed for context-aware follow-up handling.
    *  Each entry is a { role, content } pair (max 6 turns = 3 exchanges). */
   conversationHistory?: Array<{ role: 'user' | 'wiz'; content: string }>;
+  /** Optional cat profile context for personalised decoding. */
+  catContext?: BehaviorCatContext;
 }
 
 export interface BehaviorDecodeResponse {
