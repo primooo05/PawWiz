@@ -19,6 +19,7 @@ const CatPregnancyTracker: React.FC = () => {
     const diet = useDietRecommender();
     const { profile, isLoading: isProfileLoading } = useProfilePanel();
 
+<<<<<<< HEAD
     // ── Female cat roster ────────────────────────────────────────────────────
     // Gather ALL female cats regardless of which diet profile is currently active.
     // The pregnancy tracker is cat-specific, not active-profile-specific — a user
@@ -29,6 +30,12 @@ const CatPregnancyTracker: React.FC = () => {
         .map((p) => ({ id: p.catId ?? p.id, name: p.name, photoUrl: p.photoUrl ?? null }));
 
     // Fallback: primary profile cat is female but no diet profile exists yet.
+=======
+    // Build the roster of female cats. Diet profiles carry gender; fall back to the
+    // primary profile when the owner has a female cat but no diet profile yet.
+    const femaleRoster =
+        diet.profiles.filter((p) => p.gender === 'female').map((p) => ({ id: p.catId ?? p.id, name: p.name, photoUrl: p.photoUrl ?? null }));
+>>>>>>> 4bae8d0 (feat: Flo-style cat pregnancy tracker backend + frontend integration)
     if (femaleRoster.length === 0 && profile?.catSex === 'female') {
         femaleRoster.push({ id: 'primary', name: profile.catName || 'Your Cat', photoUrl: null });
     }
@@ -51,6 +58,10 @@ const CatPregnancyTracker: React.FC = () => {
     }, [femaleRoster.length, activeProfileIsFemale, selectedCatId]);
 
     // ── Backend session ──────────────────────────────────────────────────────
+    const catIdForApi = selectedCatId && selectedCatId !== 'primary' ? selectedCatId : null;
+    const pregnancy = useCatPregnancy(catIdForApi);
+
+    // Backend pregnancy session — syncs logs to server when catId is available.
     const catIdForApi = selectedCatId && selectedCatId !== 'primary' ? selectedCatId : null;
     const pregnancy = useCatPregnancy(catIdForApi);
 
@@ -101,19 +112,34 @@ const CatPregnancyTracker: React.FC = () => {
 
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
+    // When the user submits the setup form, start both the local tracker and
+    // (if a real catId is available) a server-side pregnancy session.
     const startTrackingWithLoading = (e: React.FormEvent) => {
         e.preventDefault();
         if (matingDate) {
             setIsLoading(true);
+<<<<<<< HEAD
+=======
+            // Start the backend session (fire-and-forget; the local UI drives UX).
+>>>>>>> 4bae8d0 (feat: Flo-style cat pregnancy tracker backend + frontend integration)
             if (catIdForApi) {
                 void pregnancy.startSession(matingDate);
             }
         }
     };
 
+<<<<<<< HEAD
     const saveLogForDateWithSync = React.useCallback(
         (dateStr: string, log: typeof todayLog) => {
             saveLogForDate(dateStr, log);
+=======
+    // Sync today's log to the backend whenever it changes locally.
+    const saveLogForDateWithSync = React.useCallback(
+        (dateStr: string, log: typeof todayLog) => {
+            saveLogForDate(dateStr, log);
+
+            // If we have an active backend session, persist the log server-side.
+>>>>>>> 4bae8d0 (feat: Flo-style cat pregnancy tracker backend + frontend integration)
             if (pregnancy.hasActiveSession && dateStr === todayStr) {
                 const symptoms = (log.symptoms || []).map((s: string) =>
                     s.toLowerCase().replace(/\s+/g, '_'),
@@ -197,6 +223,10 @@ const CatPregnancyTracker: React.FC = () => {
                     />
                 ) : (
                     <>
+<<<<<<< HEAD
+=======
+                        {/* Flo-style insight cards (from backend) — shown above the dashboard */}
+>>>>>>> 4bae8d0 (feat: Flo-style cat pregnancy tracker backend + frontend integration)
                         {pregnancy.insights.length > 0 && (
                             <InsightCardFeed
                                 insights={pregnancy.insights}
@@ -205,6 +235,10 @@ const CatPregnancyTracker: React.FC = () => {
                             />
                         )}
 
+<<<<<<< HEAD
+=======
+                        {/* "Logged today" status pill — links to existing bottom sheet */}
+>>>>>>> 4bae8d0 (feat: Flo-style cat pregnancy tracker backend + frontend integration)
                         <div className="flex justify-end mb-4">
                             <TodayLogStatus
                                 loggedToday={pregnancy.loggedToday}
