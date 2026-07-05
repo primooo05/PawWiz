@@ -96,7 +96,10 @@ model Cat {
   onboardingSession       OnboardingSession?      @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
   healthTimelineInsights  HealthTimelineInsight[]
   pregnancySessions       PregnancySession[]
+<<<<<<< HEAD
   behaviorChats           BehaviorChat[]
+=======
+>>>>>>> 4bae8d0 (feat: Flo-style cat pregnancy tracker backend + frontend integration)
 
   @@index([profileId])
   @@map("cats")
