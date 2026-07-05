@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Info, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getFelineFeedingGuideDetails } from '../../../../hooks/features/useDietRecommender';
+import type { FoodType } from '../../../../lib/foods';
 
 interface FeedingGuidelineProps {
     lifeStage: 'kitten' | 'adult' | 'senior';
     weight: number;
     isKg: boolean;
-    foodPreference: 'dry' | 'wet' | 'mixed';
+    foodPreference: FoodType;
 }
 
 export const FeedingGuideline: React.FC<FeedingGuidelineProps> = ({

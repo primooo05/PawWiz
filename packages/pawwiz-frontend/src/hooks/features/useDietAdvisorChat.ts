@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { API_BASE } from '../../lib/config.js';
+import type { FoodType } from '../../lib/foods';
 
 export interface DietChatMessage {
     id: string;
@@ -17,7 +18,7 @@ export interface DietAdviceCatContext {
     age: number;
     weight: number;
     isKg: boolean;
-    foodPreference: 'dry' | 'wet' | 'mixed';
+    foodPreference: FoodType;
     isSpayedNeutered: boolean;
     dailyCalories: number;
     totalLoggedCalories: number;

@@ -37,6 +37,7 @@ export const DietRecommender: React.FC = () => {
         handleResetDietTracking,
         toggleUnit,
         addMeal,
+        addCustomMeal,
         skipMeal,
         resetMealLog,
         addWater,
@@ -143,10 +144,7 @@ export const DietRecommender: React.FC = () => {
                     foodPreference={foodPreference}
                     isSpayedNeutered={isSpayedNeutered}
                     activeLifeStage={activeLifeStage}
-                    lifeStage={lifeStage}
                     age={age}
-                    ageBracketInfo={ageBracketInfo}
-                    onReset={handleResetWithLoading}
                     catName={catName}
                     gender={gender}
                     profiles={profiles}
@@ -156,6 +154,7 @@ export const DietRecommender: React.FC = () => {
                     loggedMeals={loggedMeals}
                     waterIntake={waterIntake}
                     addMeal={addMeal}
+                    addCustomMeal={addCustomMeal}
                     skipMeal={skipMeal}
                     resetMealLog={resetMealLog}
                     addWater={addWater}

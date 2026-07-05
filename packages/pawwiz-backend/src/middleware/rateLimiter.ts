@@ -128,6 +128,23 @@ export const onboardingStartLimiter = rateLimit({
 });
 
 /**
+ * Tracking-write limiter: 60 requests per 5 min, keyed on JWT sub claim.
+ * Guards high-frequency authenticated write endpoints (water intake, meal
+ * logging) against accidental spam/rapid double-taps without blocking normal
+ * day-to-day logging activity.
+ */
+export const trackingWriteLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => req.user?.sub ?? keyGenerator(req),
+  handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
+    res.status(options.statusCode).json({ error: 'Too many updates. Please wait a moment before trying again.' });
+  },
+});
+
+/**
  * Selector middleware for POST /api/toxicity/scan.
  * Delegates to scanLimiter when the request is authenticated (req.user present)
  * and scanIpLimiter otherwise.
