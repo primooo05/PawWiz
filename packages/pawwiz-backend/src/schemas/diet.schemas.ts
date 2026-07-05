@@ -11,7 +11,7 @@ export const createDietProfileSchema = z.object({
   age: z.number().int().nonnegative('Age must be non-negative'),
   weight: z.number().positive('Weight must be greater than zero'),
   isKg: z.boolean(),
-  foodPreference: z.enum(['dry', 'wet', 'mixed']),
+  foodPreference: z.enum(['dry', 'wet', 'mixed', 'chicken', 'chicken_thigh', 'fish', 'egg', 'other']),
   isSpayedNeutered: z.boolean(),
   isTracking: z.boolean().optional().default(false),
   waterIntake: z.number().int().nonnegative().optional().default(0),
@@ -26,7 +26,7 @@ export const updateDietProfileSchema = z.object({
   age: z.number().int().nonnegative().optional(),
   weight: z.number().positive().optional(),
   isKg: z.boolean().optional(),
-  foodPreference: z.enum(['dry', 'wet', 'mixed']).optional(),
+  foodPreference: z.enum(['dry', 'wet', 'mixed', 'chicken', 'chicken_thigh', 'fish', 'egg', 'other']).optional(),
   isSpayedNeutered: z.boolean().optional(),
   isTracking: z.boolean().optional(),
   waterIntake: z.number().int().nonnegative().optional(),
@@ -35,9 +35,11 @@ export const updateDietProfileSchema = z.object({
 });
 
 export const updateDietMealLogSchema = z.object({
-  foodType: z.enum(['dry', 'wet', 'mixed']).nullable().optional(),
+  // foodType accepts catalog ids (dry/wet/mixed/chicken/…) OR a free-text custom
+  // food name, so it is validated as a bounded string rather than a fixed enum.
+  foodType: z.string().max(60).nullable().optional(),
   amount: z.number().nonnegative().nullable().optional(),
-  unit: z.enum(['spoon', 'cup']).nullable().optional(),
+  unit: z.enum(['spoon', 'cup', 'gram']).nullable().optional(),
   kcal: z.number().nonnegative().optional(),
   status: z.enum(['pending', 'logged', 'skipped']),
   timestamp: z.string().nullable().optional(),

@@ -107,7 +107,7 @@ export interface DietAdviceCatContext {
   age: number;
   weight: number;
   isKg: boolean;
-  foodPreference: 'dry' | 'wet' | 'mixed';
+  foodPreference: 'dry' | 'wet' | 'mixed' | 'chicken' | 'chicken_thigh' | 'fish' | 'egg' | 'other';
   isSpayedNeutered: boolean;
   dailyCalories: number;
   totalLoggedCalories: number;
@@ -123,4 +123,56 @@ export interface DietAdviceRequest {
   /** Recent conversation turns for context-aware follow-up handling.
    *  Each entry is a { role, content } pair (max 6 turns = 3 exchanges). */
   conversationHistory?: Array<{ role: 'user' | 'wiz'; content: string }>;
+}
+
+// ─── Unified Health Timeline types ───────────────────────────────────────────
+
+export type EventSource = 'behavior' | 'diet' | 'pregnancy' | 'heat';
+
+export type EventType =
+  | 'behavior_log'
+  | 'meal_logged'
+  | 'diet_profile_updated'
+  | 'water_updated'
+  | 'pregnancy_started'
+  | 'pregnancy_daily_log'
+  | 'heat_cycle_started'
+  | 'mating_logged';
+
+export interface HealthEvent {
+  id: string;               // originating record id (cuid from source table)
+  catId: string;
+  source: EventSource;
+  eventType: EventType;
+  occurredAt: string;       // ISO 8601 UTC with ms precision: YYYY-MM-DDTHH:mm:ss.sssZ
+  title: string;            // human-readable headline (≤ 80 chars)
+  description: string;      // short prose summary (≤ 200 chars; truncated before AI prompt)
+  metadata?: Record<string, unknown>; // source-specific fields
+}
+
+export type InsightSeverity = 'info' | 'warning' | 'concern';
+
+export interface CorrelationInsight {
+  id: string;               // UUID
+  catId: string;
+  type: string;             // correlation type slug
+  summary: string;          // ≤ 160 chars
+  detail: string;           // ≤ 500 chars
+  severity: InsightSeverity;
+  eventIds: string[];       // correlated HealthEvent ids, lowercase hyphen-separated UUIDs
+  source: 'ai' | 'heuristic';
+  generatedAt: string;      // ISO 8601 UTC
+}
+
+export interface TimelineResponse {
+  data: HealthEvent[];
+  pagination: {
+    nextCursor: string | null;
+    hasMore: boolean;
+  };
+  errors: Array<{ source: EventSource; message: string }>;
+}
+
+export interface InsightsResponse {
+  data: CorrelationInsight[];
 }

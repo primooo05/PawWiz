@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import LoadingScreen from '../../layout/LoadingScreen';
-import DietSetupView, { DietSetupModal } from './DietSetupView';
+import { DietSetupModal } from './DietSetupView';
 import DietDashboardView from './DietDashboardView';
 import { useDietRecommender } from '../../../hooks/features/useDietRecommender';
 import BottomNav from '../../layout/BottomNav';
@@ -34,7 +34,6 @@ export const DietRecommender: React.FC = () => {
         activeLifeStage,
         ageBracketInfo,
         handleStartDietTracking,
-        handleResetDietTracking,
         toggleUnit,
         addMeal,
         addCustomMeal,

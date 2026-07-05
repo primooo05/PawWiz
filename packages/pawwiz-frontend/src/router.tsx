@@ -13,6 +13,7 @@ import DietRecommender from './components/features/diet/DietRecommender';
 import BehaviorChat from './components/features/behavior/BehaviorChat';
 import BehaviorDashboard from './components/features/behavior/BehaviorDashboard';
 import Dashboard from './components/features/dashboard/Dashboard';
+import HealthTimelinePage from './components/features/timeline/HealthTimelinePage';
 
 export function Router() {
   return (
@@ -29,6 +30,7 @@ export function Router() {
         <Route path="/diet-recommender" element={<DietRecommender />} />
         <Route path="/behavior-chat" element={<BehaviorChat />} />
         <Route path="/behavior-dashboard" element={<BehaviorDashboard />} />
+        <Route path="/health-timeline/:catId" element={<HealthTimelinePage />} />
         <Route path="/docs" element={<Docs />} />
         <Route path="*" element={<NotFound />} />
       </Route>

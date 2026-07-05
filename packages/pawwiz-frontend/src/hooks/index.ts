@@ -6,7 +6,7 @@ export { useResetPassword } from './auth/useResetPassword';
 // Onboarding hooks
 export { useOnboarding } from './onboarding/useOnboarding';
 export { useOnboardingState } from './onboarding/useOnboardingState';
-export { useOnboardingValidation } from './onboarding/useOnboardingValidation';
+export * from './onboarding/useOnboardingValidation';
 
 // Tracker hooks
 export { usePregnancyTracker } from './trackers/usePregnancyTracker';
@@ -22,6 +22,10 @@ export { useDietRecommender } from './features/useDietRecommender';
 export { usePlantScan } from './features/usePlantScan';
 export { useCatAvatarUpload } from './features/useCatAvatarUpload';
 export { useProfilePanel } from './features/useProfilePanel';
+export { useQuickLog } from './features/useQuickLog';
+export { useHealthTimeline } from './features/useHealthTimeline';
+export { useTimelineInsights } from './features/useTimelineInsights';
+export { useHealthExport } from './features/useHealthExport';
 
 // UI hooks
 export { useFormValidation } from './ui/useFormValidation';

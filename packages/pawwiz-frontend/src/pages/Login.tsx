@@ -4,7 +4,10 @@ import { CircleWrapper } from '../components/ui/CircleWrapper';
 import Navbar from '../components/layout/Navbar';
 import { useLogin } from '../hooks/auth/useLogin';
 import { useForgotPassword } from '../hooks/auth/useForgotPassword';
+import { TextField } from '../components/ui/forms/TextField';
 import catsLogin from '../assets/Cats_Login.svg';
+
+const LOGIN_LABEL_CLASS = 'italic text-[#a0aec0] text-lg font-bold';
 
 export default function Login() {
   const location = useLocation();
@@ -119,24 +122,18 @@ export default function Login() {
                 </div>
               ) : (
                 <form onSubmit={recovery.handleSubmit} noValidate className="flex flex-col gap-6">
-                  <div className="flex flex-col text-left">
-                    <label htmlFor="recovery-email" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
-                      Enter Email
-                    </label>
-                    <input
-                      id="recovery-email"
-                      type="email"
-                      name="email"
-                      placeholder="Your Email"
-                      value={recovery.form.values.email}
-                      onChange={(e) => recovery.form.handleChange('email', e.target.value)}
-                      onBlur={() => recovery.form.handleBlur('email')}
-                      className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
-                    />
-                    <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${recovery.form.errors.email ? 'opacity-100' : 'opacity-0'}`}>
-                      {recovery.form.errors.email || '\u00A0'}
-                    </p>
-                  </div>
+                  <TextField
+                    id="recovery-email"
+                    type="email"
+                    name="email"
+                    label="Enter Email"
+                    labelClassName={LOGIN_LABEL_CLASS}
+                    placeholder="Your Email"
+                    value={recovery.form.values.email}
+                    onChange={(e) => recovery.form.handleChange('email', e.target.value)}
+                    onBlur={() => recovery.form.handleBlur('email')}
+                    error={recovery.form.errors.email}
+                  />
 
                   <button
                     type="submit"
@@ -167,69 +164,59 @@ export default function Login() {
 
               <form onSubmit={handleLogin} noValidate className="flex flex-col gap-6">
                 {/* Email Field */}
-                <div className="flex flex-col text-left">
-                  <label htmlFor="email" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
-                    Enter Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    placeholder="Your Email"
-                    value={form.values.email}
-                    onChange={(e) => form.handleChange('email', e.target.value)}
-                    onBlur={() => form.handleBlur('email')}
-                    className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
-                  />
-                  <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${form.errors.email ? 'opacity-100' : 'opacity-0'}`}>
-                    {form.errors.email || '\u00A0'}
-                  </p>
-                </div>
+                <TextField
+                  id="email"
+                  type="email"
+                  name="email"
+                  label="Enter Email"
+                  labelClassName={LOGIN_LABEL_CLASS}
+                  placeholder="Your Email"
+                  value={form.values.email}
+                  onChange={(e) => form.handleChange('email', e.target.value)}
+                  onBlur={() => form.handleBlur('email')}
+                  error={form.errors.email}
+                />
 
                 {/* Password Field */}
                 <div className="flex flex-col text-left">
-                  <label htmlFor="password" className="italic text-[#a0aec0] text-lg font-bold mb-2 block">
-                    Enter Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      placeholder="Your Password"
-                      value={form.values.password}
-                      onChange={(e) => form.handleChange('password', e.target.value)}
-                      onBlur={() => form.handleBlur('password')}
-                      autoComplete="current-password"
-                      className="w-full bg-[#30c290] text-white placeholder-white/80 font-bold px-8 py-4 pr-14 rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#e9c46a] text-center text-lg shadow-md min-h-[44px]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      aria-pressed={showPassword}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#e9c46a] rounded-full p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                      tabIndex={0}
-                    >
-                      {showPassword ? (
-                        /* Eye-slash — password visible */
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                          <line x1="1" y1="1" x2="23" y2="23" />
-                        </svg>
-                      ) : (
-                        /* Eye — password hidden */
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
-                          <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  <p className={`mt-1 text-sm text-red-500 ml-4 min-h-[20px] transition-opacity duration-200 ${form.errors.password ? 'opacity-100' : 'opacity-0'}`}>
-                    {form.errors.password || '\u00A0'}
-                  </p>
+                  <TextField
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    label="Enter Password"
+                    labelClassName={LOGIN_LABEL_CLASS}
+                    placeholder="Your Password"
+                    value={form.values.password}
+                    onChange={(e) => form.handleChange('password', e.target.value)}
+                    onBlur={() => form.handleBlur('password')}
+                    autoComplete="current-password"
+                    error={form.errors.password}
+                    trailing={
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        aria-pressed={showPassword}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/90 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#e9c46a] rounded-full p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        tabIndex={0}
+                      >
+                        {showPassword ? (
+                          /* Eye-slash — password visible */
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        ) : (
+                          /* Eye — password hidden */
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+                            <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    }
+                  />
                   {/* Forgot password trigger — decoupled from login payload */}
                   <button
                     type="button"

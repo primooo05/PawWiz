@@ -8,11 +8,12 @@ import QuickLogBar from '../quicklog/QuickLogBar';
 import ProfileCard from '../diet/sub-components/ProfileCard.js';
 import { CircleWrapper } from '../../ui/CircleWrapper';
 import { StackedBarChart, DonutChartLabeled, LineChart } from './charts/Charts';
-import { Activity, Apple, Heart, BarChart3, Droplet } from 'lucide-react';
+import { Activity, Apple, Heart, BarChart3, Droplet, Stethoscope } from 'lucide-react';
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker.js';
 import { useDietRecommender, getAgeBracketInfo } from '../../../hooks/features/useDietRecommender';
 import { getTimeGreeting } from '../../../utils/greeting';
+import HealthInsightsWidget from './HealthInsightsWidget.js';
 
 // Neo-brutalist palette (shared with charts)
 const ORANGE = '#FF6B35';
@@ -875,6 +876,19 @@ const Dashboard: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Health Insights Section */}
+          {diet.activeProfile?.catId && (
+            <div className="mt-16">
+              <div className="border-l-4 border-[#1a1a1a] pl-4 mb-6">
+                <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
+                  <Stethoscope className="w-7 h-7" strokeWidth={3} /> HEALTH INSIGHTS
+                </h2>
+                <p className="text-sm text-[#555] mt-2 font-bold">AI-detected patterns across behavior, diet, and reproductive events</p>
+              </div>
+              <HealthInsightsWidget catId={diet.activeProfile.catId} />
+            </div>
+          )}
 
         </div>
       </div>

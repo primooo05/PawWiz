@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Feline food catalog + calorie math.
  *
  * Each food carries a real-ish caloric density (kcal per gram) plus how many

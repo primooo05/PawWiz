@@ -97,6 +97,25 @@ export const emailCheckLimiter = rateLimit({
 });
 
 /**
+ * Quick-tracking write limiter: 60 writes per 5 min, keyed on the JWT sub claim.
+ * Guards the high-frequency one-tap endpoints (Quick Log behaviors + water
+ * intake) against scripted spam and accidental tap-floods. Generous for a human
+ * tapping through their day, tight for automation. Keyed on the user (not IP) so
+ * one abuser can't exhaust the budget for others behind the same NAT/proxy.
+ */
+export const trackingWriteLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => req.user?.sub ?? 'unknown',
+  message: 'You are logging too fast. Please slow down and try again shortly.',
+  handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
+    res.status(options.statusCode).json({ error: options.message });
+  },
+});
+
+/**
  * OTP verification limiter: 5 attempts per 15 min per IP.
  * Front-line defence against online OTP brute-forcing (complements the
  * per-session lockout enforced in OnboardingService.verifyOtp).
@@ -124,23 +143,6 @@ export const onboardingStartLimiter = rateLimit({
   keyGenerator,
   handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
     res.status(options.statusCode).json({ error: 'Too many onboarding attempts. Please wait before trying again.' });
-  },
-});
-
-/**
- * Tracking-write limiter: 60 requests per 5 min, keyed on JWT sub claim.
- * Guards high-frequency authenticated write endpoints (water intake, meal
- * logging) against accidental spam/rapid double-taps without blocking normal
- * day-to-day logging activity.
- */
-export const trackingWriteLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000,
-  limit: 60,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  keyGenerator: (req: Request) => req.user?.sub ?? keyGenerator(req),
-  handler: (req: Request, res: Response, next: NextFunction, options: Options) => {
-    res.status(options.statusCode).json({ error: 'Too many updates. Please wait a moment before trying again.' });
   },
 });
 

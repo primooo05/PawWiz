@@ -90,10 +90,11 @@ model Cat {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  profile             Profile?           @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  dietProfiles        DietProfile[]
-  onboardingSessionId String?            @map("onboarding_session_id")
-  onboardingSession   OnboardingSession? @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
+  profile                 Profile?                @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  dietProfiles            DietProfile[]
+  onboardingSessionId     String?                 @map("onboarding_session_id")
+  onboardingSession       OnboardingSession?      @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
+  healthTimelineInsights  HealthTimelineInsight[]
 
   @@index([profileId])
   @@map("cats")
@@ -170,6 +171,33 @@ model BehaviorMessage {
 
   @@index([chatId])
   @@map("behavior_messages")
+}
+
+enum InsightSeverity {
+  info
+  warning
+  concern
+}
+
+model HealthTimelineInsight {
+  id          String          @id @default(uuid())
+  catId       String          @map("cat_id")
+  type        String          @db.VarChar(100)
+  summary     String          @db.VarChar(160)
+  detail      String          @db.VarChar(500)
+  severity    InsightSeverity
+  eventIds    Json            @map("event_ids")
+  source      String          @db.VarChar(20)
+  generatedAt DateTime        @map("generated_at") @db.Timestamptz
+  createdAt   DateTime        @default(now())      @map("created_at")
+  updatedAt   DateTime        @updatedAt           @map("updated_at")
+
+  cat Cat @relation(fields: [catId], references: [id], onDelete: Cascade)
+
+  @@index([catId, generatedAt(sort: Desc)])
+  @@index([catId, type])
+  @@unique([catId, type, generatedAt])
+  @@map("health_timeline_insights")
 }
 
 model BehaviorLog {

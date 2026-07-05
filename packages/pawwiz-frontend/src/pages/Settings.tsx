@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDietRecommender } from '../hooks/features/useDietRecommender';
 import { useCatAvatarUpload } from '../hooks/features/useCatAvatarUpload';
 import BottomNav from '../components/layout/BottomNav';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import LoadingScreen from '../components/layout/LoadingScreen';
 import { SearchableDropdown } from '../components/features/onboarding/SearchableDropdown';
@@ -103,18 +103,15 @@ function CatAvatarTrigger({
 
 export default function Settings() {
     const navigate = useNavigate();
-    const location = useLocation();
     const {
         profiles,
         switchProfile,
         createNewProfile,
         deleteProfile,
-        updateProfile,
     } = useDietRecommender();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showAddForm, setShowAddForm] = useState<boolean>(false);
-    const [editingCatId, setEditingCatId] = useState<string | null>(null);
     const [catToDelete, setCatToDelete] = useState<{ id: string; name: string } | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; catId: string } | null>(null);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
@@ -196,37 +193,6 @@ export default function Settings() {
         setNewCatMarking('');
     };
 
-    const openAddCatForm = () => {
-        setEditingCatId(null);
-        clearAddCatForm();
-        setShowAddForm(true);
-    };
-
-    const openEditCatForm = (cat: (typeof profiles)[number]) => {
-        setEditingCatId(cat.id);
-        setNewCatName(cat.name);
-        setNewCatGender(cat.gender);
-        setNewCatLifeStage(cat.lifeStage);
-        setNewCatBreed(cat.breed || '');
-        setNewCatMarking(cat.marking || '');
-        setShowAddForm(true);
-    };
-
-    const closeCatForm = () => {
-        setShowAddForm(false);
-        setEditingCatId(null);
-    };
-
-    // Auto-open the add-cat form when navigated here from the diet setup view
-    useEffect(() => {
-        if (location.state && (location.state as { openAddCat?: boolean }).openAddCat) {
-            openAddCatForm();
-            // Clear the navigation state so the form doesn't re-open on back/refresh
-            navigate('/settings', { replace: true, state: {} });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [location.state]);
-
         const handleNavigation = (item: string) => {
         if (item === 'calendar') {
         navigate('/pregnancy-tracker');
@@ -263,47 +229,31 @@ export default function Settings() {
 
         setIsLoading(true);
         try {
-            if (editingCatId) {
-                // Edit existing cat identity
-                await updateProfile(editingCatId, {
-                    name: newCatName.trim(),
-                    gender: newCatGender,
-                    lifeStage: newCatLifeStage,
-                    breed: newCatBreed,
-                    marking: newCatMarking || 'Solid Color',
-                });
+            const serverProf = await createNewProfile(newCatName.trim(), {
+                gender: newCatGender,
+                lifeStage: newCatLifeStage,
+                breed: newCatBreed,
+                marking: newCatMarking || 'Solid Color',
+                isTracking: false,
+                age: 3,
+                weight: 4.0,
+                isKg: true,
+                foodPreference: 'mixed',
+                isSpayedNeutered: false,
+            });
+
+            if (serverProf) {
                 setToast({
                     show: true,
-                    message: `${newCatName.trim()}'s profile has been updated`,
-                    catId: editingCatId,
+                    message: `${newCatName.trim()} has been added to your family`,
+                    catId: serverProf.id,
                 });
-            } else {
-                const serverProf = await createNewProfile(newCatName.trim(), {
-                    gender: newCatGender,
-                    lifeStage: newCatLifeStage,
-                    breed: newCatBreed,
-                    marking: newCatMarking || 'Solid Color',
-                    isTracking: false,
-                    age: 3,
-                    weight: 4.0,
-                    isKg: true,
-                    foodPreference: 'mixed',
-                    isSpayedNeutered: false,
-                });
-
-                if (serverProf) {
-                    setToast({
-                        show: true,
-                        message: `${newCatName.trim()} has been added to your family`,
-                        catId: serverProf.id,
-                    });
-                }
             }
 
-            closeCatForm();
             clearAddCatForm();
+            setShowAddForm(false);
         } catch (error) {
-            console.error('Failed to save cat profile', error);
+            console.error('Failed to add another cat', error);
         } finally {
             setIsLoading(false);
         }
@@ -337,8 +287,8 @@ export default function Settings() {
                                         const weightText = `${cat.weight} ${cat.isKg ? 'kg' : 'lbs'}`;
 
                                         return (
-                                            <div key={cat.id} className="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 first:pt-0 last:pb-0">
-                                                <div className="flex items-center gap-4 min-w-0">
+                                            <div key={cat.id} className="py-4 flex justify-between items-center first:pt-0 last:pb-0">
+                                                <div className="flex items-center gap-4">
                                                     {/* Avatar with upload trigger */}
                                                     <CatAvatarTrigger
                                                         catProfileId={cat.id}
@@ -355,8 +305,8 @@ export default function Settings() {
                                                             switchProfile(cat.id);
                                                         }}
                                                     />
-                                                    <div className="min-w-0">
-                                                        <h3 className="font-extrabold text-lg text-slate-900 truncate">{cat.name}</h3>
+                                                    <div>
+                                                        <h3 className="font-extrabold text-lg text-slate-900">{cat.name}</h3>
                                                         <div className="flex flex-wrap gap-2 mt-1">
                                                             <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-[#15AFB4] font-black text-[10px] uppercase rounded-md">
                                                                 {cat.gender}
@@ -373,28 +323,21 @@ export default function Settings() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2 shrink-0">
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         type="button"
                                                         onClick={() => {
                                                             switchProfile(cat.id);
                                                             navigate('/diet-recommender');
                                                         }}
-                                                        className="flex-1 sm:flex-none bg-[#30c290] hover:bg-[#39d3c5] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
+                                                        className="bg-[#30c290] hover:bg-[#39d3c5] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
                                                     >
                                                         Select
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => openEditCatForm(cat)}
-                                                        className="flex-1 sm:flex-none bg-white hover:bg-slate-50 text-slate-700 font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-2 border-slate-900 shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        type="button"
                                                         onClick={() => setCatToDelete({ id: cat.id, name: cat.name })}
-                                                        className="flex-1 sm:flex-none bg-rose-500 hover:bg-rose-600 text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
+                                                        className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
                                                     >
                                                         Delete
                                                     </button>
@@ -408,7 +351,10 @@ export default function Settings() {
                             {!showAddForm && (
                                 <button
                                     type="button"
-                                    onClick={openAddCatForm}
+                                    onClick={() => {
+                                        clearAddCatForm();
+                                        setShowAddForm(true);
+                                    }}
                                     className="mt-6 w-full py-4 px-6 rounded-2xl bg-[#FFB870] hover:bg-[#ffc58a] text-slate-900 font-extrabold text-md border-none cursor-pointer transition-all duration-200 shadow-[0_4px_0_0_#1e293b] active:shadow-none active:translate-y-[4px]"
                                 >
                                     + Add Another Cat
@@ -432,9 +378,9 @@ export default function Settings() {
                 {showAddForm && (
                     <div className="mt-8 bg-white border-2 border-slate-900 rounded-[2.5rem] p-8 shadow-[6px_6px_0_0_rgba(15,23,42,1)]">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black uppercase text-slate-900">{editingCatId ? 'Edit Cat Profile' : 'Add Another Cat'}</h2>
+                            <h2 className="text-2xl font-black uppercase text-slate-900">Add Another Cat</h2>
                             <button 
-                                onClick={closeCatForm}
+                                onClick={() => setShowAddForm(false)}
                                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
                             >
                                 ✕
@@ -547,7 +493,7 @@ export default function Settings() {
                             <div className="col-span-1 md:col-span-2 flex justify-end gap-4 pt-4 border-t-2 border-slate-100">
                                 <button
                                     type="button"
-                                    onClick={closeCatForm}
+                                    onClick={() => setShowAddForm(false)}
                                     className="bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider cursor-pointer transition-all"
                                 >
                                     Cancel
@@ -556,7 +502,7 @@ export default function Settings() {
                                     type="submit"
                                     className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none"
                                 >
-                                    {editingCatId ? 'Save Changes' : 'Confirm'}
+                                    Confirm
                                 </button>
                             </div>
                         </form>
