@@ -54,6 +54,34 @@ function SectionCard({
   );
 }
 
+/** Small brutalist button that copies the given text to the clipboard. */
+function CopyButton({ value, label }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={label ? `Copy ${label}` : `Copy ${value}`}
+      title={copied ? 'Copied!' : 'Copy'}
+      className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 border-2 border-slate-900 rounded-md text-[10px] font-black uppercase tracking-wider bg-white hover:bg-slate-100 active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
+      style={copied ? { backgroundColor: TEAL, color: '#fff' } : undefined}
+    >
+      {copied ? '✓ Copied' : '⧉ Copy'}
+    </button>
+  );
+}
+
 /** Monospace code block with brutalist framing. */
 function Code({ code, lang = 'ts' }: { code: string; lang?: string }) {
   return (
@@ -795,7 +823,9 @@ export default function Docs() {
         {/* SECTION 2 — ENVIRONMENT */}
         <SectionCard id="environment" eyebrow="Section 02" title="Environment Variables">
           <p className="text-sm text-slate-600 font-medium mb-6">
-            Injected at dev time via Infisical (<code className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">infisical run --</code>).
+            Load them either from a single root <code className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">.env</code> file
+            (copy <code className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">.env.example</code> at the repo root) or inject
+            at dev time via Infisical (<code className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">infisical run --</code>).
             The backend degrades gracefully to mocks when optional AI keys are absent.
           </p>
           <div className="border-2 border-slate-900 rounded-2xl overflow-hidden overflow-x-auto">
@@ -811,7 +841,12 @@ export default function Docs() {
               <tbody className="divide-y-2 divide-slate-100 bg-white">
                 {ENV_VARS.map((v) => (
                   <tr key={v.key}>
-                    <td className="px-4 py-3 font-mono font-bold text-slate-900">{v.key}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-mono font-bold text-slate-900">{v.key}</span>
+                        <CopyButton value={v.key} label={v.key} />
+                      </div>
+                    </td>
                     <td className="px-4 py-3 font-bold text-slate-600">{v.scope}</td>
                     <td className="px-4 py-3">
                       <span
@@ -834,7 +869,7 @@ export default function Docs() {
           <div className="mt-6">
             <Code
               lang="bash"
-              code={`# 1. install deps (npm workspaces)\nnpm install\n\n# 2. run migrations (Infisical injects DATABASE_URL)\ninfisical run -- npx prisma migrate deploy -w packages/pawwiz-backend\n\n# 3. start both apps (env via Infisical)\nnpm run dev\n# frontend → localhost:5173   backend → localhost:3001`}
+              code={`# 1. install deps (npm workspaces)\nnpm install\n\n# 2. set up env — copy the single root template, then fill in values\ncp .env.example .env\n\n# 3a. run migrations + start (LOCAL root .env, no Infisical)\nnpm run prisma:deploy -w packages/pawwiz-backend\nnpm run dev:local\n\n# 3b. or, using Infisical for secret injection\ninfisical run -- npx prisma migrate deploy -w packages/pawwiz-backend\nnpm run dev\n\n# frontend → localhost:5173   backend → localhost:3001`}
             />
           </div>
         </SectionCard>
@@ -856,10 +891,10 @@ export default function Docs() {
             <div>
               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Honeypot Trap</h3>
               <Code code={HONEYPOT_SNIPPET} />
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mt-5 mb-2">Zod Validation Gate</h3>
+              <Code code={VALIDATE_SNIPPET} />
             </div>
           </div>
-          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Zod Validation Gate</h3>
-          <Code code={VALIDATE_SNIPPET} />
 
           {/* OWASP hardening delivered in the security & performance refactor */}
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mt-8 mb-3">
