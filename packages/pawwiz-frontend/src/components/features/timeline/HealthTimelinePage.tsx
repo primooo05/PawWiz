@@ -336,6 +336,10 @@ const HealthTimelinePage: React.FC = () => {
           activeItem="dashboard"
           onItemClick={(item: string) => {
             if (item === 'dashboard') navigate('/dashboard');
+            else if (item === 'diet-reco') navigate('/diet-recommender');
+            else if (item === 'behavior') navigate('/behavior-chat');
+            else if (item === 'calendar') navigate('/pregnancy-tracker');
+            else if (item === 'settings') navigate('/settings');
           }}
           className="w-full max-w-2xl md:w-auto md:scale-110"
         />

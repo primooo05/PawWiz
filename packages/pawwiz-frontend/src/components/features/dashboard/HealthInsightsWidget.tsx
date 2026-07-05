@@ -22,24 +22,24 @@ function getRelativeTime(dateStr: string): string {
 
 const severityConfig = {
   concern: {
-    card: 'bg-amber-50 border-l-4 border-red-500',
-    badge: 'bg-red-100 text-red-800 border border-red-300',
-    text: 'text-red-800',
-    icon: <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />,
+    card: 'bg-[#fff0f0] border-l-4 border-[#F98080]',
+    badge: 'bg-[#F98080] text-white border border-[#1a1a1a]',
+    text: 'text-[#1a1a1a]',
+    icon: <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: '#F98080' }} />,
     label: 'Concern',
   },
   warning: {
-    card: 'bg-blue-50 border-l-4 border-blue-400',
-    badge: 'bg-blue-100 text-blue-800 border border-blue-300',
-    text: 'text-blue-800',
-    icon: <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />,
+    card: 'bg-[#fff8e6] border-l-4 border-[#FF6B35]',
+    badge: 'bg-[#FF6B35] text-white border border-[#1a1a1a]',
+    text: 'text-[#1a1a1a]',
+    icon: <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#FF6B35' }} />,
     label: 'Warning',
   },
   info: {
-    card: 'bg-gray-50 border-l-4 border-gray-300',
-    badge: 'bg-gray-100 text-gray-800 border border-gray-300',
-    text: 'text-gray-800',
-    icon: <Info className="w-4 h-4 text-gray-500 flex-shrink-0" />,
+    card: 'bg-[#f0fbfa] border-l-4 border-[#4ECDC4]',
+    badge: 'bg-[#4ECDC4] text-white border border-[#1a1a1a]',
+    text: 'text-[#1a1a1a]',
+    icon: <Info className="w-4 h-4 flex-shrink-0" style={{ color: '#4ECDC4' }} />,
     label: 'Info',
   },
 } as const;
@@ -56,7 +56,7 @@ const InsightCard: React.FC<{ insight: CorrelationInsight }> = ({ insight }) => 
             <span className={`text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded ${config.badge}`}>
               {config.label}
             </span>
-            <span className="text-xs font-bold text-gray-500">
+            <span className="text-xs font-bold text-[#888]">
               {getRelativeTime(insight.generatedAt)}
             </span>
           </div>
@@ -64,7 +64,7 @@ const InsightCard: React.FC<{ insight: CorrelationInsight }> = ({ insight }) => 
             {insight.summary}
           </p>
           {insight.detail && (
-            <p className="text-xs font-bold text-gray-500 mt-1 line-clamp-2">
+            <p className="text-xs font-bold text-[#555] mt-1 line-clamp-2">
               {insight.detail}
             </p>
           )}
@@ -95,13 +95,13 @@ const HealthInsightsWidget: React.FC<HealthInsightsWidgetProps> = ({ catId }) =>
 
       {/* Error state */}
       {!isLoading && error && (
-        <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 flex flex-col gap-3">
-          <p className="text-sm font-bold text-red-800">
+        <div className="bg-[#fff0f0] border-2 border-[#F98080] rounded-2xl p-4 flex flex-col gap-3">
+          <p className="text-sm font-bold text-[#1a1a1a]">
             Failed to load health insights: {error}
           </p>
           <button
             onClick={() => void refresh()}
-            className="flex items-center gap-2 self-start bg-white hover:bg-red-50 text-red-800 font-black text-xs uppercase tracking-wider px-3 py-2 border-2 border-red-300 rounded-xl shadow-[2px_2px_0_0_#1a1a1a] active:shadow-none active:translate-y-[2px] transition-all"
+            className="flex items-center gap-2 self-start bg-white hover:bg-[#fff0f0] text-[#1a1a1a] font-black text-xs uppercase tracking-wider px-3 py-2 border-2 border-[#1a1a1a] rounded-xl shadow-[2px_2px_0_0_#1a1a1a] active:shadow-none active:translate-y-[2px] transition-all"
           >
             <RefreshCw className="w-3 h-3" />
             Retry
@@ -112,7 +112,7 @@ const HealthInsightsWidget: React.FC<HealthInsightsWidgetProps> = ({ catId }) =>
       {/* Empty state */}
       {!isLoading && !error && visibleInsights.length === 0 && (
         <div className="bg-white border-2 border-[#1a1a1a] rounded-2xl p-4">
-          <p className="text-sm font-bold text-gray-600">
+          <p className="text-sm font-bold text-[#555]">
             Log more activity to generate health insights
           </p>
         </div>

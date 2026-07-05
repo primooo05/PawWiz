@@ -125,7 +125,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 caused the buttons to overlap the title in the narrower context. */}
             <div className="w-full flex flex-wrap items-start justify-between mb-4 gap-3">
                 <div className="border-l-4 border-[#1a1a1a] pl-4 min-w-0 shrink-0">
-                    <h2 className="text-2xl md:text-3xl font-black tracking-wider text-slate-900 uppercase whitespace-nowrap">Cat Profile</h2>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-wider text-[#1a1a1a] uppercase whitespace-nowrap">Cat Profile</h2>
                     <p className="text-sm text-[#555] mt-2 font-bold">Your cat's saved details</p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -145,7 +145,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                             e.stopPropagation();
                             setIsFlipped(prev => !prev);
                         }}
-                        className="flex items-center gap-1 text-xs font-black text-slate-500 hover:text-slate-800 cursor-pointer active:scale-95 transition-transform"
+                        className="flex items-center gap-1 text-xs font-black text-[#555] hover:text-[#1a1a1a] cursor-pointer active:scale-95 transition-transform"
                     >
                         <RefreshCw size={13} />
                         Flip Card
@@ -155,7 +155,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                         onClick={handleDownload}
                         disabled={isDownloading}
                         aria-label="Download cat profile card as PNG"
-                        className="flex items-center gap-1.5 text-xs font-black text-white bg-slate-900 hover:bg-slate-700 px-3 py-1.5 rounded-xl border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(48,194,144,1)] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 text-xs font-black text-white bg-[#1a1a1a] hover:bg-[#333] px-3 py-1.5 rounded-xl border-2 border-[#1a1a1a] shadow-[2px_2px_0_0_#1a1a1a] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         {isDownloading ? (
                             <Loader2 size={13} className="animate-spin" />
@@ -182,9 +182,9 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                 <div className="flip-card-inner w-full h-full relative">
 
                     {/* FRONT VIEW */}
-                    <div ref={frontRef} className="flip-card-front absolute inset-0 bg-white border-2 border-slate-900 shadow-[4px_4px_0_0_rgba(15,23,42,1)] overflow-hidden flex flex-col">
+                    <div ref={frontRef} className="flip-card-front absolute inset-0 bg-white border-4 border-[#1a1a1a] shadow-[4px_4px_0_0_#1a1a1a] overflow-hidden flex flex-col">
                         {/* Header */}
-                        <div className="px-5 py-2.5 border-b-2 border-slate-900 flex items-center">
+                        <div className="px-5 py-2.5 border-b-2 border-[#1a1a1a] flex items-center">
                             <img src={pawWizTextLogo} alt="Paw Wiz" className="h-6 object-contain" />
                         </div>
 
@@ -200,13 +200,13 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                                 ].map((item) => (
                                     <div key={item.label} className="grid grid-cols-[90px_1fr] gap-2 text-xs font-bold uppercase">
                                         <span className="text-[#30c290] font-black">{item.label}</span>
-                                        <span className="text-slate-900 font-extrabold">{item.value}</span>
+                                        <span className="text-[#1a1a1a] font-extrabold">{item.value}</span>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Right Image Container */}
-                            <div className="w-32 h-32 shrink-0 bg-white border-2 border-slate-900 rounded-3xl overflow-hidden  relative z-10">
+                            <div className="w-32 h-32 shrink-0 bg-white border-2 border-[#1a1a1a] rounded-3xl overflow-hidden  relative z-10">
                                 {photoUrl && !hasPhotoError ? (
                                     <>
                                         <img
@@ -244,21 +244,21 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                         </div>
 
                         {/* Footer */}
-                        <div className="px-5 py-2 border-t-2 border-slate-900 text-center flex flex-col items-center justify-center gap-1">
+                        <div className="px-5 py-2 border-t-2 border-[#1a1a1a] text-center flex flex-col items-center justify-center gap-1">
                             <span
-                                className="text-xl text-slate-800 leading-none"
+                                className="text-xl text-[#1a1a1a] leading-none"
                                 style={{ fontFamily: "'Caveat', 'Brush Script MT', 'Reenie Beanie', cursive" }}
                             >
                                 {displayName || 'Owner'}
                             </span>
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">
+                            <span className="text-[8px] font-black text-[#888] uppercase tracking-widest leading-none">
                                 {displayName ? `[${catName}'s Owner]` : 'Owner Signature'}
                             </span>
                         </div>
                     </div>
 
                     {/* BACK VIEW */}
-                    <div ref={backRef} className="flip-card-back absolute inset-0 bg-white border-2 border-slate-900 shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex items-center justify-center relative overflow-hidden rounded-3xl">
+                    <div ref={backRef} className="flip-card-back absolute inset-0 bg-white border-4 border-[#1a1a1a] shadow-[4px_4px_0_0_#1a1a1a] flex items-center justify-center relative overflow-hidden rounded-3xl">
                         <img src={pawWizTextLogo} alt="Paw Wiz" className="h-12 object-contain" />
 
                         {/* Seamless L-shaped Checkerboard Pattern (Single Container, Perfect Squares) */}
