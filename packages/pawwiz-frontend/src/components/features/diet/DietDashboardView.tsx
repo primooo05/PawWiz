@@ -66,6 +66,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 }) => {
     const navigate = useNavigate();
     const [isAskAiOpen, setIsAskAiOpen] = useState(false);
+    const [wizPrefillQuestion, setWizPrefillQuestion] = useState<string | undefined>(undefined);
 
     // Modal state
     const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
@@ -411,6 +412,10 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                 initialAmount={modalAmount}
                 catName={catName}
                 loggedMeals={loggedMeals}
+                onAskWiz={(question) => {
+                    setWizPrefillQuestion(question);
+                    setIsAskAiOpen(true);
+                }}
             />
 
             {/* Floating Ask AI button */}
@@ -427,7 +432,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 
             <DietAdvisorModal
                 isOpen={isAskAiOpen}
-                onClose={() => setIsAskAiOpen(false)}
+                onClose={() => { setIsAskAiOpen(false); setWizPrefillQuestion(undefined); }}
                 catContext={{
                     catName,
                     gender,
@@ -444,6 +449,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     mealsLoggedToday,
                     mealsPendingToday,
                 }}
+                prefillQuestion={wizPrefillQuestion}
             />
         </div>
     );
