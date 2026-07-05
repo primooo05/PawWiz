@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAgeBracketInfo } from '../../../hooks/features/useDietRecommender';
 import type { CatProfile } from '../../../hooks/features/useDietRecommender';
+import type { FoodType } from '../../../lib/foods';
 import { supabase } from '../../../lib/supabase';
 import { API_BASE } from '../../../lib/config.js';
 import AnimatedAvatarGroup from '../../ui/smoothui/animated-avatar-group';
@@ -20,8 +21,8 @@ interface DietSetupViewProps {
     setWeight: (w: number) => void;
     isKg: boolean;
     toggleUnit: (toKg: boolean) => void;
-    foodPreference: 'dry' | 'wet' | 'mixed';
-    setFoodPreference: (pref: 'dry' | 'wet' | 'mixed') => void;
+    foodPreference: FoodType;
+    setFoodPreference: (pref: FoodType) => void;
     isSpayedNeutered: boolean;
     setIsSpayedNeutered: (val: boolean) => void;
     onSubmit: (e: React.FormEvent) => void;
@@ -399,22 +400,31 @@ const DietSetupContent: React.FC<DietSetupContentProps> = ({
                 </div>
 
                 {/* 5. Food Preference */}
-                <div>
+                <div className="col-span-1 md:col-span-2">
                     <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-3">
                         Food Type Preference
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                        {(['dry', 'wet', 'mixed'] as const).map((pref) => (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {([
+                            { id: 'dry',           label: 'Dry Kibble' },
+                            { id: 'wet',           label: 'Wet Food' },
+                            { id: 'mixed',         label: 'Mixed' },
+                            { id: 'chicken',       label: 'Chicken Breast' },
+                            { id: 'chicken_thigh', label: 'Chicken Thigh' },
+                            { id: 'fish',          label: 'Fish / Salmon' },
+                            { id: 'egg',           label: 'Cooked Egg' },
+                            { id: 'other',         label: 'Other / Custom' },
+                        ] as const).map(({ id, label }) => (
                             <button
-                                key={pref}
+                                key={id}
                                 type="button"
-                                onClick={() => setFoodPreference(pref)}
-                                className={`py-3 rounded-xl border-2 font-bold text-xs capitalize transition-all cursor-pointer ${foodPreference === pref
+                                onClick={() => setFoodPreference(id)}
+                                className={`py-3 px-2 rounded-xl border-2 font-bold text-xs text-center transition-all cursor-pointer ${foodPreference === id
                                     ? 'bg-[#EEF9F8] border-teal-400 text-teal-800 shadow-[1px_1px_0_0_rgba(15,23,42,1)]'
                                     : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-slate-200'
                                     }`}
                             >
-                                {pref}
+                                {label}
                             </button>
                         ))}
                     </div>

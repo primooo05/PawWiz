@@ -23,7 +23,7 @@ interface DietDashboardViewProps {
     gender: 'male' | 'female';
     weight: number;
     isKg: boolean;
-    foodPreference: 'dry' | 'wet' | 'mixed';
+    foodPreference: FoodType;
     isSpayedNeutered: boolean;
     activeLifeStage: 'kitten' | 'adult' | 'senior';
     lifeStage: 'kitten' | 'adult' | 'senior';

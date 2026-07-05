@@ -49,7 +49,7 @@ export const dietAdviceSchema = z.object({
     age: z.number().nonnegative(),
     weight: z.number().positive(),
     isKg: z.boolean(),
-    foodPreference: z.enum(['dry', 'wet', 'mixed']),
+    foodPreference: z.enum(['dry', 'wet', 'mixed', 'chicken', 'chicken_thigh', 'fish', 'egg', 'other']),
     isSpayedNeutered: z.boolean(),
     dailyCalories: z.number().nonnegative(),
     totalLoggedCalories: z.number().nonnegative(),

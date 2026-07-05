@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Info, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getFelineFeedingGuideDetails } from '../../../../hooks/features/useDietRecommender';
+import type { FoodType } from '../../../../lib/foods';
 
 interface FeedingGuidelineProps {
     lifeStage: 'kitten' | 'adult' | 'senior';
     weight: number;
     isKg: boolean;
-    foodPreference: 'dry' | 'wet' | 'mixed';
+    foodPreference: FoodType;
 }
 
 export const FeedingGuideline: React.FC<FeedingGuidelineProps> = ({
@@ -54,7 +55,7 @@ export const FeedingGuideline: React.FC<FeedingGuidelineProps> = ({
             {/* Chips list formatted in 3 columns (food + hydration side-by-side) */}
             <div className="grid grid-cols-3 gap-3">
                 <div className="p-4 bg-teal-50/70 border border-teal-100 rounded-2xl flex flex-col justify-center">
-                    <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider block mb-1">Daily Total Spoons</span>
+                    <span className="text-[10px] font-black text-teal-800 uppercase tracking-wider block mb-1">Daily Portion</span>
                     <span className="text-xs sm:text-sm font-black text-slate-900 leading-snug">{guide.dailySpoons}</span>
                 </div>
 
