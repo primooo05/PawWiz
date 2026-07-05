@@ -96,6 +96,7 @@ model Cat {
   onboardingSession       OnboardingSession?      @relation(fields: [onboardingSessionId], references: [id], onDelete: Cascade)
   healthTimelineInsights  HealthTimelineInsight[]
   pregnancySessions       PregnancySession[]
+  behaviorChats           BehaviorChat[]
 
   @@index([profileId])
   @@map("cats")
@@ -149,14 +150,17 @@ model Plant {
 model BehaviorChat {
   id             String   @id @default(cuid())
   supabaseUserId String   @map("supabase_user_id")
+  catId          String?  @map("cat_id")   // nullable: null = legacy/user-scoped system chats
   title          String   @default("New Chat")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
+  cat            Cat?             @relation(fields: [catId], references: [id], onDelete: SetNull)
   messages       BehaviorMessage[]
   behaviorLogs   BehaviorLog[]
 
   @@index([supabaseUserId])
+  @@index([supabaseUserId, catId])
   @@map("behavior_chats")
 }
 

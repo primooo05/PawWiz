@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Cat } from 'lucide-react';
+import React, { useState } from 'react';
+import { Cat, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { API_BASE } from '../../../lib/config.js';
 import type { ChatSession } from '../../../hooks/features/useBehaviorChat';
+import type { CatProfile } from '../../../hooks/features/useDietRecommender';
 
 interface CatProfilePanelProps {
   activeSession: ChatSession | null | undefined;
   onDeleteChat: () => void;
   onExampleClick: (text: string) => void;
   catName?: string;
+  profiles?: CatProfile[];
+  selectedCatId?: string;
+  onSwitchCat?: (id: string) => void;
 }
 
 interface CatProfileData {
@@ -27,28 +31,44 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
   onDeleteChat,
   onExampleClick,
   catName,
+  profiles = [],
+  selectedCatId = '',
+  onSwitchCat,
 }) => {
   const [profile, setProfile] = useState<CatProfileData | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
   const isLoading = !activeSession;
 
-  useEffect(() => {
-    let active = true;
+  // Derive display profile from diet profiles prop first; fall back to API fetch
+  const selectedDietProfile = profiles.find((p) => p.id === selectedCatId) ?? profiles[0];
 
+  // Sync profile state from diet profiles prop when available
+  React.useEffect(() => {
+    if (selectedDietProfile) {
+      setProfile({
+        name: selectedDietProfile.name,
+        gender: selectedDietProfile.gender,
+        lifeStage: selectedDietProfile.lifeStage,
+        age: selectedDietProfile.age,
+        weight: selectedDietProfile.weight,
+        isKg: selectedDietProfile.isKg,
+        photoUrl: selectedDietProfile.photoUrl ?? null,
+        breed: selectedDietProfile.breed ?? null,
+      });
+      return;
+    }
+
+    // Fallback: fetch from API when no profiles were passed as props
+    let active = true;
     const loadProfile = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        // Fetch diet profiles which contain the full cat data (weight, age, etc.)
         const dietRes = await fetch(`${API_BASE}/api/diet/profiles`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         });
 
         if (dietRes.ok && active) {
@@ -69,11 +89,8 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
           }
         }
 
-        // Fallback: fetch the primary profile for basic cat info
         const profileRes = await fetch(`${API_BASE}/api/profile`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
 
         if (profileRes.ok && active) {
@@ -83,26 +100,18 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
               name: data.catName,
               gender: data.catSex?.toLowerCase() === 'female' ? 'female' : 'male',
               lifeStage: data.catLifeStage?.toLowerCase() === 'senior'
-                ? 'senior'
-                : data.catLifeStage?.toLowerCase() === 'kitten'
-                  ? 'kitten'
-                  : 'adult',
-              age: 0,
-              weight: 0,
-              isKg: true,
-              photoUrl: null,
-              breed: data.catBreed || null,
+                ? 'senior' : data.catLifeStage?.toLowerCase() === 'kitten'
+                  ? 'kitten' : 'adult',
+              age: 0, weight: 0, isKg: true, photoUrl: null, breed: data.catBreed || null,
             });
           }
         }
-      } catch {
-        // Silently fail — profile panel is supplementary
-      }
+      } catch { /* Silently fail — panel is supplementary */ }
     };
 
     loadProfile();
     return () => { active = false; };
-  }, []);
+  }, [selectedDietProfile]);
 
   const messageCount = activeSession?.messages.filter((m) => m.speaker === 'user').length ?? 0;
   const analysisCount = activeSession?.messages.filter((m) => m.analysis).length ?? 0;
@@ -110,29 +119,14 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
   return (
     <aside className="hidden lg:flex w-[280px] xl:w-[300px] flex-shrink-0 flex-col gap-3 overflow-hidden">
       <style>{`
-        .scrollbar-custom::-webkit-scrollbar {
-          width: 6px;
-        }
-        .scrollbar-custom::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .scrollbar-custom::-webkit-scrollbar-thumb {
-          background: #30c290;
-          border-radius: 8px;
-        }
-        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-          background: #27a7a0;
-        }
-        .scrollbar-custom::-webkit-scrollbar-button {
-          display: none;
-        }
-        
-        /* Firefox scrollbar */
-        .scrollbar-custom {
-          scrollbar-color: #30c290 transparent;
-          scrollbar-width: thin;
-        }
+        .scrollbar-custom::-webkit-scrollbar { width: 6px; }
+        .scrollbar-custom::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-custom::-webkit-scrollbar-thumb { background: #30c290; border-radius: 8px; }
+        .scrollbar-custom::-webkit-scrollbar-thumb:hover { background: #27a7a0; }
+        .scrollbar-custom::-webkit-scrollbar-button { display: none; }
+        .scrollbar-custom { scrollbar-color: #30c290 transparent; scrollbar-width: thin; }
       `}</style>
+
       {/* Cat Profile Card */}
       <div className="bg-white rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0_0_rgba(15,23,42,1)] p-5 flex flex-col items-center">
         {/* Avatar */}
@@ -144,7 +138,6 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
           )}
         </div>
 
-        {/* Name badge */}
         {isLoading ? (
           <>
             <div className="h-5 w-20 bg-slate-200 rounded-full animate-pulse mb-3" />
@@ -160,7 +153,7 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
             </span>
 
             {/* Info chips */}
-            <div className="flex flex-wrap justify-center gap-1.5 w-full">
+            <div className="flex flex-wrap justify-center gap-1.5 w-full mb-3">
               <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border-2 border-slate-900 shadow-[1px_1px_0_0_rgba(15,23,42,1)] ${
                 profile.gender === 'female' ? 'bg-[#ff9ebb]' : 'bg-[#5ce1e6]'
               } text-slate-900 uppercase`}>
@@ -177,6 +170,47 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
                 </span>
               )}
             </div>
+
+            {/* Cat switcher — only shown when there are multiple cats */}
+            {profiles.length > 1 && onSwitchCat && (
+              <div className="relative w-full">
+                <button
+                  onClick={() => setIsSwitcherOpen((v) => !v)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl border-2 border-slate-200 bg-slate-50 hover:border-[#30c290]/60 hover:bg-[#30c290]/5 transition-all text-xs font-bold text-slate-600 cursor-pointer"
+                  aria-label="Switch cat profile"
+                  aria-expanded={isSwitcherOpen}
+                >
+                  <span>Switch Cat</span>
+                  <ChevronDown size={14} className={`transition-transform ${isSwitcherOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isSwitcherOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-slate-900 rounded-xl shadow-[3px_3px_0_0_rgba(15,23,42,1)] overflow-hidden z-20">
+                    {profiles.map((p) => {
+                      const isSelected = p.id === selectedCatId;
+                      return (
+                        <button key={p.id}
+                          onClick={() => { onSwitchCat(p.id); setIsSwitcherOpen(false); }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors cursor-pointer ${
+                            isSelected ? 'bg-[#30c290]/10 text-[#30c290]' : 'hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <div className="w-6 h-6 rounded-full overflow-hidden bg-teal-50 flex-shrink-0 flex items-center justify-center border border-[#30c290]/30">
+                            {p.photoUrl ? (
+                              <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Cat size={12} className="text-[#30c290]" />
+                            )}
+                          </div>
+                          <span className="text-xs font-black uppercase tracking-wide truncate flex-1">{p.name}</span>
+                          {isSelected && <span className="text-[#30c290] text-[10px] font-black">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <span className="text-xs font-bold text-slate-400">Loading profile...</span>
@@ -185,44 +219,30 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
 
       {/* Session Stats */}
       <div className="bg-white rounded-2xl border-2 border-slate-900 shadow-[3px_3px_0_0_rgba(15,23,42,1)] p-4">
-        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3">
-          Session Info
-        </h3>
+        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3">Session Info</h3>
 
         {isLoading ? (
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500">Messages</span>
-              <div className="h-4 w-8 bg-slate-200 rounded-md animate-pulse" />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500">Analyses</span>
-              <div className="h-4 w-8 bg-slate-200 rounded-md animate-pulse" />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500">Started</span>
-              <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
-            </div>
+            {['Messages', 'Analyses', 'Started'].map((label) => (
+              <div key={label} className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500">{label}</span>
+                <div className="h-4 w-8 bg-slate-200 rounded-md animate-pulse" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-slate-500">Messages</span>
-              <span className="text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
-                {messageCount}
-              </span>
+              <span className="text-xs font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">{messageCount}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-slate-500">Analyses</span>
-              <span className="text-xs font-black text-[#30c290] bg-[#30c290]/10 px-2 py-0.5 rounded-md">
-                {analysisCount}
-              </span>
+              <span className="text-xs font-black text-[#30c290] bg-[#30c290]/10 px-2 py-0.5 rounded-md">{analysisCount}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-slate-500">Started</span>
-              <span className="text-[10px] font-bold text-slate-600">
-                {activeSession?.createdAt?.toLocaleDateString() ?? '-'}
-              </span>
+              <span className="text-[10px] font-bold text-slate-600">{activeSession?.createdAt?.toLocaleDateString() ?? '-'}</span>
             </div>
           </div>
         )}
@@ -230,29 +250,17 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
 
       {/* Quick Tips */}
       <div className="bg-gradient-to-br from-[#30c290]/5 to-[#30c290]/10 rounded-2xl border-2 border-[#30c290]/30 p-4">
-        <h3 className="text-[10px] font-black text-[#30c290] uppercase tracking-wider mb-2">
-        </h3>
+        <h3 className="text-[10px] font-black text-[#30c290] uppercase tracking-wider mb-2"></h3>
         <ul className="space-y-1.5 text-[10px] text-slate-600 font-medium">
-          <li className="flex items-start gap-1.5">
-            <span className="text-[#30c290]">•</span>
-            Mention specific sounds: hiss, chirp, trill
-          </li>
-          <li className="flex items-start gap-1.5">
-            <span className="text-[#30c290]">•</span>
-            Describe body posture: tail, ears, eyes
-          </li>
-          <li className="flex items-start gap-1.5">
-            <span className="text-[#30c290]">•</span>
-            Add context: time of day, triggers
-          </li>
+          <li className="flex items-start gap-1.5"><span className="text-[#30c290]">•</span>Mention specific sounds: hiss, chirp, trill</li>
+          <li className="flex items-start gap-1.5"><span className="text-[#30c290]">•</span>Describe body posture: tail, ears, eyes</li>
+          <li className="flex items-start gap-1.5"><span className="text-[#30c290]">•</span>Add context: time of day, triggers</li>
         </ul>
       </div>
 
-      {/* Divider */}
+      {/* Example prompt */}
       <div className="border-t border-[#30c290]/20 pt-3">
-        <h3 className="text-[10px] font-black text-[#30c290] uppercase tracking-wider mb-2">
-          ✏️ Try this example
-        </h3>
+        <h3 className="text-[10px] font-black text-[#30c290] uppercase tracking-wider mb-2">✏️ Try this example</h3>
         <button
           type="button"
           disabled={isLoading}
@@ -267,14 +275,10 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
         >
           <p className="text-[10px] text-slate-500 leading-relaxed italic group-hover:text-slate-700 transition-colors">
             "Every night around 2 AM,{' '}
-            <span className="font-semibold not-italic text-[#30c290]">
-              {catName ?? 'my cat'}
-            </span>{' '}
+            <span className="font-semibold not-italic text-[#30c290]">{catName ?? 'my cat'}</span>{' '}
             suddenly sprints around the house, makes a loud trill, and her tail is fully puffed. It lasts about 10 minutes then she's completely calm. What's happening?"
           </p>
-          <p className="text-[10px] text-[#30c290] font-bold mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            Click to use this example →
-          </p>
+          <p className="text-[10px] text-[#30c290] font-bold mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to use this example →</p>
         </button>
       </div>
 
@@ -289,28 +293,18 @@ const CatProfilePanel: React.FC<CatProfilePanelProps> = ({
         Delete Chat
       </button>
 
-      {/* Delete confirmation */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white rounded-2xl p-6 max-w-xs w-full mx-4 border-2 border-slate-900 shadow-[4px_4px_0_0_rgba(15,23,42,1)] animate-scaleUp">
             <h4 className="text-sm font-black text-slate-900 mb-2">Delete this chat?</h4>
-            <p className="text-xs text-slate-500 mb-5">
-              This will permanently remove the conversation and all behavior analyses in it.
-            </p>
+            <p className="text-xs text-slate-500 mb-5">This will permanently remove the conversation and all behavior analyses in it.</p>
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2 rounded-xl border-2 border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-              >
+              <button onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2 rounded-xl border-2 border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">
                 Cancel
               </button>
-              <button
-                onClick={() => {
-                  onDeleteChat();
-                  setShowDeleteConfirm(false);
-                }}
-                className="flex-1 py-2 rounded-xl bg-red-500 border-2 border-red-600 text-xs font-black text-white hover:bg-red-600 transition-colors cursor-pointer"
-              >
+              <button onClick={() => { onDeleteChat(); setShowDeleteConfirm(false); }}
+                className="flex-1 py-2 rounded-xl bg-red-500 border-2 border-red-600 text-xs font-black text-white hover:bg-red-600 transition-colors cursor-pointer">
                 Delete
               </button>
             </div>

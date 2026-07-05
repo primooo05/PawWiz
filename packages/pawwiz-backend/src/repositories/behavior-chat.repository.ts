@@ -10,6 +10,7 @@ import type { BehaviorChat, BehaviorMessage } from '@prisma/client';
 
 export interface CreateChatData {
   supabaseUserId: string;
+  catId?: string | null;
   title?: string;
 }
 
@@ -45,11 +46,18 @@ class BehaviorChatRepository {
   }
 
   /** Get all chats for a user (ordered newest first, messages ordered by creation).
+   *  When catId is provided, returns only chats for that cat.
    *  Excludes the reserved "Quick Logs" anchor chat — it holds one-tap behavior
    *  entries, not a real conversation, so it never surfaces in the chat list. */
-  async findAllByUser(supabaseUserId: string): Promise<ChatWithMessages[]> {
+  async findAllByUser(supabaseUserId: string, catId?: string | null): Promise<ChatWithMessages[]> {
     return prisma.behaviorChat.findMany({
-      where: { supabaseUserId, title: { not: QUICK_LOG_CHAT_TITLE } },
+      where: {
+        supabaseUserId,
+        title: { not: QUICK_LOG_CHAT_TITLE },
+        // When catId is supplied, scope to that cat.
+        // When omitted (legacy callers), return all chats regardless of catId.
+        ...(catId != null ? { catId } : {}),
+      },
       include: {
         messages: { orderBy: { createdAt: 'asc' } },
       },
@@ -72,6 +80,7 @@ class BehaviorChatRepository {
     return prisma.behaviorChat.create({
       data: {
         supabaseUserId: data.supabaseUserId,
+        catId: data.catId ?? null,
         title: data.title || 'New Chat',
       },
     });

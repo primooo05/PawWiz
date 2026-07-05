@@ -12,6 +12,20 @@ import GreetingHeader from '../../layout/GreetingHeader';
 
 export const BehaviorChat: React.FC = () => {
   const navigate = useNavigate();
+
+  const { profiles, activeProfileId, switchProfile } = useDietRecommender();
+  const { profile } = useProfilePanel();
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // ── Cat profile selection — resolved before the hook so catId is stable ───
+  const [selectedCatId, setSelectedCatId] = useState<string>('');
+  const effectiveCatId = selectedCatId || activeProfileId;
+  const selectedCat = profiles.find((p) => p.id === effectiveCatId) ?? profiles[0];
+
+  // The Cat DB id (from cats table) — used to scope behavior chats per cat.
+  const selectedCatDbId = selectedCat?.catId ?? null;
+
   const {
     sessions,
     activeSession,
@@ -24,12 +38,25 @@ export const BehaviorChat: React.FC = () => {
     createNewSession,
     deleteSession,
     isInitialized,
-  } = useBehaviorChat();
+  } = useBehaviorChat(selectedCatDbId);
 
-  const { profiles, activeProfileId, switchProfile, catName } = useDietRecommender();
-  const { profile } = useProfilePanel();
+  // Build a BehaviorCatContext snapshot from the selected diet profile
+  const catContext = selectedCat
+    ? {
+        name: selectedCat.name,
+        sex: selectedCat.gender,
+        lifeStage: selectedCat.lifeStage,
+        breed: selectedCat.breed ?? null,
+        age: selectedCat.age,
+      }
+    : undefined;
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const catName = selectedCat?.name ?? 'your cat';
+
+  const handleSwitchCat = (id: string) => {
+    setSelectedCatId(id);
+    switchProfile(id); // keep diet recommender in sync
+  };
 
   const behaviorGreeting = getTimeGreeting(
     {
@@ -59,7 +86,7 @@ export const BehaviorChat: React.FC = () => {
     name: p.name,
     src: p.photoUrl || undefined,
     alt: p.name,
-    isActive: p.id === activeProfileId,
+    isActive: p.id === effectiveCatId,
     isNew: !p.isTracking,
   }));
 
@@ -75,6 +102,11 @@ export const BehaviorChat: React.FC = () => {
     setInputValue(exampleText);
   };
 
+  // Wrap sendMessage to always inject the current cat context
+  const handleSend = (text: string) => {
+    sendMessage(text, catContext);
+  };
+
   // Show skeleton while sessions are being fetched from backend
   const isInitialLoading = !isInitialized || !activeSession;
 
@@ -86,7 +118,7 @@ export const BehaviorChat: React.FC = () => {
           title={behaviorGreeting.title}
           subtitle={behaviorGreeting.subtitle}
           avatars={avatarDataList}
-          onAvatarClick={(id) => switchProfile(id)}
+          onAvatarClick={(id) => handleSwitchCat(id)}
         />
       </div>
 
@@ -110,7 +142,7 @@ export const BehaviorChat: React.FC = () => {
           isLoading={isLoading}
           inputValue={inputValue}
           onInputChange={setInputValue}
-          onSend={sendMessage}
+          onSend={handleSend}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           isInitialLoading={isInitialLoading}
         />
@@ -120,7 +152,10 @@ export const BehaviorChat: React.FC = () => {
           activeSession={activeSession}
           onDeleteChat={() => deleteSession(activeSessionId)}
           onExampleClick={handleExampleClick}
-          catName="your cat"
+          catName={catName}
+          profiles={profiles}
+          selectedCatId={effectiveCatId}
+          onSwitchCat={handleSwitchCat}
         />
       </div>
 

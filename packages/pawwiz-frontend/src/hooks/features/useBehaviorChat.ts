@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { API_BASE } from '../../lib/config.js';
-import type { BehaviorDecodeResponse } from '../../../../pawwiz-backend/src/types/shared.js';
+import type { BehaviorDecodeResponse, BehaviorCatContext } from '../../../../pawwiz-backend/src/types/shared.js';
 
 export interface ChatMessage {
   id: string;
@@ -16,10 +16,11 @@ export interface ChatSession {
   id: string;
   title: string;
   createdAt: Date;
+  catId?: string | null;
   messages: ChatMessage[];
 }
 
-export function useBehaviorChat() {
+export function useBehaviorChat(catId?: string | null) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,14 +44,20 @@ export function useBehaviorChat() {
 
   const generateLocalId = () => `local-${Date.now()}-${msgIdCounter.current++}`;
 
-  // ─── Load chats from backend on mount ───────────────────────────────────────
+  // ─── Load chats from backend on mount / when catId changes ─────────────────
   useEffect(() => {
     let active = true;
+    // Reset session list immediately so stale chats from the previous cat
+    // don't flash while the new cat's chats are loading.
+    setSessions([]);
+    setActiveSessionId('');
+    setIsInitialized(false);
 
     const loadChats = async () => {
       try {
         const headers = await getAuthHeaders();
-        const res = await fetch(`${API_BASE}/api/behavior/chats`, { headers });
+        const catQuery = catId ? `?catId=${encodeURIComponent(catId)}` : '';
+        const res = await fetch(`${API_BASE}/api/behavior/chats${catQuery}`, { headers });
 
         if (!res.ok) return;
 
@@ -61,6 +68,7 @@ export function useBehaviorChat() {
           const mapped: ChatSession[] = data.chats.map((chat: any) => ({
             id: chat.id,
             title: chat.title,
+            catId: chat.catId ?? null,
             createdAt: new Date(chat.createdAt),
             messages: chat.messages.map((msg: any) => ({
               id: msg.id,
@@ -73,8 +81,8 @@ export function useBehaviorChat() {
           setSessions(mapped);
           setActiveSessionId(mapped[0].id);
         } else {
-          // No chats exist — create one
-          const newChat = await createChatOnServer();
+          // No chats for this cat — create one
+          const newChat = await createChatOnServer(undefined, catId);
           if (active && newChat) {
             setSessions([newChat]);
             setActiveSessionId(newChat.id);
@@ -92,22 +100,23 @@ export function useBehaviorChat() {
 
     loadChats();
     return () => { active = false; };
-  }, []);
+  }, [catId]); // re-run whenever the active cat changes
 
   // ─── Server helpers ─────────────────────────────────────────────────────────
-  const createChatOnServer = async (title?: string): Promise<ChatSession | null> => {
+  const createChatOnServer = async (title?: string, cId?: string | null): Promise<ChatSession | null> => {
     try {
       const headers = await getAuthHeaders();
       const res = await fetch(`${API_BASE}/api/behavior/chats`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, catId: cId ?? null }),
       });
       if (!res.ok) return null;
       const chat = await res.json();
       return {
         id: chat.id,
         title: chat.title,
+        catId: chat.catId ?? null,
         createdAt: new Date(chat.createdAt),
         messages: (chat.messages || []).map((msg: any) => ({
           id: msg.id,
@@ -174,7 +183,7 @@ export function useBehaviorChat() {
 
   // ─── Send message ──────────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, catContext?: BehaviorCatContext) => {
       if (!text.trim() || isLoading || !activeSessionId) return;
 
       const trimmed = text.trim();
@@ -264,6 +273,7 @@ export function useBehaviorChat() {
             bodyLanguageSigns: parsed.bodySigns,
             context: parsed.context,
             conversationHistory: recentMessages.length > 0 ? recentMessages : undefined,
+            catContext: catContext ?? undefined,
           }),
         });
 
@@ -347,7 +357,7 @@ export function useBehaviorChat() {
 
   // ─── Create new session ─────────────────────────────────────────────────────
   const createNewSession = useCallback(async () => {
-    const newChat = await createChatOnServer();
+    const newChat = await createChatOnServer(undefined, catId);
     if (newChat) {
       setSessions((prev) => [newChat, ...prev]);
       setActiveSessionId(newChat.id);
@@ -357,7 +367,7 @@ export function useBehaviorChat() {
       setSessions((prev) => [local, ...prev]);
       setActiveSessionId(local.id);
     }
-  }, []);
+  }, [catId]);
 
   // ─── Delete session ─────────────────────────────────────────────────────────
   const deleteSession = useCallback(
