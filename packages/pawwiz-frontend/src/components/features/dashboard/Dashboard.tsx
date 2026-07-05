@@ -397,25 +397,74 @@ const Dashboard: React.FC = () => {
             className="mb-10"
           />
 
-          {/* Cat Profile Card */}
-          {diet.activeProfile && (
-            <div className="w-full max-w-md mb-12">
-              <ProfileCard
-                catName={diet.activeProfile.name}
-                displayName={profile?.displayName}
-                gender={diet.activeProfile.gender}
-                weight={diet.activeProfile.weight}
-                isKg={diet.activeProfile.isKg}
-                foodPreference={diet.activeProfile.foodPreference}
-                isSpayedNeutered={diet.activeProfile.isSpayedNeutered}
-                activeLifeStage={diet.activeProfile.lifeStage}
-                lifeStage={diet.activeProfile.lifeStage}
-                age={diet.activeProfile.age}
-                onEditProfile={() => navigate('/diet-recommender')}
-                photoUrl={diet.activeProfile.photoUrl}
-              />
+          {/* Cat Profile + Behavior Analytics — side-by-side on desktop, stacked on mobile */}
+          <div className="flex flex-col md:flex-row md:items-start gap-8 mb-12">
+            {/* Cat Profile Card */}
+            {diet.activeProfile && (
+              <div className="w-full md:w-auto md:flex-shrink-0">
+                <ProfileCard
+                  catName={diet.activeProfile.name}
+                  displayName={profile?.displayName}
+                  gender={diet.activeProfile.gender}
+                  weight={diet.activeProfile.weight}
+                  isKg={diet.activeProfile.isKg}
+                  foodPreference={diet.activeProfile.foodPreference}
+                  isSpayedNeutered={diet.activeProfile.isSpayedNeutered}
+                  activeLifeStage={diet.activeProfile.lifeStage}
+                  lifeStage={diet.activeProfile.lifeStage}
+                  age={diet.activeProfile.age}
+                  onEditProfile={() => navigate('/diet-recommender')}
+                  photoUrl={diet.activeProfile.photoUrl}
+                />
+              </div>
+            )}
+
+            {/* Behavior Analytics — right side on desktop */}
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div className="border-l-4 border-[#1a1a1a] pl-4">
+                  <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
+                    <BarChart3 className="w-7 h-7" strokeWidth={3} /> BEHAVIOR ANALYTICS
+                  </h2>
+                  <p className="text-sm text-[#555] mt-1 font-bold">Trends and composition across logged behaviors</p>
+                </div>
+                {/* Period toggle */}
+                <div className="flex border-3 border-[#1a1a1a] rounded-xl overflow-hidden self-start">
+                  {(['7', '30', 'all'] as TrendPeriod[]).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setTrendPeriod(p)}
+                      className={`px-3 py-1.5 text-xs font-black tracking-wider uppercase border-r-2 border-[#1a1a1a] last:border-r-0 transition-colors ${
+                        trendPeriod === p ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f0f0eb]'
+                      }`}
+                    >
+                      {p === 'all' ? 'ALL' : `${p}D`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border-4 border-[#1a1a1a] p-5 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#0d7377' }}>
+                    Behavior Trend
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {behaviorTrend.series.map((s) => (
+                      <span key={s.name} className="flex items-center gap-1.5 text-xs font-black">
+                        <span
+                          className="inline-block w-3 h-3 border-2 border-[#1a1a1a] rounded-sm"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        {s.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={220} />
+              </div>
             </div>
-          )}
+          </div>
 
           {/* KPI Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
@@ -638,52 +687,6 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
               )}
-            </div>
-          </div>
-
-          {/* Behavior Analytics Section */}
-          <div className="mt-16">
-            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
-              <div className="border-l-4 border-[#1a1a1a] pl-4">
-                <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
-                  <BarChart3 className="w-7 h-7" strokeWidth={3} /> BEHAVIOR ANALYTICS
-                </h2>
-                <p className="text-sm text-[#555] mt-2 font-bold">Trends and composition across logged behaviors</p>
-              </div>
-              {/* Period toggle */}
-              <div className="flex border-3 border-[#1a1a1a] rounded-xl overflow-hidden self-start">
-                {(['7', '30', 'all'] as TrendPeriod[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setTrendPeriod(p)}
-                    className={`px-4 py-2 text-xs font-black tracking-wider uppercase border-r-2 border-[#1a1a1a] last:border-r-0 transition-colors ${
-                      trendPeriod === p ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f0f0eb]'
-                    }`}
-                  >
-                    {p === 'all' ? 'ALL' : `${p}D`}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white border-4 border-[#1a1a1a] p-6 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#0d7377' }}>
-                  Behavior Trend
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {behaviorTrend.series.map((s) => (
-                    <span key={s.name} className="flex items-center gap-1.5 text-xs font-black">
-                      <span
-                        className="inline-block w-3 h-3 border-2 border-[#1a1a1a] rounded-sm"
-                        style={{ backgroundColor: s.color }}
-                      />
-                      {s.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={260} />
             </div>
           </div>
 
