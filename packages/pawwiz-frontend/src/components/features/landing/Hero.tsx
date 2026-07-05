@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { usePlantScan } from '../../../hooks/features/usePlantScan';
 import { useScrollReveal } from '../../../hooks/ui/useScrollReveal';
 import WindFlow from './effects/WindFlow';
-import CatHero01 from '../../../assets/Cat_Hero01.svg';
+import CatHero01 from '../../../assets/Cat_Hero01.svg?react';
 
 interface HeroProps {
   apiBase: string;
@@ -57,9 +57,8 @@ export default function Hero({ apiBase }: HeroProps) {
       {/* Large Full-width-ready Green Toxicity Search Box */}
       <div className="reveal-item stagger-3 max-w-5xl mx-auto px-4 md:px-6 mt-12 relative z-10">
         {/* Hanging Cat Mascot */}
-        <img
-          src={CatHero01}
-          alt="Hanging Cat Mascot"
+        <CatHero01
+          aria-label="Hanging Cat Mascot"
           className="absolute -top-10 left-10 md:-top-26 md:left-12 w-32 md:w-44 z-[20] pointer-events-none select-none"
         />
         {/* Shadow below cat */}
