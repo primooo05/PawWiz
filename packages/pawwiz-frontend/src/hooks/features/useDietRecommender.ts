@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { API_BASE } from '../../lib/config.js';
-
+import { calculateKcal, getFood, type FoodType, type MealUnit } from '../../lib/foods';
 
 export interface MealLog {
     id: string;
     mealName: string; // 'Breakfast' | 'Lunch' | 'Dinner'
-    foodType?: 'dry' | 'wet' | 'mixed';
+    foodType?: string; // catalog id (see FoodType) or a custom food name
     amount?: number;
-    unit?: 'spoon' | 'cup';
+    unit?: MealUnit;
     kcal: number;
     status: 'pending' | 'logged' | 'skipped';
     timestamp?: string;
@@ -23,7 +23,7 @@ export interface CatProfile {
     age: number; // months for kitten, years for adult/senior
     weight: number;
     isKg: boolean;
-    foodPreference: 'dry' | 'wet' | 'mixed';
+    foodPreference: FoodType;
     isSpayedNeutered: boolean;
     isTracking: boolean;
     loggedMeals: MealLog[];
@@ -97,22 +97,16 @@ export const getAgeBracketInfo = (lifeStage: 'kitten' | 'adult' | 'senior', age:
     }
 };
 
+/**
+ * Calories for a logged meal. Delegates to the shared food catalog, which
+ * computes grams (from the food + amount + unit) × caloric density. Unit
+ * defaults to 'spoon' for backward compatibility with older call sites.
+ */
 export const calculateMealCalories = (
-    foodType: 'dry' | 'wet' | 'mixed',
+    foodType: FoodType,
     amount: number,
-    unit?: 'spoon' | 'cup'
-): number => {
-    if (foodType === 'dry') {
-        return Math.round(amount * 25);
-    } else if (foodType === 'wet') {
-        return Math.round(amount * 15);
-    } else {
-        // Mixed: 50% dry, 50% wet
-        const dryAmount = amount / 2;
-        const wetAmount = amount / 2;
-        return Math.round(dryAmount * 25 + wetAmount * 15);
-    }
-};
+    unit: MealUnit = 'spoon'
+): number => calculateKcal(foodType, amount, unit);
 
 export const useDietRecommender = () => {
     const [profiles, setProfiles] = useState<CatProfile[]>(() => {
@@ -172,7 +166,7 @@ export const useDietRecommender = () => {
     const [age, setAge] = useState<number>(activeProfile?.age || 0);
     const [weight, setWeight] = useState<number>(activeProfile?.weight || 0);
     const [isKg, setIsKg] = useState<boolean>(activeProfile ? activeProfile.isKg : true);
-    const [foodPreference, setFoodPreference] = useState<'dry' | 'wet' | 'mixed'>(activeProfile?.foodPreference || 'mixed');
+    const [foodPreference, setFoodPreference] = useState<FoodType>(activeProfile?.foodPreference || 'mixed');
     const [isSpayedNeutered, setIsSpayedNeutered] = useState<boolean>(activeProfile ? activeProfile.isSpayedNeutered : true);
     const [isTracking, setIsTracking] = useState<boolean>(activeProfile ? activeProfile.isTracking : false);
     const [hasNoUserProfile, setHasNoUserProfile] = useState<boolean>(false);
@@ -400,20 +394,20 @@ export const useDietRecommender = () => {
             }
         };
 
-        const updateProfile = async (id: string, updates: Partial<Omit<CatProfile, 'id' | 'loggedMeals'>>) => {
-            // Optimistic UI update
-            setProfiles(prevProfiles => {
-                const updated = prevProfiles.map(p => p.id === id ? { ...p, ...updates } : p);
+        // Edit an existing cat's profile (identity + diet fields) — used by Settings
+        const updateProfile = async (
+            id: string,
+            data: Partial<Omit<CatProfile, 'id' | 'loggedMeals'>>
+        ) => {
+            // Optimistic local update
+            setProfiles(prev => {
+                const updated = prev.map(p => (p.id === id ? { ...p, ...data } : p));
                 saveProfilesToStorage(updated);
                 return updated;
             });
-
-            // If the updated profile is the active one, sync states
             if (id === activeProfileId) {
-                const currentActive = profiles.find(p => p.id === id);
-                if (currentActive) {
-                    syncStatesToSetup({ ...currentActive, ...updates });
-                }
+                const merged = profiles.find(p => p.id === id);
+                if (merged) syncStatesToSetup({ ...merged, ...data } as CatProfile);
             }
 
             try {
@@ -421,12 +415,12 @@ export const useDietRecommender = () => {
                 const res = await fetch(`${API_BASE}/api/diet/profiles/${id}`, {
                     method: 'PUT',
                     headers,
-                    body: JSON.stringify(updates),
+                    body: JSON.stringify(data),
                 });
                 if (res.ok) {
                     const serverProf = await res.json();
                     setProfiles(prev => {
-                        const synced = prev.map(p => p.id === id ? serverProf : p);
+                        const synced = prev.map(p => (p.id === id ? serverProf : p));
                         saveProfilesToStorage(synced);
                         return synced;
                     });
@@ -435,11 +429,11 @@ export const useDietRecommender = () => {
                     }
                     return serverProf;
                 }
+                throw new Error('Failed to update profile on server');
             } catch (e) {
-                console.error('Failed to update profile on backend', e);
+                console.error('Failed to update profile', e);
             }
         };
-
 
         const handleStartDietTracking = async () => {
             setIsTracking(true); // Optimistic UI update
@@ -534,12 +528,16 @@ export const useDietRecommender = () => {
 
         const addMeal = async (
             mealId: string,
-            foodType: 'dry' | 'wet' | 'mixed',
+            foodType: string,
             amount: number,
-            unit: 'spoon' | 'cup',
-            timestamp?: string
+            unit: MealUnit,
+            timestamp?: string,
+            kcalOverride?: number
         ) => {
-            const kcal = calculateMealCalories(foodType, amount, unit);
+            // Prefer the caller-supplied kcal (the modal already computed it,
+            // including custom foods priced from their label). Fall back to the
+            // catalog calculation for legacy call sites.
+            const kcal = kcalOverride ?? calculateMealCalories(foodType as FoodType, amount, unit);
 
             // Optimistic UI update
             setProfiles(prevProfiles => prevProfiles.map(p => {
@@ -880,162 +878,80 @@ export interface FeedingGuideDetails {
     dailyCalories: number;
 }
 
+// MER activity multipliers — veterinary standard (NRC / AAFCO guidelines)
+const MER_FACTORS: Record<'kitten' | 'adult_neutered' | 'adult_intact' | 'senior_healthy' | 'senior_underweight', number> = {
+    kitten:            2.5,
+    adult_neutered:    1.2,
+    adult_intact:      1.4,
+    senior_healthy:    1.1,
+    senior_underweight: 1.4,
+};
+
+/** Format a spoon count to nearest 0.25 with a unit suffix, e.g. "3.75 spoons". */
+const fmtSpoons = (n: number, label: string): string => {
+    const snapped = Math.round(n / 0.25) * 0.25;
+    return `${snapped} ${label}`;
+};
+
 export const getFelineFeedingGuideDetails = (
     lifeStage: 'kitten' | 'adult' | 'senior',
     weightInKg: number,
-    foodPreference: 'dry' | 'wet' | 'mixed'
+    foodPreference: FoodType
 ): FeedingGuideDetails => {
-    let condition = 'Average / Ideal';
-    let dailySpoons = '';
-    let portionPerMeal = '';
-    let frequency = '';
-    let dailyCalories = 0;
+    // ── RER / MER ─────────────────────────────────────────────────────────────
+    const rer = 70 * Math.pow(weightInKg, 0.75);
+
+    let merFactor: number;
+    let frequency: string;
+    let mealsPerDay: number;
 
     if (lifeStage === 'kitten') {
-        frequency = '4 Meals Per Day';
-        if (weightInKg < 1.0) {
-            condition = 'Lightweight / Small';
-            if (foodPreference === 'wet') {
-                dailySpoons = '7 wet spoons';
-                portionPerMeal = '1.75 spoons wet';
-                dailyCalories = 7 * 15;
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '4 dry spoons';
-                portionPerMeal = '1.00 spoon dry';
-                dailyCalories = 4 * 25;
-            } else {
-                dailySpoons = '3 wet + 2 dry spoons';
-                portionPerMeal = '0.75 spoon wet + 0.50 spoon dry';
-                dailyCalories = (3 * 15) + (2 * 25);
-            }
-        } else if (weightInKg <= 3.0) {
-            condition = 'Average / Ideal';
-            if (foodPreference === 'wet') {
-                dailySpoons = '15 wet spoons';
-                portionPerMeal = '3.75 spoons wet';
-                dailyCalories = 15 * 15;
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '9 dry spoons';
-                portionPerMeal = '2.25 spoons dry';
-                dailyCalories = 9 * 25;
-            } else {
-                dailySpoons = '6 wet + 5 dry spoons';
-                portionPerMeal = '1.50 spoons wet + 1.25 spoons dry';
-                dailyCalories = (6 * 15) + (5 * 25);
-            }
-        } else {
-            condition = 'Overweight / Large';
-            if (foodPreference === 'wet') {
-                dailySpoons = '23 wet spoons';
-                portionPerMeal = '5.75 spoons wet';
-                dailyCalories = 23 * 15;
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '14 dry spoons';
-                portionPerMeal = '3.50 spoons dry';
-                dailyCalories = 14 * 25;
-            } else {
-                dailySpoons = '8 wet + 9 dry spoons';
-                portionPerMeal = '2.00 spoons wet + 2.25 spoons dry';
-                dailyCalories = (8 * 15) + (9 * 25);
-            }
-        }
+        merFactor    = MER_FACTORS.kitten;
+        frequency    = '4 Meals Per Day';
+        mealsPerDay  = 4;
     } else if (lifeStage === 'adult') {
-        frequency = '2 Meals Per Day';
-        if (weightInKg < 3.5) {
-            condition = 'Lightweight / Thin';
-            if (foodPreference === 'wet') {
-                dailySpoons = '12 wet spoons';
-                portionPerMeal = '6.00 spoons wet';
-                dailyCalories = 12 * 15;
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '7 dry spoons';
-                portionPerMeal = '3.50 spoons dry';
-                dailyCalories = 7 * 25;
-            } else {
-                dailySpoons = '4 wet + 5 dry spoons';
-                portionPerMeal = '2.00 spoons wet + 2.50 spoons dry';
-                dailyCalories = (4 * 15) + (5 * 25);
-            }
-        } else if (weightInKg <= 5.0) {
-            condition = 'Average / Ideal';
-            if (foodPreference === 'wet') {
-                dailySpoons = '15 wet spoons';
-                portionPerMeal = '7.50 spoons wet';
-                dailyCalories = 15 * 15;
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '9 dry spoons';
-                portionPerMeal = '4.50 spoons dry';
-                dailyCalories = 9 * 25;
-            } else {
-                dailySpoons = '4 wet + 7 dry spoons';
-                portionPerMeal = '2.00 spoons wet + 3.50 spoons dry';
-                dailyCalories = (4 * 15) + (7 * 25);
-            }
-        } else {
-            condition = 'Overweight / Obese';
-            if (foodPreference === 'wet') {
-                dailySpoons = '11 wet spoons';
-                portionPerMeal = '5.50 spoons wet';
-                dailyCalories = 11 * 15;
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '7 dry spoons';
-                portionPerMeal = '3.50 spoons dry';
-                dailyCalories = 7 * 25;
-            } else {
-                dailySpoons = '4 wet + 4 dry spoons';
-                portionPerMeal = '2.00 spoons wet + 2.00 spoons dry';
-                dailyCalories = (4 * 15) + (4 * 25);
-            }
-        }
-    } else { // senior
-        frequency = '3 Meals Per Day';
-        if (weightInKg < 3.5) {
-            condition = 'Lightweight / Thin';
-            if (foodPreference === 'wet') {
-                dailySpoons = '15 wet spoons';
-                portionPerMeal = '5.00 spoons wet';
-                dailyCalories = 15 * 15;
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '9 dry spoons';
-                portionPerMeal = '3.00 spoons dry';
-                dailyCalories = 9 * 25;
-            } else {
-                dailySpoons = '6 wet + 6 dry spoons';
-                portionPerMeal = '2.00 spoons wet + 2.00 spoons dry';
-                dailyCalories = (6 * 15) + (6 * 25);
-            }
-        } else if (weightInKg <= 5.0) {
-            condition = 'Average / Ideal';
-            if (foodPreference === 'wet') {
-                dailySpoons = '13 wet spoons';
-                portionPerMeal = '4.30 spoons wet';
-                dailyCalories = Math.round(13 * 15);
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '8 dry spoons';
-                portionPerMeal = '2.60 spoons dry';
-                dailyCalories = 8 * 25;
-            } else {
-                dailySpoons = '4 wet + 6 dry spoons';
-                portionPerMeal = '1.30 spoons wet + 2.00 spoons dry';
-                dailyCalories = (4 * 15) + (6 * 25);
-            }
-        } else {
-            condition = 'Overweight / Obese';
-            if (foodPreference === 'wet') {
-                dailySpoons = '11 wet spoons';
-                portionPerMeal = '3.60 spoons wet';
-                dailyCalories = Math.round(11 * 15);
-            } else if (foodPreference === 'dry') {
-                dailySpoons = '6 dry spoons';
-                portionPerMeal = '2.00 spoons dry';
-                dailyCalories = 6 * 25;
-            } else {
-                dailySpoons = '4 wet + 4 dry spoons';
-                portionPerMeal = '1.30 spoons wet + 1.30 spoons dry';
-                dailyCalories = (4 * 15) + (4 * 25);
-            }
-        }
+        merFactor    = MER_FACTORS.adult_neutered; // caller can't pass isSpayedNeutered here;
+        frequency    = '2 Meals Per Day';          // default to neutered (safer/lower bound).
+        mealsPerDay  = 2;
+    } else {
+        // senior — use underweight factor when cat is below healthy floor (< 3.5 kg)
+        merFactor    = weightInKg < 3.5 ? MER_FACTORS.senior_underweight : MER_FACTORS.senior_healthy;
+        frequency    = '3 Meals Per Day';
+        mealsPerDay  = 3;
     }
+
+    const dailyCalories = Math.round(rer * merFactor);
+
+    // ── Weight condition ───────────────────────────────────────────────────────
+    let condition: string;
+    if (lifeStage === 'kitten') {
+        condition = weightInKg < 1.0 ? 'Lightweight / Small'
+                  : weightInKg <= 3.0 ? 'Average / Ideal'
+                  : 'Overweight / Large';
+    } else {
+        condition = weightInKg < 3.5 ? 'Lightweight / Thin'
+                  : weightInKg <= 5.0 ? 'Average / Ideal'
+                  : 'Overweight / Obese';
+    }
+
+    // ── Portion resolution from food catalog ──────────────────────────────────
+    const food = getFood(foodPreference);
+    const gramsPerDay     = dailyCalories / food.kcalPerGram;
+    const gramsPerMeal    = gramsPerDay / mealsPerDay;
+
+    // Spoon-based foods: dry, wet, mixed. Gram-display for whole-food catalog entries.
+    const spoonsPerDay    = gramsPerDay  / food.gramsPerSpoon;
+    const spoonsPerMeal   = gramsPerMeal / food.gramsPerSpoon;
+
+    const isGramFood = !['dry', 'wet', 'mixed'].includes(foodPreference);
+
+    const dailySpoons   = isGramFood
+        ? `~${Math.round(gramsPerDay)} g/day (${food.label})`
+        : fmtSpoons(spoonsPerDay, `${foodPreference} spoons`);
+
+    const portionPerMeal = isGramFood
+        ? `~${Math.round(gramsPerMeal)} g per meal`
+        : fmtSpoons(spoonsPerMeal, `spoons ${foodPreference}`);
 
     return { condition, dailySpoons, portionPerMeal, frequency, dailyCalories };
 };

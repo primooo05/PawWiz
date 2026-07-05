@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getFelineFeedingGuideDetails } from '../../../hooks/features/useDietRecommender';
 import type { AgeBracketDetails, MealLog, CatProfile } from '../../../hooks/features/useDietRecommender';
+import type { FoodType, MealUnit } from '../../../lib/foods';
 import ConfirmationDialog from '../../ui/modals/ConfirmationDialog';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, CheckCircle2, Calendar, Award } from 'lucide-react';
@@ -12,6 +13,7 @@ import FeedingGuideline from './sub-components/FeedingGuideline';
 import CalorieTracker from './sub-components/CalorieTracker';
 import WaterTracker from './sub-components/WaterTracker';
 import MealLogModal from './sub-components/MealLogModal';
+import { defaultTimeForMeal } from './sub-components/mealTime';
 import DietAdvisorModal from './sub-components/DietAdvisorModal';
 import AnimatedAvatarGroup from '../../ui/smoothui/animated-avatar-group';
 import { motion } from 'motion/react';
@@ -21,7 +23,7 @@ interface DietDashboardViewProps {
     gender: 'male' | 'female';
     weight: number;
     isKg: boolean;
-    foodPreference: 'dry' | 'wet' | 'mixed';
+    foodPreference: FoodType;
     isSpayedNeutered: boolean;
     activeLifeStage: 'kitten' | 'adult' | 'senior';
     lifeStage: 'kitten' | 'adult' | 'senior';
@@ -33,7 +35,7 @@ interface DietDashboardViewProps {
     activeProfileId: string;
     switchProfile: (id: string) => void;
     createNewProfile: (name: string) => void;
-    addMeal: (mealId: string, foodType: 'dry' | 'wet' | 'mixed', amount: number, unit: 'spoon' | 'cup', timestamp?: string) => void;
+    addMeal: (mealId: string, foodType: string, amount: number, unit: MealUnit, timestamp?: string, kcal?: number) => void;
     skipMeal: (mealId: string) => void;
     resetMealLog: (mealId: string) => void;
     addWater: (amount: number) => void;
@@ -53,7 +55,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     activeLifeStage,
     lifeStage,
     age,
-    ageBracketInfo,
     onReset,
 
     profiles,
@@ -76,8 +77,8 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
     const [modalMealName, setModalMealName] = useState<'Breakfast' | 'Lunch' | 'Dinner'>('Breakfast');
     const [modalTimestamp, setModalTimestamp] = useState<string>('08:00');
-    const [modalFoodType, setModalFoodType] = useState<'dry' | 'wet'>('dry');
-    const [modalUnit, setModalUnit] = useState<'spoon' | 'cup'>('spoon');
+    const [modalFoodType, setModalFoodType] = useState<FoodType>('dry');
+    const [modalUnit, setModalUnit] = useState<MealUnit>('spoon');
     const [modalAmount, setModalAmount] = useState<number>(3);
     const [isEditingMeal, setIsEditingMeal] = useState(false);
     const [editingMealId, setEditingMealId] = useState<string | null>(null);
@@ -92,7 +93,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     const feedingGuide = getFelineFeedingGuideDetails(activeLifeStage, weightInKg, foodPreference);
     const dailyCalories = feedingGuide.dailyCalories;
 
-    // Water target: kitten: ~70ml per kg; adult/senior: ~50ml per kg
+    // Water target (kitten: approx. 70ml per kg; adult/senior: approx. 50ml per kg)
     const waterTarget = activeLifeStage === 'kitten'
         ? Math.round(weightInKg * 70)
         : Math.round(weightInKg * 50);
@@ -116,24 +117,23 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 
     const handleMealModalSubmit = (
         mealName: 'Breakfast' | 'Lunch' | 'Dinner',
-        foodType: 'dry' | 'wet',
+        foodType: string,
         amount: number,
-        unit: 'spoon' | 'cup',
-        formattedTimestamp: string
+        unit: MealUnit,
+        formattedTimestamp: string,
+        kcal: number
     ) => {
         const targetMealId = mealName === 'Breakfast' ? '1' : mealName === 'Lunch' ? '2' : '3';
         if (isEditingMeal && editingMealId && editingMealId !== targetMealId) {
             resetMealLog(editingMealId);
         }
-        addMeal(targetMealId, foodType, amount, unit, formattedTimestamp);
+        addMeal(targetMealId, foodType, amount, unit, formattedTimestamp, kcal);
         setIsAddMealModalOpen(false);
     };
 
     const openAddMealModal = () => {
-        const now = new Date();
-        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         setModalMealName('Breakfast');
-        setModalTimestamp(timeStr);
+        setModalTimestamp(defaultTimeForMeal('Breakfast'));
         setModalFoodType('dry');
         setModalUnit('spoon');
         setModalAmount(3);
@@ -153,21 +153,9 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 
     const handleEditMealClick = (meal: MealLog) => {
         setModalMealName(meal.mealName as any);
-        let time24 = '08:00';
-        if (meal.timestamp) {
-            const match = meal.timestamp.match(/(\d+):(\d+)(am|pm)/);
-            if (match) {
-                let h = parseInt(match[1], 10);
-                const m = match[2];
-                const ampm = match[3];
-                if (ampm === 'pm' && h < 12) h += 12;
-                if (ampm === 'am' && h === 12) h = 0;
-                time24 = `${String(h).padStart(2, '0')}:${m}`;
-            }
-        }
-        setModalTimestamp(time24);
-        setModalFoodType(meal.foodType === 'wet' ? 'wet' : 'dry');
-        setModalUnit(meal.unit || 'spoon');
+        setModalTimestamp(defaultTimeForMeal(meal.mealName as any, meal.timestamp ?? undefined));
+        setModalFoodType((meal.foodType as FoodType) ?? 'dry');
+        setModalUnit((meal.unit as MealUnit) ?? 'spoon');
         setModalAmount(meal.amount || 3);
         setIsEditingMeal(true);
         setEditingMealId(meal.id);
@@ -223,7 +211,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 
     const mealsLoggedToday = loggedMeals.filter(m => m.status === 'logged').length;
     const mealsPendingToday = loggedMeals.filter(m => m.status === 'pending').length;
-    const mealsSkippedToday = loggedMeals.filter(m => m.status === 'skipped').length;
 
     const successDaysList = React.useMemo(() => {
         const localDays = (() => {

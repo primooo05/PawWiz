@@ -5,6 +5,14 @@ import { AppError } from '../utils/errors.js';
 import { profileService } from './profile.service.js';
 import { prisma } from '../lib/prisma.js';
 
+/**
+ * Absolute ceiling for stored daily water intake (ml). A cat's normal intake is
+ * ~50 ml/kg/day; even the largest, heaviest-drinking cat stays well under this.
+ * The cap prevents one-tap spam from producing physically impossible hydration
+ * data that would corrupt the dashboard analytics.
+ */
+const MAX_DAILY_WATER_ML = 2000;
+
 function mapProfileToFrontend(profile: any) {
   const mealMap: Record<string, string> = {
     'Breakfast': '1',
@@ -168,7 +176,9 @@ class DietService {
     const existing = await dietRepository.findByIdAndProfileId(profileId, userProfileId);
     if (!existing) throw AppError.notFound('Diet profile not found');
 
-    let newWaterIntake = data.reset ? 0 : Math.max(0, existing.waterIntake + data.amount);
+    let newWaterIntake = data.reset
+      ? 0
+      : Math.min(MAX_DAILY_WATER_ML, Math.max(0, existing.waterIntake + data.amount));
 
     const updated = await dietRepository.update(profileId, { waterIntake: newWaterIntake });
     return mapProfileToFrontend(updated);

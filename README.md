@@ -12,17 +12,15 @@ PawWiz is architected as a decoupled monorepo managed via native **npm workspace
 - **Backend (`packages/pawwiz-backend`)**: Node.js (Express 5) + TypeScript + Prisma 7 (PostgreSQL).
 - **AI pipeline**: Groq (Llama 3.3 70B) as the primary model for behavior decoding and conversational text, with Google **Gemini 2.5 Flash** (`@google/genai`) as the multimodal/text fallback and for plant vision + diet enrichment. A deterministic heuristic fallback keeps every feature working when AI keys are absent.
 - **ASPCA Verification Loop**: Deterministic database interceptor that treats the local ASPCA dataset as ground truth to eliminate AI hallucinations on plant toxicity scanning.
-
 ---
 
 ## Getting Started
 
-### 📋 Prerequisites
+### Prerequisites
 
 Ensure you have the following installed on your machine:
 - **Node.js** (v20+ recommended)
 - **npm** (v10+ recommended)
-
 ---
 
 ### Step 1: Install Dependencies

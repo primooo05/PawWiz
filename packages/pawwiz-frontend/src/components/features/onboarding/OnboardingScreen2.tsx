@@ -1,5 +1,6 @@
 import React from 'react';
 import catClean2 from '../../../assets/Cat_Clean2.svg';
+import { TextField } from '../../ui/forms/TextField';
 
 interface OnboardingScreen2Props {
   active: boolean;
@@ -64,23 +65,25 @@ export const OnboardingScreen2: React.FC<OnboardingScreen2Props> = ({
 
       {/* 3. Inputs */}
       <div className="md:col-start-1 md:row-start-2 flex flex-col justify-center items-center md:items-start text-center md:text-left space-y-6 w-full max-w-md">
-        <input
+        <TextField
+          name="ownerName"
           type="text"
           value={ownerName}
           onChange={(e) => setOwnerName(e.target.value)}
           placeholder="Your Name (e.g., Ayla)"
-          className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
+          aria-label="Your name"
           disabled={isTyping || !active}
+          reserveErrorSpace={false}
         />
-        <input
+        <TextField
+          name="ownerEmail"
           type="email"
           value={ownerEmail}
           onChange={(e) => setOwnerEmail(e.target.value)}
           placeholder="Your Email (e.g., ayla@example.com)"
-          className="w-full px-5 py-3.5 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
+          aria-label="Your email"
           disabled={isTyping || !active}
-          aria-invalid={showBubble}
-          aria-describedby="email-error"
+          reserveErrorSpace={false}
         />
       </div>
 

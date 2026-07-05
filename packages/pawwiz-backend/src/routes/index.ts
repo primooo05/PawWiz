@@ -11,6 +11,7 @@ import { onboardingRouter } from './onboarding.routes.js';
 import { dietRouter } from './diet.routes.js';
 import { toxicityRouter } from './toxicity.routes.js';
 import { behaviorChatRouter } from './behavior-chat.routes.js';
+import { quickLogRouter } from './quick-log.routes.js';
 import { authRouter } from './auth.routes.js';
 
 export function registerRoutes(app: Express): void {
@@ -22,5 +23,6 @@ export function registerRoutes(app: Express): void {
   app.use('/api/toxicity', toxicityRouter);
   app.use('/api/diet', dietRouter);
   app.use('/api/behavior', behaviorChatRouter);
+  app.use('/api/quick-log', quickLogRouter);
 }
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import type { MealLog } from '../../../../hooks/features/useDietRecommender';
+import { getFood, formatAmountUnit, type MealUnit } from '../../../../lib/foods';
 
 interface MealsTrackerProps {
     loggedMeals: MealLog[];
@@ -124,11 +125,15 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
                                                 <>
                                                     <div className="flex justify-between">
                                                         <span>Food:</span>
-                                                        <span className="text-slate-900 capitalize">{meal.foodType === 'dry' ? 'Kibble' : meal.foodType === 'wet' ? 'Wet Food' : 'Mixed Food'}</span>
+                                                        <span className="text-slate-900">{getFood(meal.foodType).label}</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span>Amount:</span>
-                                                        <span className="text-slate-900">{meal.amount} {meal.unit}{meal.amount !== 1 ? 's' : ''}</span>
+                                                        <span className="text-slate-900">
+                                                            {meal.amount != null
+                                                                ? formatAmountUnit(meal.amount, (meal.unit as MealUnit) ?? 'spoon')
+                                                                : '—'}
+                                                        </span>
                                                     </div>
                                                     <div className="flex justify-between items-center bg-slate-900/5 p-2 rounded-xl mt-1">
                                                         <span>Energy:</span>
