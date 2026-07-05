@@ -27,15 +27,15 @@ export function usePlantScan(apiBase: string) {
       size: file.size,
     });
 
-    // Client-side validation: PlantNet only accepts JPEG and PNG, max 50 MB.
+    // Client-side validation: mirrors the backend limits (JPEG/PNG only, max 10 MB).
     if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
       console.warn('[usePlantScan] Validation failed: Unsupported image type', file.type);
       setScanError('Only JPEG and PNG images are supported.');
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-      console.warn('[usePlantScan] Validation failed: File size exceeds 50MB limit', file.size);
-      setScanError('Image must be smaller than 50 MB.');
+    if (file.size > 10 * 1024 * 1024) {
+      console.warn('[usePlantScan] Validation failed: File size exceeds 10MB limit', file.size);
+      setScanError('Image must be smaller than 10 MB.');
       return;
     }
 

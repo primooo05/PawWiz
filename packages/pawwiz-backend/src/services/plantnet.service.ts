@@ -25,7 +25,7 @@ class PlantNetService {
    * Extracts `results[0]` (highest-confidence entry; PlantNet pre-sorts descending).
    * Maps `results[0].score` directly to `confidence` — no transformation needed.
    *
-   * @param imageBuffer  Raw image bytes (JPEG or PNG, max 50 MB).
+   * @param imageBuffer  Raw image bytes (JPEG or PNG, max 10 MB).
    * @param mimetype     MIME type of the uploaded file.
    */
   async identify(imageBuffer: Buffer, mimetype: string): Promise<PlantIdentificationResult> {

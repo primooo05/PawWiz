@@ -42,7 +42,7 @@ const upload = multer({
     } else {
       cb(
         new AppError(
-          'Invalid file type. Only JPEG, PNG, WebP, and GIF images are accepted.',
+          'Invalid file type. Only JPEG and PNG images are accepted.',
           400,
         ) as unknown as Error,
       );
