@@ -11,6 +11,8 @@ export type AvatarData = {
   alt: string;
   isActive?: boolean;
   isNew?: boolean;
+  /** Optional status dot (e.g. "logged today" indicator on pregnancy tracker). */
+  statusDot?: 'green' | 'amber' | null;
 };
 
 export type AnimatedAvatarGroupProps = {
@@ -191,6 +193,17 @@ const AnimatedAvatarGroup = ({
                 <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 border-2 border-slate-900 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-md z-[101] pointer-events-none select-none">
                   !
                 </div>
+              )}
+
+              {/* Status dot (e.g. "logged today") */}
+              {avatar.statusDot && (
+                <div
+                  className={cn(
+                    "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm z-[101] pointer-events-none",
+                    avatar.statusDot === 'green' ? 'bg-emerald-400' : 'bg-amber-400'
+                  )}
+                  aria-label={avatar.statusDot === 'green' ? 'Logged today' : 'Not logged yet'}
+                />
               )}
 
               {/* Tooltip */}

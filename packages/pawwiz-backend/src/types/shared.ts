@@ -176,3 +176,108 @@ export interface TimelineResponse {
 export interface InsightsResponse {
   data: CorrelationInsight[];
 }
+
+// ─── Cat Pregnancy Tracker — Flo-style logging types ─────────────────────────
+//
+// Chip Registry — the single source of truth for the tappable chips the daily
+// log offers. Both the backend (Zod enum validation) and the frontend (chip
+// rendering) import these const arrays, so an unknown chip value can never be
+// persisted and the two sides can never drift apart.
+
+export const SYMPTOM_CHIPS = [
+  'appetite_loss',
+  'appetite_increase',
+  'vomiting',
+  'discharge',        // clear/mucus — normal near labor
+  'panting',
+  'restless',
+  'lethargy',
+  'contractions',     // Week 9 only — surfaced prominently
+  'nesting',          // Weeks 7-9 — surfaced prominently
+  'nipple_swelling',  // Weeks 3-4
+  'weight_gain',
+] as const;
+
+export const MOOD_CHIPS = [
+  'affectionate',
+  'hiding',
+  'vocal',
+  'aggressive',
+  'calm',
+  'anxious',
+  'grooming_more',
+  'grooming_less',
+  'seeking_solitude', // Common Weeks 7-9
+] as const;
+
+export const APPETITE_LEVELS = [
+  'normal',
+  'increased',
+  'reduced',
+  'none',
+] as const;
+
+export const ENERGY_LEVELS = [
+  'normal',
+  'high',
+  'low',
+  'very_low',
+] as const;
+
+export type SymptomChip = typeof SYMPTOM_CHIPS[number];
+export type MoodChip = typeof MOOD_CHIPS[number];
+export type AppetiteLevel = typeof APPETITE_LEVELS[number];
+export type EnergyLevel = typeof ENERGY_LEVELS[number];
+
+export type PregnancyInsightType =
+  | 'pattern_detected'
+  | 'milestone_reached'
+  | 'vet_reminder'
+  | 'warning';
+
+export interface PregnancyLogEntry {
+  id: string;
+  pregnancySessionId: string;
+  symptoms: SymptomChip[];
+  moodBehavior: MoodChip[];
+  appetiteLevel: AppetiteLevel | null;
+  energyLevel: EnergyLevel | null;
+  nestingObserved: boolean;
+  weight: number | null;
+  temp: number | null;
+  notes: string | null;
+  gestationWeek: number;
+  logDate: string;   // ISO 8601 UTC
+  createdAt: string; // ISO 8601 UTC
+}
+
+export interface PregnancyInsightCard {
+  id: string;
+  insightType: PregnancyInsightType;
+  title: string;
+  body: string;
+  gestationWeek: number;
+  isRead: boolean;
+  createdAt: string; // ISO 8601 UTC
+}
+
+export interface WeeklyLogGroup {
+  week: number;
+  phase: string; // e.g. "Fetal Swell", "Nesting Search"
+  logs: PregnancyLogEntry[];
+}
+
+export interface ActiveSessionResponse {
+  sessionId: string;
+  catId: string;
+  matingDate: string;           // ISO 8601 UTC
+  expectedDeliveryDate: string; // ISO 8601 UTC
+  daysPregnant: number;         // now - matingDate, in whole days
+  gestationWeek: number;        // Math.ceil(daysPregnant / 7), clamped 1..10
+  daysRemaining: number;        // expectedDelivery - now, in whole days (>= 0)
+  status: 'active' | 'completed';
+  todayLog: PregnancyLogEntry | null; // null if not yet logged today
+  recentLogs: PregnancyLogEntry[];    // last 7 days, newest-first
+  insights: PregnancyInsightCard[];   // unread insight cards
+  weeklyHistory: WeeklyLogGroup[];    // full history grouped by gestation week
+}

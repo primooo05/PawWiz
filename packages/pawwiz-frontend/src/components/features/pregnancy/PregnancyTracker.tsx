@@ -9,7 +9,10 @@ import FemaleCatSelector from './FemaleCatSelector';
 import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker';
 import { useDietRecommender } from '../../../hooks/features/useDietRecommender';
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
+import { useCatPregnancy } from '../../../hooks/features/useCatPregnancy';
 import { useNavigate } from 'react-router-dom';
+import InsightCardFeed from './flo/InsightCardFeed';
+import TodayLogStatus from './flo/TodayLogStatus';
 
 const CatPregnancyTracker: React.FC = () => {
     const navigate = useNavigate();
@@ -19,7 +22,7 @@ const CatPregnancyTracker: React.FC = () => {
     // Build the roster of female cats. Diet profiles carry gender; fall back to the
     // primary profile when the owner has a female cat but no diet profile yet.
     const femaleRoster =
-        diet.profiles.filter((p) => p.gender === 'female').map((p) => ({ id: p.id, name: p.name, photoUrl: p.photoUrl ?? null }));
+        diet.profiles.filter((p) => p.gender === 'female').map((p) => ({ id: p.catId ?? p.id, name: p.name, photoUrl: p.photoUrl ?? null }));
     if (femaleRoster.length === 0 && profile?.catSex === 'female') {
         femaleRoster.push({ id: 'primary', name: profile.catName || 'Your Cat', photoUrl: null });
     }
@@ -33,6 +36,10 @@ const CatPregnancyTracker: React.FC = () => {
             setSelectedCatId(femaleRoster[0].id);
         }
     }, [hasFemaleCat, femaleRoster.length, selectedCatId]);
+
+    // Backend pregnancy session — syncs logs to server when catId is available.
+    const catIdForApi = selectedCatId && selectedCatId !== 'primary' ? selectedCatId : null;
+    const pregnancy = useCatPregnancy(catIdForApi);
 
     const {
         matingDate,
@@ -70,12 +77,43 @@ const CatPregnancyTracker: React.FC = () => {
 
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
+    // When the user submits the setup form, start both the local tracker and
+    // (if a real catId is available) a server-side pregnancy session.
     const startTrackingWithLoading = (e: React.FormEvent) => {
         e.preventDefault();
         if (matingDate) {
             setIsLoading(true);
+            // Start the backend session (fire-and-forget; the local UI drives UX).
+            if (catIdForApi) {
+                void pregnancy.startSession(matingDate);
+            }
         }
     };
+
+    // Sync today's log to the backend whenever it changes locally.
+    const saveLogForDateWithSync = React.useCallback(
+        (dateStr: string, log: typeof todayLog) => {
+            saveLogForDate(dateStr, log);
+
+            // If we have an active backend session, persist the log server-side.
+            if (pregnancy.hasActiveSession && dateStr === todayStr) {
+                const symptoms = (log.symptoms || []).map((s: string) =>
+                    s.toLowerCase().replace(/\s+/g, '_'),
+                );
+                const moods = (log.moods || []).map((m: string) =>
+                    m.toLowerCase().replace(/\s+/g, '_'),
+                );
+                void pregnancy.saveDailyLog({
+                    symptoms: symptoms as any,
+                    moodBehavior: moods as any,
+                    nestingObserved: symptoms.includes('nesting'),
+                    weight: log.weight,
+                    temp: log.temperature,
+                });
+            }
+        },
+        [saveLogForDate, pregnancy, todayStr],
+    );
 
     const handleNavigation = (item: string) => {
         if (item === 'calendar') {
@@ -140,36 +178,56 @@ const CatPregnancyTracker: React.FC = () => {
                         onSubmit={startTrackingWithLoading}
                     />
                 ) : (
-                    <DashboardView
-                        setIsTracking={setIsTracking}
-                        currentDay={currentDay}
-                        daysRemaining={daysRemaining}
-                        currentWeek={currentWeek}
-                        dueDateString={dueDateString}
-                        progressPercentage={progressPercentage}
-                        currentYear={currentYear}
-                        currentMonthIndex={currentMonthIndex}
-                        currentMonthLabel={currentMonthLabel}
-                        calendarGrid={calendarGrid}
-                        changeCalendarMonth={changeCalendarMonth}
-                        getElapsedDayLabel={getElapsedDayLabel}
-                        getWeekMilestone={getWeekMilestone}
-                        getLocalDateStr={getLocalDateStr}
-                        getDayBadgeClassName={getDayBadgeClassName}
-                        logs={logs}
-                        selectedDateStr={selectedDateStr}
-                        isBottomSheetOpen={isBottomSheetOpen}
-                        openLogForDate={openLogForDate}
-                        closeBottomSheet={closeBottomSheet}
-                        saveLogForDate={saveLogForDate}
-                        isDateLoggable={isDateLoggable}
-                        todayStr={todayStr}
-                        todayLog={todayLog}
-                        todayLoggable={todayLoggable}
-                        elapsedDayForSelected={elapsedDayForSelected}
-                        hasVetWarningForSelected={hasVetWarningForSelected}
-                        hasNauseaInEarlyWeeksForSelected={hasNauseaInEarlyWeeksForSelected}
-                    />
+                    <>
+                        {/* Flo-style insight cards (from backend) — shown above the dashboard */}
+                        {pregnancy.insights.length > 0 && (
+                            <InsightCardFeed
+                                insights={pregnancy.insights}
+                                onMarkRead={pregnancy.markInsightRead}
+                                className="mb-6 max-w-lg mx-auto"
+                            />
+                        )}
+
+                        {/* "Logged today" status pill — links to existing bottom sheet */}
+                        <div className="flex justify-end mb-4">
+                            <TodayLogStatus
+                                loggedToday={pregnancy.loggedToday}
+                                onClick={() => openLogForDate(todayStr)}
+                            />
+                        </div>
+
+                        <DashboardView
+                            setIsTracking={setIsTracking}
+                            currentDay={currentDay}
+                            daysRemaining={daysRemaining}
+                            currentWeek={currentWeek}
+                            dueDateString={dueDateString}
+                            progressPercentage={progressPercentage}
+                            currentYear={currentYear}
+                            currentMonthIndex={currentMonthIndex}
+                            currentMonthLabel={currentMonthLabel}
+                            calendarGrid={calendarGrid}
+                            changeCalendarMonth={changeCalendarMonth}
+                            getElapsedDayLabel={getElapsedDayLabel}
+                            getWeekMilestone={getWeekMilestone}
+                            getLocalDateStr={getLocalDateStr}
+                            getDayBadgeClassName={getDayBadgeClassName}
+                            logs={logs}
+                            selectedDateStr={selectedDateStr}
+                            isBottomSheetOpen={isBottomSheetOpen}
+                            openLogForDate={openLogForDate}
+                            closeBottomSheet={closeBottomSheet}
+                            saveLogForDate={saveLogForDateWithSync}
+                            isDateLoggable={isDateLoggable}
+                            todayStr={todayStr}
+                            todayLog={todayLog}
+                            todayLoggable={todayLoggable}
+                            elapsedDayForSelected={elapsedDayForSelected}
+                            hasVetWarningForSelected={hasVetWarningForSelected}
+                            hasNauseaInEarlyWeeksForSelected={hasNauseaInEarlyWeeksForSelected}
+                            loggedToday={pregnancy.loggedToday}
+                        />
+                    </>
                 )}
             </main>
 
