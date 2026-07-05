@@ -58,20 +58,27 @@ function recentMealLogsInclude() {
   return { where: { createdAt: { gte: mealLogWindowStart() } } };
 }
 
+/**
+ * Narrow profile select used in all DietProfile reads.
+ * mapProfileToFrontend only needs these 5 fields as a fallback when no Cat row
+ * is linked — fetching the full Profile row is unnecessary overhead.
+ */
+const profileSelect = {
+  select: {
+    catName: true,
+    catSex: true,
+    catLifeStage: true,
+    catBreed: true,
+    catMarking: true,
+  },
+} as const;
+
 class DietRepository {
   async findManyByProfileId(profileId: string) {
     return prisma.dietProfile.findMany({
       where: { profileId },
       include: {
-        profile: {
-          select: {
-            catName: true,
-            catSex: true,
-            catLifeStage: true,
-            catBreed: true,
-            catMarking: true,
-          }
-        },
+        profile: profileSelect,
         cat: true,
         mealLogs: recentMealLogsInclude(),
       }
@@ -82,7 +89,7 @@ class DietRepository {
     return prisma.dietProfile.findUnique({
       where: { id },
       include: {
-        profile: true,
+        profile: profileSelect,
         cat: true,
         mealLogs: recentMealLogsInclude(),
       },
@@ -93,7 +100,7 @@ class DietRepository {
     return prisma.dietProfile.findFirst({
       where: { id, profileId },
       include: {
-        profile: true,
+        profile: profileSelect,
         cat: true,
         mealLogs: recentMealLogsInclude(),
       },
@@ -135,7 +142,7 @@ class DietRepository {
           },
         },
         include: {
-          profile: true,
+          profile: profileSelect,
           cat: true,
           mealLogs: recentMealLogsInclude(),
         },
@@ -172,7 +179,7 @@ class DietRepository {
         where: { id },
         data: dietData,
         include: {
-          profile: true,
+          profile: profileSelect,
           cat: true,
           mealLogs: recentMealLogsInclude(),
         },
