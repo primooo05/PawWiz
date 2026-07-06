@@ -37,9 +37,11 @@ interface SymptomLogFormProps {
     currentWeek: number;
     logs: Record<string, DailyLog>;
     saveLogForDate: (dateStr: string, log: DailyLog) => void;
+    onDeleteLog: (dateStr: string) => void;
     setIsWeightPickerOpen: (open: boolean) => void;
     hasVetWarningForSelected: boolean;
     hasNauseaInEarlyWeeksForSelected: boolean;
+    registeredWeight?: number;
 }
 
 export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
@@ -50,27 +52,54 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
     currentWeek,
     logs,
     saveLogForDate,
+    onDeleteLog,
     setIsWeightPickerOpen,
     hasVetWarningForSelected,
     hasNauseaInEarlyWeeksForSelected,
+    registeredWeight,
 }) => {
     if (!selectedDateStr) return null;
 
     const [tempUnit, setTempUnit] = React.useState<'C' | 'F'>('C');
-    const activeLog: DailyLog = logs[selectedDateStr] || { symptoms: [], symptomSeverities: {}, moods: [] };
+    const [draftLog, setDraftLog] = React.useState<DailyLog>({ symptoms: [], moods: [], symptomSeverities: {} });
+
+    React.useEffect(() => {
+        if (isOpen && selectedDateStr) {
+            setDraftLog(logs[selectedDateStr] || { symptoms: [], moods: [], symptomSeverities: {} });
+        }
+    }, [isOpen, selectedDateStr, logs]);
+
+    const activeLog = {
+        symptoms: [],
+        moods: [],
+        symptomSeverities: {},
+        ...draftLog
+    };
+
     const selectedDateWeek = elapsedDayForSelected !== null ? Math.ceil(elapsedDayForSelected / 7) : currentWeek;
+    const hasLog = !!(
+        (activeLog.symptoms && activeLog.symptoms.length > 0) ||
+        (activeLog.moods && activeLog.moods.length > 0) ||
+        activeLog.weight !== undefined ||
+        activeLog.temperature !== undefined
+    );
+
+    const handleSaveAndClose = () => {
+        saveLogForDate(selectedDateStr, activeLog);
+        closeBottomSheet();
+    };
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <>
-                    {/* Backdrop */}
-                    <motion.div
+                     {/* Backdrop */}
+                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 cursor-pointer"
-                        onClick={closeBottomSheet}
+                        onClick={handleSaveAndClose}
                     />
 
                     {/* Centered Modal Container */}
@@ -94,7 +123,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                     </h3>
                                 </div>
                                 <button
-                                    onClick={closeBottomSheet}
+                                    onClick={handleSaveAndClose}
                                     className="h-8 w-8 rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 font-bold font-sans cursor-pointer"
                                 >
                                     ✕
@@ -125,7 +154,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                                     } else {
                                                         delete nextSeverities[symptom.label];
                                                     }
-                                                    saveLogForDate(selectedDateStr, {
+                                                    setDraftLog({
                                                         ...activeLog,
                                                         symptoms: nextSymptoms,
                                                         symptomSeverities: nextSeverities,
@@ -190,7 +219,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                                                 onClick={() => {
                                                                     const nextSeverities = { ...(activeLog.symptomSeverities || {}) };
                                                                     nextSeverities[s] = sev;
-                                                                    saveLogForDate(selectedDateStr, {
+                                                                    setDraftLog({
                                                                         ...activeLog,
                                                                         symptomSeverities: nextSeverities,
                                                                     });
@@ -238,7 +267,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                                     const nextMoods = isMoodSelected
                                                         ? currentMoods.filter((m) => m !== moodItem.label)
                                                         : [...currentMoods, moodItem.label];
-                                                    saveLogForDate(selectedDateStr, {
+                                                    setDraftLog({
                                                         ...activeLog,
                                                         moods: nextMoods,
                                                     });
@@ -257,22 +286,25 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                             </div>
 
                             {/* Weight Input */}
-                            <div className="mb-6">
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">
-                                    Weight
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsWeightPickerOpen(true)}
-                                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-left text-sm text-slate-700 font-medium flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors"
-                                >
-                                    <span>
-                                        {activeLog.weight !== undefined
-                                            ? `${activeLog.weight} kg`
-                                            : 'Tap to log weight...'}
+                            <div className="mb-6 space-y-3">
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wide">
+                                    <span>Weight</span>
+                                    <span className="font-black text-sm text-[#14b8a6]">
+                                        {(activeLog.weight !== undefined ? activeLog.weight : (registeredWeight || 4.0)).toFixed(1)} kg
                                     </span>
-                                    <span className="text-slate-400">⚖️</span>
-                                </button>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1.0"
+                                    max="13.0"
+                                    step="0.1"
+                                    value={activeLog.weight !== undefined ? activeLog.weight : (registeredWeight || 4.0)}
+                                    onChange={(e) => {
+                                        const w = parseFloat(e.target.value);
+                                        setDraftLog({ ...activeLog, weight: w });
+                                    }}
+                                    className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#14b8a6]"
+                                />
                             </div>
 
                             {/* Temperature Slider */}
@@ -310,7 +342,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                     }
                                     onChange={(val) => {
                                         const celsius = tempUnit === 'C' ? val / 10 : ((val / 10) - 32) / 1.8;
-                                        saveLogForDate(selectedDateStr, { ...activeLog, temperature: parseFloat(celsius.toFixed(1)) });
+                                        setDraftLog({ ...activeLog, temperature: parseFloat(celsius.toFixed(1)) });
                                     }}
                                     formatValue={(val) => `${(val / 10).toFixed(1)} °${tempUnit}`}
                                     accentColor="#14b8a6"
@@ -334,9 +366,22 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
                                 )}
                             </div>
 
+                            {hasLog && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onDeleteLog(selectedDateStr);
+                                        closeBottomSheet();
+                                    }}
+                                    className="w-full py-4 mb-3 bg-red-50 text-red-500 border-2 border-red-200 rounded-2xl font-black hover:bg-red-100 transition-all cursor-pointer text-center text-sm"
+                                >
+                                    Undo Log
+                                </button>
+                            )}
+
                             <button
                                 type="button"
-                                onClick={closeBottomSheet}
+                                onClick={handleSaveAndClose}
                                 className="w-full py-4 bg-[#FFEA30] text-slate-900 border-2 border-slate-900 rounded-2xl font-bold shadow-[2px_2px_0_0_rgba(15,23,42,1)] hover:bg-yellow-400 transition-colors text-center cursor-pointer"
                             >
                                 Done

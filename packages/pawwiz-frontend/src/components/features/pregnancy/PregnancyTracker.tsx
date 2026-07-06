@@ -194,24 +194,57 @@ const CatPregnancyTracker: React.FC = () => {
 
     const saveLogForDateWithSync = React.useCallback(
         (dateStr: string, log: typeof todayLog) => {
-            saveLogForDate(dateStr, log);
-            if (pregnancy.hasActiveSession && dateStr === todayStr) {
-                const symptoms = (log.symptoms || []).map((s: string) =>
-                    s.toLowerCase().replace(/\s+/g, '_'),
-                );
-                const moods = (log.moods || []).map((m: string) =>
-                    m.toLowerCase().replace(/\s+/g, '_'),
-                );
-                void pregnancy.saveDailyLog({
-                    symptoms: symptoms as any,
-                    moodBehavior: moods as any,
-                    nestingObserved: symptoms.includes('nesting'),
-                    weight: log.weight,
-                    temp: log.temperature,
+            const hasData = !!(
+                (log.symptoms && log.symptoms.length > 0) ||
+                (log.moods && log.moods.length > 0) ||
+                log.weight !== undefined ||
+                log.temperature !== undefined
+            );
+
+            if (hasData) {
+                saveLogForDate(dateStr, log);
+                if (pregnancy.hasActiveSession) {
+                    const symptoms = (log.symptoms || []).map((s: string) =>
+                        s.toLowerCase().replace(/\s+/g, '_'),
+                    );
+                    const moods = (log.moods || []).map((m: string) =>
+                        m.toLowerCase().replace(/\s+/g, '_'),
+                    );
+                    void pregnancy.saveDailyLog({
+                        symptoms: symptoms as any,
+                        moodBehavior: moods as any,
+                        nestingObserved: symptoms.includes('nesting'),
+                        weight: log.weight,
+                        temp: log.temperature,
+                        logDate: dateStr,
+                    });
+                }
+            } else {
+                setLogs((prev) => {
+                    const next = { ...prev };
+                    delete next[dateStr];
+                    return next;
                 });
+                if (pregnancy.hasActiveSession) {
+                    void pregnancy.deleteDailyLog(dateStr);
+                }
             }
         },
-        [saveLogForDate, pregnancy, todayStr],
+        [saveLogForDate, pregnancy],
+    );
+
+    const handleDeleteLog = React.useCallback(
+        async (dateStr: string) => {
+            setLogs((prev) => {
+                const next = { ...prev };
+                delete next[dateStr];
+                return next;
+            });
+            if (pregnancy.hasActiveSession) {
+                await pregnancy.deleteDailyLog(dateStr);
+            }
+        },
+        [pregnancy],
     );
 
     const handleNavigation = (item: string) => {
@@ -266,6 +299,15 @@ const CatPregnancyTracker: React.FC = () => {
         );
     }
 
+    const todayHasLog = !!(
+        logs[todayStr] && (
+            (logs[todayStr].symptoms && logs[todayStr].symptoms.length > 0) ||
+            (logs[todayStr].moods && logs[todayStr].moods.length > 0) ||
+            logs[todayStr].weight !== undefined ||
+            logs[todayStr].temperature !== undefined
+        )
+    );
+
     // ── Main view ────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
@@ -314,6 +356,7 @@ const CatPregnancyTracker: React.FC = () => {
                             openLogForDate={openLogForDate}
                             closeBottomSheet={closeBottomSheet}
                             saveLogForDate={saveLogForDateWithSync}
+                            onDeleteLog={handleDeleteLog}
                             isDateLoggable={isDateLoggable}
                             todayStr={todayStr}
                             todayLog={todayLog}
@@ -321,7 +364,7 @@ const CatPregnancyTracker: React.FC = () => {
                             elapsedDayForSelected={elapsedDayForSelected}
                             hasVetWarningForSelected={hasVetWarningForSelected}
                             hasNauseaInEarlyWeeksForSelected={hasNauseaInEarlyWeeksForSelected}
-                            loggedToday={pregnancy.loggedToday}
+                            loggedToday={todayHasLog}
                         />
                     </>
                 )}

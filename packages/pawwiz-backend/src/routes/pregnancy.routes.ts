@@ -9,6 +9,7 @@ import {
   getInsights,
   markInsightRead,
   completeSession,
+  deleteLog,
 } from '../controllers/pregnancy.controller.js';
 
 const pregnancyRouter = Router();
@@ -23,6 +24,7 @@ pregnancyRouter.patch('/session/:sessionId/complete', completeSession);
 
 // Flo-style daily logging (one-tap, high-frequency → rate-limited)
 pregnancyRouter.post('/log', trackingWriteLimiter, upsertLog);
+pregnancyRouter.delete('/log/:sessionId/:dateStr', deleteLog);
 pregnancyRouter.get('/log/history/:sessionId', getLogHistory);
 
 // Insight cards

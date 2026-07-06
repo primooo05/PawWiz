@@ -22,6 +22,7 @@ export interface DailyLogPayload {
   weight?: number;
   temp?: number;
   notes?: string;
+  logDate?: string;
 }
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -213,6 +214,33 @@ export function useCatPregnancy(catId: string | null) {
     }
   }, [session]);
 
+  const deleteDailyLog = useCallback(
+    async (dateStr: string): Promise<boolean> => {
+      if (!session) return false;
+      setIsSaving(true);
+      setError(null);
+      try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(
+          `${API_BASE}/api/pregnancy/log/${session.sessionId}/${encodeURIComponent(dateStr)}`,
+          { method: 'DELETE', headers },
+        );
+        if (!res.ok) {
+          setError(await parseError(res));
+          return false;
+        }
+        await fetchActive();
+        return true;
+      } catch {
+        setError('Failed to delete the log.');
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [session, fetchActive],
+  );
+
   const todayLog: PregnancyLogEntry | null = session?.todayLog ?? null;
   const insights: PregnancyInsightCard[] = session?.insights ?? [];
 
@@ -224,10 +252,18 @@ export function useCatPregnancy(catId: string | null) {
     isSaving,
     error,
     hasActiveSession: !!session,
-    loggedToday: !!todayLog,
+    loggedToday: !!(
+      todayLog && (
+        (todayLog.symptoms && todayLog.symptoms.length > 0) ||
+        (todayLog.moodBehavior && todayLog.moodBehavior.length > 0) ||
+        todayLog.weight !== null ||
+        todayLog.temp !== null
+      )
+    ),
     refresh: fetchActive,
     startSession,
     saveDailyLog,
+    deleteDailyLog,
     loadHistory,
     markInsightRead,
     completeSession,

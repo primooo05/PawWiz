@@ -96,6 +96,13 @@ class PregnancyLogRepository {
       return tx.pregnancyLog.create({ data: payload });
     });
   }
+
+  async deleteLog(sessionId: string, date: Date) {
+    const { start, end } = utcDayBounds(date);
+    return prisma.pregnancyLog.deleteMany({
+      where: { pregnancySessionId: sessionId, logDate: { gte: start, lte: end } }
+    });
+  }
 }
 
 export const pregnancyLogRepository = new PregnancyLogRepository();

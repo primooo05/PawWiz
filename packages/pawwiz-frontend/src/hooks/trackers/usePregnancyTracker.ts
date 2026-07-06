@@ -25,32 +25,7 @@ export interface DailyLog {
 }
 
 export const getInitialLogs = (matingDateStr: string): Record<string, DailyLog> => {
-    if (!matingDateStr) return {};
-    const base = new Date(matingDateStr);
-
-    const getOffsetDateStr = (days: number) => {
-        const d = new Date(base);
-        d.setDate(d.getDate() + days);
-        return d.toISOString().split('T')[0];
-    };
-
-    return {
-        [getOffsetDateStr(7)]: {
-            symptoms: ['Nesting', 'Pinking Up'],
-            moods: ['Quiet'],
-            weight: 3.8,
-        },
-        [getOffsetDateStr(14)]: {
-            symptoms: ['Appetite Up', 'Extra Sleep'],
-            moods: ['Affectionate'],
-            weight: 4.1,
-        },
-        [getOffsetDateStr(21)]: {
-            symptoms: ['Vomiting', 'Weight Gain'],
-            moods: ['Calm'],
-            weight: 4.2,
-        },
-    };
+    return {};
 };
 
 export function usePregnancyTracker() {
@@ -65,16 +40,8 @@ export function usePregnancyTracker() {
 
     const trackedDate = matingDate ? new Date(matingDate) : null;
     const initialDisplayDate = trackedDate ?? new Date();
-    const [calendarMonthIndex, setCalendarMonthIndex] = useState<number>(initialDisplayDate.getMonth());
-    const [calendarYear, setCalendarYear] = useState<number>(initialDisplayDate.getFullYear());
-
-
-    useEffect(() => {
-        if (!trackedDate) return;
-
-        setCalendarMonthIndex(trackedDate.getMonth());
-        setCalendarYear(trackedDate.getFullYear());
-    }, [matingDate]);
+    const [calendarMonthIndex, setCalendarMonthIndex] = useState<number>(new Date().getMonth());
+    const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
 
     useEffect(() => {
         if (matingDate) {

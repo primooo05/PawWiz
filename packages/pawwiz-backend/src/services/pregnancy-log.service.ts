@@ -18,6 +18,7 @@ import { AppError } from '../utils/errors.js';
 import { stripHtmlTags } from '../middleware/sanitizer.js';
 import { computeGestationWeek, phaseForWeek } from '../utils/gestation.js';
 import { logger } from '../utils/winston.js';
+import { prisma } from '../lib/prisma.js';
 import type { CreateLogInput } from '../schemas/pregnancy.schemas.js';
 import type {
   PregnancyLogEntry,
@@ -82,7 +83,7 @@ class PregnancyLogService {
       throw AppError.badRequest('Cannot log against a completed pregnancy session.');
     }
 
-    const now = new Date();
+    const now = payload.logDate ? new Date(payload.logDate) : new Date();
     const gestationWeek = computeGestationWeek(session.matingDate, now);
 
     // Notes are already HTML-stripped by the global sanitizer middleware; strip
@@ -102,6 +103,14 @@ class PregnancyLogService {
       gestationWeek,
       logDate: now,
     });
+
+    // Sync weight back to DietProfile if logged in pregnancy tracker
+    if (payload.weight != null) {
+      await prisma.dietProfile.updateMany({
+        where: { catId: session.catId },
+        data: { weight: payload.weight },
+      });
+    }
 
     // Fire-and-forget: insight generation runs in the background so it never
     // blocks or fails the log-submit response.
@@ -127,6 +136,16 @@ class PregnancyLogService {
         ? await pregnancyLogRepository.findByWeek(sessionId, week)
         : await pregnancyLogRepository.findAll(sessionId);
     return groupByWeek(logs);
+  }
+
+  async deleteDailyLog(
+    supabaseUserId: string,
+    sessionId: string,
+    dateStr: string,
+  ): Promise<void> {
+    await verifySessionOwnership(sessionId, supabaseUserId);
+    const date = new Date(dateStr);
+    await pregnancyLogRepository.deleteLog(sessionId, date);
   }
 }
 
