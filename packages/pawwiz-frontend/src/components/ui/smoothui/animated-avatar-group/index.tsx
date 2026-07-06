@@ -2,7 +2,6 @@
 
 import { motion, useReducedMotion, AnimatePresence } from "motion/react";
 import { useEffect, useState } from "react";
-import { Cat } from "lucide-react";
 
 export type AvatarData = {
   id: string;
@@ -131,7 +130,7 @@ const AnimatedAvatarGroup = ({
                     }
               }
               className={cn(
-                "rounded-full border-2 transition-all duration-200 bg-teal-50 flex items-center justify-center text-[#30c290]",
+                "rounded-full border-2 transition-all duration-200 bg-teal-50",
                 avatar.isActive
                   ? "border-[#30c290] ring-4 ring-[#30c290]/25 shadow-md scale-105"
                   : "border-slate-900"
@@ -147,9 +146,7 @@ const AnimatedAvatarGroup = ({
                 ...springTransition,
                 delay: shouldReduceMotion ? 0 : index * 0.03,
               }}
-            >
-              <Cat size={size * 0.55} className="stroke-[1.5]" />
-            </motion.div>
+            />
           );
 
           return (

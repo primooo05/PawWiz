@@ -179,6 +179,10 @@ class TimelineService {
         const mealLogs = await prisma.dietMealLog.findMany({
           where: {
             dietProfile: { catId },
+            // Only include meals the user actually logged — 'pending' rows are
+            // seed placeholders created automatically when a diet profile is set
+            // up and must never appear as timeline events.
+            status: 'logged',
             createdAt: { gte: startDate, lte: endDate },
           },
           include: { dietProfile: { select: { catId: true } } },
