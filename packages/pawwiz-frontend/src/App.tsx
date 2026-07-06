@@ -20,8 +20,10 @@ export default function App() {
                      location.pathname === '/dashboard' || 
                      location.pathname === '/user-dashboard' ||
                      location.pathname === '/pregnancy-tracker' || 
+                     location.pathname === '/heat-tracker' ||
                      location.pathname === '/settings' ||
-                     location.pathname === '/reset-password';
+                     location.pathname === '/reset-password' ||
+                     location.pathname.startsWith('/health-timeline/');
 
   return (
     <div className="min-h-screen bg-white text-slate-800 relative overflow-x-hidden">
