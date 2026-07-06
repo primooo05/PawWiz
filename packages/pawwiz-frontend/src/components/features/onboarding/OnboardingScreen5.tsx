@@ -56,47 +56,51 @@ export const OnboardingScreen5: React.FC<OnboardingScreen5Props> = ({
 
       {/* 2. Life Stage Selection */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4">
-        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
-          Life Stage
-        </label>
-        <div className="flex flex-col gap-4 w-full">
-          <div className="flex gap-4 w-full">
-            {options.slice(0, 2).map((opt) => {
-              const isSelected = catLifeStage === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setCatLifeStage(opt.value)}
-                  disabled={isTyping || !active}
-                  className={`flex-1 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${isSelected
-                      ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
-                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+        <div className="flex flex-col items-center md:items-start space-y-2.5 w-full">
+          <label className="text-xs md:text-sm text-slate-400 font-semibold italic pl-1">
+            Life Stage
+          </label>
+          <div className="flex flex-col gap-3 w-full">
+            <div className="flex gap-4 w-full">
+              {options.slice(0, 2).map((opt) => {
+                const isSelected = catLifeStage === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setCatLifeStage(opt.value)}
+                    disabled={isTyping || !active}
+                    className={`flex-1 flex justify-center items-center py-3 px-4 rounded-2xl border-2 font-extrabold text-sm md:text-base cursor-pointer transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-teal-50 border-[#2ec4b6] text-[#1b9e91] shadow-[0_4px_0_0_#9de8e0] translate-y-[2px]'
+                        : 'bg-white border-[#2ec4b6] text-[#2ec4b6] hover:bg-teal-50/30'
                     }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex justify-center w-full">
-            {options.slice(2).map((opt) => {
-              const isSelected = catLifeStage === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setCatLifeStage(opt.value)}
-                  disabled={isTyping || !active}
-                  className={`w-2/3 py-3.5 px-4 rounded-2xl border-none font-extrabold text-sm md:text-base italic cursor-pointer transition-all duration-200 ${isSelected
-                      ? 'bg-[#1b9e91] text-white shadow-[0_4px_0_0_#126b62] translate-y-[2px]'
-                      : 'bg-[#2ec4b6] hover:bg-[#39d3c5] text-white shadow-[0_4px_0_0_#209f93] active:shadow-none active:translate-y-[4px]'
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex justify-center w-full">
+              {options.slice(2).map((opt) => {
+                const isSelected = catLifeStage === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setCatLifeStage(opt.value)}
+                    disabled={isTyping || !active}
+                    className={`w-2/3 flex justify-center items-center py-3 px-4 rounded-2xl border-2 font-extrabold text-sm md:text-base cursor-pointer transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-teal-50 border-[#2ec4b6] text-[#1b9e91] shadow-[0_4px_0_0_#9de8e0] translate-y-[2px]'
+                        : 'bg-white border-[#2ec4b6] text-[#2ec4b6] hover:bg-teal-50/30'
                     }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

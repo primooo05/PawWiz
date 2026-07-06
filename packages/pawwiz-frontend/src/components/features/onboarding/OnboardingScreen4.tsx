@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import catScreen4 from '../../../assets/Cat_Screen4.svg';
 import { SearchableDropdown } from './SearchableDropdown';
+import { TextField } from '../../ui/forms/TextField';
 
 
 interface OnboardingScreen4Props {
@@ -136,23 +137,21 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
       {/* 2. Form Fields */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4">
         {/* Cat Name Input */}
-        <div className="flex flex-col items-center md:items-start space-y-1.5 w-full">
-          <label className="text-xs md:text-sm text-slate-400 font-semibold italic pl-1">
-            Cat's Name
-          </label>
-          <input
-            type="text"
-            value={catName}
-            onChange={(e) => setCatName(e.target.value)}
-            placeholder="Galaxy Destroyer 67"
-            className="w-full px-5 py-3.5 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
-            disabled={isTyping || !active}
-          />
-        </div>
+        <TextField
+          id="cat-name"
+          name="catName"
+          label="Cat's Name"
+          type="text"
+          value={catName}
+          onChange={(e) => setCatName(e.target.value)}
+          placeholder="Galaxy Destroyer 67"
+          disabled={isTyping || !active}
+          reserveErrorSpace={false}
+        />
 
         {/* Breed Input */}
-        <div className="flex flex-col items-center md:items-start space-y-1.5 w-full">
-          <label className="text-xs md:text-sm text-slate-400 font-semibold italic pl-1">
+        <div className="flex flex-col items-center md:items-start w-full">
+          <label className="mb-2 block text-sm text-slate-500 font-semibold pl-1">
             Breed (Optional)
           </label>
           <SearchableDropdown
@@ -167,8 +166,8 @@ export const OnboardingScreen4: React.FC<OnboardingScreen4Props> = ({
         </div>
 
         {/* Marking Input */}
-        <div className="flex flex-col items-center md:items-start space-y-1.5 w-full">
-          <label className="text-xs md:text-sm text-slate-400 font-semibold italic pl-1">
+        <div className="flex flex-col items-center md:items-start w-full">
+          <label className="mb-2 block text-sm text-slate-500 font-semibold pl-1">
             Marking (Optional)
           </label>
           <SearchableDropdown
