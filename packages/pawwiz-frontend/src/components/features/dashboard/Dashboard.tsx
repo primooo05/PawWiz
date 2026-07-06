@@ -14,6 +14,7 @@ import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker
 import { useDietRecommender, getAgeBracketInfo } from '../../../hooks/features/useDietRecommender';
 import { getTimeGreeting } from '../../../utils/greeting';
 import HealthInsightsWidget from './HealthInsightsWidget.js';
+import { SkeletonLine, SkeletonAvatar, SkeletonProfileCard, SkeletonImageCard, SkeletonMessages } from '../../ui/skeletons/SkeletonLoader';
 
 // Neo-brutalist palette (shared with charts)
 const ORANGE = '#FF6B35';
@@ -62,13 +63,14 @@ interface DashboardStats {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = useProfilePanel();
+  const { profile, isLoading: isProfileLoading } = useProfilePanel();
   const pregnancy = usePregnancyTracker();
   const diet = useDietRecommender();
 
   const [stats, setStats] = useState<DashboardStats>({});
   const [behaviorPatterns, setBehaviorPatterns] = useState<Array<{ type: string; frequency: number }>>([]);
   const [catName, setCatName] = useState<string>('Your Cat');
+  const [isBehaviorLoading, setIsBehaviorLoading] = useState(true);
 
   const [isTransitioning, setIsTransitioning] = useState(
     !!(location.state as { animateIn?: boolean })?.animateIn
@@ -91,6 +93,7 @@ const Dashboard: React.FC = () => {
   // /api/dashboard/stats aggregator). Exposed as a callback so it can be
   // re-run after a Quick Log entry to keep the composition live.
   const refreshBehaviorStats = useCallback(async () => {
+    setIsBehaviorLoading(true);
     try {
       const {
         data: { session },
@@ -130,6 +133,8 @@ const Dashboard: React.FC = () => {
       setStats({ behavior });
     } catch (err) {
       console.error('Failed to fetch behavior stats:', err);
+    } finally {
+      setIsBehaviorLoading(false);
     }
   }, []);
 
@@ -400,7 +405,7 @@ const Dashboard: React.FC = () => {
           {/* Cat Profile + Behavior Analytics — side-by-side on desktop, stacked on mobile */}
           <div className="flex flex-col md:flex-row md:items-start gap-8 mb-12">
             {/* Cat Profile Card */}
-            {diet.activeProfile && (
+            {diet.activeProfile ? (
               <div className="w-full md:w-auto md:flex-shrink-0">
                 <ProfileCard
                   catName={diet.activeProfile.name}
@@ -416,6 +421,10 @@ const Dashboard: React.FC = () => {
                   onEditProfile={() => navigate('/diet-recommender')}
                   photoUrl={diet.activeProfile.photoUrl}
                 />
+              </div>
+            ) : (
+              <div className="w-full md:w-auto md:flex-shrink-0">
+                <SkeletonImageCard className="md:w-72" />
               </div>
             )}
 
@@ -444,92 +453,130 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white border-4 border-[#1a1a1a] p-5 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                  <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#2ec4b6' }}>
-                    Behavior Trend
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {behaviorTrend.series.map((s) => (
-                      <span key={s.name} className="flex items-center gap-1.5 text-xs font-black">
-                        <span
-                          className="inline-block w-3 h-3 border-2 border-[#1a1a1a] rounded-sm"
-                          style={{ backgroundColor: s.color }}
-                        />
-                        {s.name}
-                      </span>
-                    ))}
+              {isBehaviorLoading ? (
+                <div className="bg-white border-4 border-[#1a1a1a] p-5 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                  <div className="mb-4">
+                    <SkeletonLine width="w-32" height="h-2.5" className="mb-4" />
+                    <div className="space-y-2">
+                      <SkeletonLine width="w-full" height="h-32" />
+                    </div>
                   </div>
                 </div>
-                <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={220} />
-              </div>
+              ) : (
+                <div className="bg-white border-4 border-[#1a1a1a] p-5 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: '#2ec4b6' }}>
+                      Behavior Trend
+                    </h3>
+                    <div className="flex flex-wrap gap-3">
+                      {behaviorTrend.series.map((s) => (
+                        <span key={s.name} className="flex items-center gap-1.5 text-xs font-black">
+                          <span
+                            className="inline-block w-3 h-3 border-2 border-[#1a1a1a] rounded-sm"
+                            style={{ backgroundColor: s.color }}
+                          />
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={220} />
+                </div>
+              )}
             </div>
           </div>
 
           {/* KPI Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
-            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
-              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Meals Today</p>
-              <p className="text-3xl font-black mt-1" style={{ color: ORANGE }}>
-                {completedMealsCount}/{totalMealsCount}
-              </p>
-              <p className="text-xs font-bold text-[#555] mt-1">logged</p>
-            </div>
-
-            {/* Top Behavior — includes the composition legend + donut inline */}
-            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
-              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Top Behavior</p>
-              {behaviorComposition.length > 0 ? (
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-lg font-black leading-tight truncate"
-                      style={{ color: dominantBehavior?.color ?? TEAL }}
-                    >
-                      {dominantBehavior ? dominantBehavior.name : '—'}
-                    </p>
-                    <p className="text-[11px] font-bold text-[#555] mt-0.5">
-                      {dominantBehavior ? `${dominantShare}% of this week` : 'No logs yet'}
-                    </p>
-                    <ul className="mt-2 space-y-0.5">
-                      {behaviorComposition.map((c) => (
-                        <li key={c.name} className="flex items-center gap-1.5 text-[10px] font-black">
-                          <span
-                            className="inline-block w-2.5 h-2.5 border border-[#1a1a1a] rounded-sm flex-shrink-0"
-                            style={{ backgroundColor: c.color }}
-                          />
-                          {c.name}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <DonutChartLabeled data={behaviorComposition} size={104} minLabelPercent={15} />
-                  </div>
+            {isBehaviorLoading ? (
+              <>
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <SkeletonLine width="w-20" height="h-2" className="mb-3" />
+                  <SkeletonLine width="w-16" height="h-8" className="mb-2" />
+                  <SkeletonLine width="w-12" height="h-2" />
                 </div>
-              ) : (
-                <>
-                  <p className="text-3xl font-black mt-1" style={{ color: TEAL }}>—</p>
-                  <p className="text-xs font-bold text-[#555] mt-1">No logs yet</p>
-                </>
-              )}
-            </div>
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <SkeletonLine width="w-20" height="h-2" className="mb-3" />
+                  <SkeletonLine width="w-16" height="h-8" className="mb-2" />
+                  <SkeletonLine width="w-32" height="h-2" />
+                </div>
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <SkeletonLine width="w-20" height="h-2" className="mb-3" />
+                  <SkeletonLine width="w-16" height="h-8" className="mb-2" />
+                  <SkeletonLine width="w-20" height="h-2" />
+                </div>
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <SkeletonLine width="w-20" height="h-2" className="mb-3" />
+                  <SkeletonLine width="w-16" height="h-8" className="mb-2" />
+                  <SkeletonLine width="w-20" height="h-2" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Meals Today</p>
+                  <p className="text-3xl font-black mt-1" style={{ color: ORANGE }}>
+                    {completedMealsCount}/{totalMealsCount}
+                  </p>
+                  <p className="text-xs font-bold text-[#555] mt-1">logged</p>
+                </div>
 
-            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
-              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Water Today</p>
-              <p className="text-3xl font-black mt-1" style={{ color: '#2ec4b6' }}>
-                {waterNow}
-                <span className="text-lg"> ml</span>
-              </p>
-              <p className="text-xs font-bold text-[#555] mt-1">goal {waterGoal} ml</p>
-            </div>
-            <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
-              <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Diet Score</p>
-              <p className="text-3xl font-black mt-1" style={{ color: GREEN }}>
-                {mergedStats.diet?.adherenceScore ?? '--'}%
-              </p>
-              <p className="text-xs font-bold text-[#555] mt-1">adherence</p>
-            </div>
+                {/* Top Behavior — includes the composition legend + donut inline */}
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Top Behavior</p>
+                  {behaviorComposition.length > 0 ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-lg font-black leading-tight truncate"
+                          style={{ color: dominantBehavior?.color ?? TEAL }}
+                        >
+                          {dominantBehavior ? dominantBehavior.name : '—'}
+                        </p>
+                        <p className="text-[11px] font-bold text-[#555] mt-0.5">
+                          {dominantBehavior ? `${dominantShare}% of this week` : 'No logs yet'}
+                        </p>
+                        <ul className="mt-2 space-y-0.5">
+                          {behaviorComposition.map((c) => (
+                            <li key={c.name} className="flex items-center gap-1.5 text-[10px] font-black">
+                              <span
+                                className="inline-block w-2.5 h-2.5 border border-[#1a1a1a] rounded-sm flex-shrink-0"
+                                style={{ backgroundColor: c.color }}
+                              />
+                              {c.name}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <DonutChartLabeled data={behaviorComposition} size={104} minLabelPercent={15} />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-3xl font-black mt-1" style={{ color: TEAL }}>—</p>
+                      <p className="text-xs font-bold text-[#555] mt-1">No logs yet</p>
+                    </>
+                  )}
+                </div>
+
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Water Today</p>
+                  <p className="text-3xl font-black mt-1" style={{ color: '#2ec4b6' }}>
+                    {waterNow}
+                    <span className="text-lg"> ml</span>
+                  </p>
+                  <p className="text-xs font-bold text-[#555] mt-1">goal {waterGoal} ml</p>
+                </div>
+                <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
+                  <p className="text-[11px] font-black text-[#888] uppercase tracking-widest">Diet Score</p>
+                  <p className="text-3xl font-black mt-1" style={{ color: GREEN }}>
+                    {mergedStats.diet?.adherenceScore ?? '--'}%
+                  </p>
+                  <p className="text-xs font-bold text-[#555] mt-1">adherence</p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Quick Log */}
