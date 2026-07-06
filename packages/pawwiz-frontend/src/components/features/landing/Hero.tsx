@@ -59,10 +59,10 @@ export default function Hero({ apiBase }: HeroProps) {
         {/* Hanging Cat Mascot */}
         <CatHero01
           aria-label="Hanging Cat Mascot"
-          className="absolute -top-10 left-10 md:-top-26 md:left-12 w-32 md:w-44 z-[20] pointer-events-none select-none"
+          className="absolute -top-6 left-2 md:-top-26 md:left-12 w-16 h-16 md:w-44 md:h-44 z-[20] pointer-events-none select-none"
         />
         {/* Shadow below cat */}
-        <div className="absolute left-10 md:left-12 w-32 md:w-44 h-2 md:h-3 top-24 md:top-2 z-[15] pointer-events-none">
+        <div className="absolute left-2 md:left-12 w-16 md:w-44 h-2 md:h-3 top-9 md:top-2 z-[15] pointer-events-none">
           <div className="w-full h-full bg-black/40 rounded-full blur-lg" style={{ filter: 'blur(12px)' }} />
         </div>
         <div className="w-full bg-[#30c290] py-16 md:py-20 px-6 md:px-12 rounded-3xl md:rounded-[56px] shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_25px_60px_-15px_rgba(46,196,182,0.3)] text-center text-white relative overflow-hidden">
