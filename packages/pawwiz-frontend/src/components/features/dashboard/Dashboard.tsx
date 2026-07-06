@@ -89,9 +89,12 @@ const Dashboard: React.FC = () => {
     }
   }, [location.state]);
 
-  // Update stats when behavior data loads
+  // Update stats when behavior data loads.
+  // Guard is isLoading only — patterns can be empty after a first quick log
+  // and the KPI strip must still reflect the updated weekly summary.
   useEffect(() => {
-    if (!behaviorDashboard.isLoading && behaviorDashboard.patterns.length > 0) {
+    console.log('[Dashboard] behavior useEffect — isLoading:', behaviorDashboard.isLoading, '| patterns:', behaviorDashboard.patterns.length, '| weeklySummary:', !!behaviorDashboard.weeklySummary);
+    if (!behaviorDashboard.isLoading) {
       const behavior: DashboardStats['behavior'] = {
         overallTrend: behaviorDashboard.weeklySummary?.concernFlags.length
           ? behaviorDashboard.weeklySummary.concernFlags[0]
@@ -549,7 +552,7 @@ const Dashboard: React.FC = () => {
               resetMealLog={diet.resetMealLog}
               waterIntake={waterNow}
               onAddWater={(amount) => diet.addWater(amount)}
-              catId={diet.activeProfileId || undefined}
+              catId={diet.activeProfile?.catId || undefined}
               disabled={!diet.activeProfile}
               onBehaviorLogged={behaviorDashboard.refreshData}
             />

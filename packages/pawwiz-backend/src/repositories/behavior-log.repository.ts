@@ -130,7 +130,8 @@ export async function getBehaviorLogsForChat(chatId: string): Promise<BehaviorLo
  */
 export async function getBehaviorTypeFrequency(
   supabaseUserId: string,
-  days: number = 7
+  days: number = 7,
+  catId?: string
 ): Promise<Array<{ type: string; count: number }>> {
   const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -139,6 +140,7 @@ export async function getBehaviorTypeFrequency(
     where: {
       supabaseUserId,
       createdAt: { gte: cutoffDate },
+      ...(catId ? { catId } : {}),
     },
     _count: true,
   });

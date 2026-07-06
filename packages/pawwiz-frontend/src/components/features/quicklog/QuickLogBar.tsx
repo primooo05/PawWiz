@@ -210,10 +210,16 @@ const QuickLogBar: React.FC<QuickLogBarProps> = ({
   };
 
   const handleBehavior = async (type: QuickLogBehaviorType) => {
-    if (disabled || behaviorCooldownRemaining(type) > 0) return;
+    console.log('[QuickLogBar] handleBehavior called:', type, '| catId:', catId, '| disabled:', disabled, '| cooldown:', behaviorCooldownRemaining(type));
+    if (disabled || behaviorCooldownRemaining(type) > 0) {
+      console.warn('[QuickLogBar] Skipped — disabled or cooldown active');
+      return;
+    }
     const ok = await logBehavior(type, { catId });
+    console.log('[QuickLogBar] logBehavior returned:', ok);
     if (ok) {
       setCooldownUntil((prev) => ({ ...prev, [type]: Date.now() + BEHAVIOR_COOLDOWN_MS }));
+      console.log('[QuickLogBar] Calling onBehaviorLogged callback:', typeof onBehaviorLogged);
       onBehaviorLogged?.();
     }
   };
