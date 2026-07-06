@@ -65,16 +65,15 @@ export default function Login() {
       <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
 
       {/* Main content wrapper */}
-      <div className={`relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-between gap-8 lg:gap-12 transition-opacity duration-300 ${
-        isTransitioning
-          ? 'z-0 invisible opacity-0'
-          : isZIndexHigh
-            ? 'z-0 opacity-0'
-            : 'z-10 opacity-100'
-      } my-auto`}>
+      <div className={`relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-center lg:justify-between gap-8 lg:gap-12 transition-opacity duration-300 ${isTransitioning
+        ? 'z-0 invisible opacity-0'
+        : isZIndexHigh
+          ? 'z-0 opacity-0'
+          : 'z-10 opacity-100'
+        } my-auto`}>
 
         {/* Left side: branding text (desktop) + text visible on mobile above the form */}
-        <div className="flex flex-col items-start justify-between w-full lg:w-1/2 max-w-lg mx-auto lg:mx-0 relative">
+        <div className="flex flex-col items-start justify-center lg:justify-between w-full lg:w-1/2 max-w-lg mx-auto lg:mx-0 relative">
           {/* Branding copy — always visible, sits at the top on mobile */}
           <div>
             <h1 className="px-0 sm:px-2 text-3xl sm:text-4xl lg:text-6xl font-black text-[#e9c46a] leading-tight tracking-tight uppercase select-none mb-4 sm:mb-6">

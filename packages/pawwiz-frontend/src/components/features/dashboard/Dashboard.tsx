@@ -360,7 +360,6 @@ const Dashboard: React.FC = () => {
                   activeLifeStage={diet.activeProfile.lifeStage}
                   lifeStage={diet.activeProfile.lifeStage}
                   age={diet.activeProfile.age}
-                  onEditProfile={() => navigate('/diet-recommender')}
                   photoUrl={diet.activeProfile.photoUrl}
                 />
               </div>

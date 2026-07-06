@@ -840,7 +840,7 @@ export const useDietRecommender = () => {
 
                 if (needsReset && prevDayStr) {
                     const meals = activeProfileRaw.loggedMeals || [];
-                    const allCompleted = meals.length > 0 && meals.every(m => m.status === 'logged' || m.status === 'skipped');
+                    const allCompleted = meals.length > 0 && meals.some(m => m.status === 'logged');
 
                     if (allCompleted) {
                         try {

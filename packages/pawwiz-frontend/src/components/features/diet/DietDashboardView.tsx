@@ -40,6 +40,7 @@ interface DietDashboardViewProps {
     loggedMeals: MealLog[];
     waterIntake: number;
     displayName?: string;
+    onEditProfile: () => void;
 }
 
 export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
@@ -63,6 +64,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     loggedMeals,
     waterIntake,
     displayName,
+    onEditProfile,
 }) => {
     const navigate = useNavigate();
     const [isAskAiOpen, setIsAskAiOpen] = useState(false);
@@ -242,7 +244,16 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
             {/* Header Greeting Row */}
             <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">{greeting.title}</h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900">{greeting.title}</h1>
+                        <button
+                            type="button"
+                            onClick={onEditProfile}
+                            className="px-3 py-1 bg-[#EEF9F8] border border-teal-400 text-teal-800 text-xs font-black uppercase tracking-wider rounded-xl shadow-[2px_2px_0_0_#0f172a] hover:bg-teal-50 active:translate-y-[1px] active:shadow-none transition-all cursor-pointer shrink-0"
+                        >
+                            Edit Profile
+                        </button>
+                    </div>
                     <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">{greeting.subtitle}</p>
                 </div>
 

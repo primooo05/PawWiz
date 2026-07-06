@@ -14,7 +14,7 @@ interface ProfileCardProps {
     activeLifeStage: 'kitten' | 'adult' | 'senior';
     lifeStage: 'kitten' | 'adult' | 'senior';
     age: number;
-    onEditProfile: () => void;
+    onEditProfile?: () => void;
     photoUrl?: string | null;
 }
 
@@ -129,16 +129,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                     <p className="text-sm text-[#555] mt-2 font-bold">Your cat's saved details</p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEditProfile();
-                        }}
-                        className="text-xs font-black text-[#30c290] hover:text-[#20a396] cursor-pointer active:scale-95 transition-transform"
-                    >
-                        Edit Profile
-                    </button>
+                    {onEditProfile && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEditProfile();
+                            }}
+                            className="text-xs font-black text-[#30c290] hover:text-[#20a396] cursor-pointer active:scale-95 transition-transform"
+                        >
+                            Edit Profile
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={(e) => {
@@ -177,19 +179,19 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
             <div
                 className={`flip-card w-full cursor-pointer ${isFlipped ? 'flipped' : ''}`}
                 onClick={() => setIsFlipped(prev => !prev)}
-                style={{ height: '240px' }}
+                style={{ height: '255px' }}
             >
                 <div className="flip-card-inner w-full h-full relative">
 
                     {/* FRONT VIEW */}
                     <div ref={frontRef} className="flip-card-front absolute inset-0 bg-white border-4 border-[#1a1a1a] shadow-[4px_4px_0_0_#1a1a1a] overflow-hidden flex flex-col">
                         {/* Header */}
-                        <div className="px-5 py-2.5 border-b-2 border-[#1a1a1a] flex items-center">
+                        <div className="px-5 py-2 border-b-2 border-[#1a1a1a] flex items-center">
                             <img src={pawWizTextLogo} alt="Paw Wiz" className="h-6 object-contain" />
                         </div>
 
                         {/* Content Body: Flexbox for left text and right image */}
-                        <div className="flex-grow flex items-center justify-between px-5 py-2.5 gap-4 relative">
+                        <div className="flex-grow flex items-center justify-between px-5 py-2 gap-4 relative">
                             <div className="flex flex-col gap-2">
                                 {[
                                     { label: 'Cat name:', value: catName },
@@ -244,7 +246,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                         </div>
 
                         {/* Footer */}
-                        <div className="px-5 py-2 border-t-2 border-[#1a1a1a] text-center flex flex-col items-center justify-center gap-1">
+                        <div className="px-5 py-1.5 border-t-2 border-[#1a1a1a] text-center flex flex-col items-center justify-center gap-0.5">
                             <span
                                 className="text-xl text-[#1a1a1a] leading-none"
                                 style={{ fontFamily: "'Caveat', 'Brush Script MT', 'Reenie Beanie', cursive" }}

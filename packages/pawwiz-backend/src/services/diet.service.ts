@@ -95,12 +95,8 @@ function mapProfileToFrontend(profile: any) {
 
   const successDays: string[] = [];
   Object.entries(logsByDate).forEach(([dateStr, logs]) => {
-    const standardMeals = ['Breakfast', 'Lunch', 'Dinner'];
-    const completedMeals = logs.filter((m: any) => m.status === 'logged' || m.status === 'skipped');
-    const hasAllThree = standardMeals.every(mealName => 
-      completedMeals.some((m: any) => m.mealName === mealName)
-    );
-    if (hasAllThree) {
+    const hasOneLogged = logs.some((m: any) => m.status === 'logged');
+    if (hasOneLogged) {
       successDays.push(dateStr);
     }
   });
