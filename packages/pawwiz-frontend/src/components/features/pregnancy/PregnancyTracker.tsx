@@ -12,7 +12,6 @@ import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { useCatPregnancy } from '../../../hooks/features/useCatPregnancy';
 import { useNavigate } from 'react-router-dom';
 import InsightCardFeed from './flo/InsightCardFeed';
-import TodayLogStatus from './flo/TodayLogStatus';
 
 const CatPregnancyTracker: React.FC = () => {
     const navigate = useNavigate();
@@ -209,12 +208,7 @@ const CatPregnancyTracker: React.FC = () => {
                             />
                         )}
 
-                        <div className="flex justify-end mb-4">
-                            <TodayLogStatus
-                                loggedToday={pregnancy.loggedToday}
-                                onClick={() => openLogForDate(todayStr)}
-                            />
-                        </div>
+
 
                         <DashboardView
                             catName={selectedCatName}

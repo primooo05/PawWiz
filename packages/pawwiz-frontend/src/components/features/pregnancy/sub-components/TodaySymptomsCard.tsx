@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DailyLog } from '../../../../hooks/trackers/usePregnancyTracker';
 import { Droplet, Palette, Scale, Moon, UtensilsCrossed, Home, Milk, Zap } from 'lucide-react';
+import TodayLogStatus from '../flo/TodayLogStatus';
 
 const getSymptomsForWeek = (week: number) => {
     if (week <= 3) {
@@ -19,7 +20,7 @@ const getSymptomsForWeek = (week: number) => {
         ];
     } else {
         return [
-            { label: 'Nesting', icon: Home },
+            { label: 'Nesting Behavior', icon: Home },
             { label: 'Milk Production', icon: Milk },
             { label: 'Contractions', icon: Zap },
             { label: 'Appetite Changes', icon: UtensilsCrossed },
@@ -33,6 +34,7 @@ interface TodaySymptomsCardProps {
     openLogForDate: (dateStr: string) => void;
     currentWeek: number;
     todayLog: DailyLog;
+    loggedToday: boolean;
 }
 
 export const TodaySymptomsCard: React.FC<TodaySymptomsCardProps> = ({
@@ -41,6 +43,7 @@ export const TodaySymptomsCard: React.FC<TodaySymptomsCardProps> = ({
     openLogForDate,
     currentWeek,
     todayLog,
+    loggedToday,
 }) => {
     const safeTodayLog = todayLog || { symptoms: [], symptomSeverities: {} };
 
@@ -48,17 +51,15 @@ export const TodaySymptomsCard: React.FC<TodaySymptomsCardProps> = ({
         <div className="p-8 bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-[1.1rem] font-bold text-[#1e293b]">Log Symptoms for Today</h3>
-                <button
-                    type="button"
-                    disabled={!todayLoggable}
-                    onClick={() => openLogForDate(todayStr)}
-                    className={`px-4 py-2 bg-[#FFEA30] border-2 border-slate-900 text-slate-900 rounded-full text-xs font-black transition-all duration-200 ease-out shadow-[2px_2px_0_0_rgba(15,23,42,1)] ${todayLoggable
-                        ? 'hover:bg-yellow-400 hover:-translate-y-0.5 hover:scale-105 active:translate-y-0 active:scale-95 active:shadow-[1px_1px_0_0_rgba(15,23,42,1)] cursor-pointer'
-                        : 'opacity-40 cursor-not-allowed'
-                        }`}
-                >
-                    Log
-                </button>
+                <TodayLogStatus
+                    loggedToday={loggedToday}
+                    onClick={() => {
+                        if (todayLoggable) {
+                            openLogForDate(todayStr);
+                        }
+                    }}
+                    className={!todayLoggable ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}
+                />
             </div>
 
             <div className="flex gap-4 overflow-x-auto pb-2">

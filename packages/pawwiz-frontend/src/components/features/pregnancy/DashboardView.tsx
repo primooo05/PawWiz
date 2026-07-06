@@ -261,6 +261,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         openLogForDate={openLogForDate}
                         currentWeek={currentWeek}
                         todayLog={todayLog}
+                        loggedToday={loggedToday}
                     />
                 </div>
             </div>
