@@ -323,7 +323,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F5F5F0] text-[#1a1a1a] font-sans pb-24 md:pb-12 relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#FAFAFA] text-[#1a1a1a] font-sans pb-24 md:pb-12 relative overflow-hidden">
       <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
 
       <div className={`transition-opacity duration-300 ${
