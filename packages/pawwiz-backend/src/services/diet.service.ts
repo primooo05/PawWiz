@@ -149,6 +149,49 @@ class DietService {
     if (!existing) throw AppError.notFound('Diet profile not found');
 
     const updated = await dietRepository.update(id, data);
+
+    // Sync weight to pregnancy tracker log if there is an active pregnancy session
+    if (updated.catId && data.weight != null) {
+      const activeSession = await prisma.pregnancySession.findFirst({
+        where: { catId: updated.catId, status: 'active' },
+      });
+      if (activeSession) {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+        // Compute gestationWeek
+        const diffTime = Math.abs(now.getTime() - activeSession.matingDate.getTime());
+        const currentDay = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const gestationWeek = Math.ceil(currentDay / 7) || 1;
+
+        const existingLog = await prisma.pregnancyLog.findFirst({
+          where: {
+            pregnancySessionId: activeSession.id,
+            logDate: { gte: startOfToday, lte: endOfToday },
+          },
+        });
+
+        if (existingLog) {
+          await prisma.pregnancyLog.update({
+            where: { id: existingLog.id },
+            data: { weight: data.weight },
+          });
+        } else {
+          await prisma.pregnancyLog.create({
+            data: {
+              pregnancySessionId: activeSession.id,
+              weight: data.weight,
+              gestationWeek,
+              logDate: now,
+              symptoms: [],
+              moodBehavior: [],
+            },
+          });
+        }
+      }
+    }
+
     return mapProfileToFrontend(updated);
   }
 

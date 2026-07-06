@@ -227,6 +227,11 @@ export const SYMPTOM_CHIPS = [
   'nesting',          // Weeks 7-9 — surfaced prominently
   'nipple_swelling',  // Weeks 3-4
   'weight_gain',
+  'nausea',
+  'nipple_changes',
+  'appetite_changes',
+  'milk_production',
+  'nesting_behavior',
 ] as const;
 
 export const MOOD_CHIPS = [
@@ -239,6 +244,8 @@ export const MOOD_CHIPS = [
   'grooming_more',
   'grooming_less',
   'seeking_solitude', // Common Weeks 7-9
+  'restless',
+  'quiet',
 ] as const;
 
 export const APPETITE_LEVELS = [

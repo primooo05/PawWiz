@@ -40,6 +40,7 @@ export const createLogSchema = z.object({
   // normal feline range 38–39.2 °C; bounds reject nonsense input
   temp: z.number().min(35).max(42).optional(),
   notes: z.string().max(300).optional(),
+  logDate: z.coerce.date().optional(),
 });
 
 /** Optional `?week=` filter for the history endpoint. */

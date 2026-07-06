@@ -35,6 +35,7 @@ interface DashboardViewProps {
     openLogForDate: (dateStr: string) => void;
     closeBottomSheet: () => void;
     saveLogForDate: (dateStr: string, log: DailyLog) => void;
+    onDeleteLog: (dateStr: string) => void;
     isDateLoggable: (year: number, monthIdx: number, dayNum: number) => boolean;
     todayStr: string;
     todayLog: DailyLog;
@@ -73,6 +74,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     openLogForDate,
     closeBottomSheet,
     saveLogForDate,
+    onDeleteLog,
     isDateLoggable,
     todayStr,
     todayLog,
@@ -91,6 +93,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
     const { profiles } = useDietRecommender();
     const { profile } = useProfilePanel();
+    const registeredWeight = profiles.find(p => (p.catId ?? p.id) === selectedCatId)?.weight;
 
     const pregnancyGreeting = getTimeGreeting(
         {
@@ -205,6 +208,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     isEduExpanded={isEduExpanded}
                     setIsEduExpanded={setIsEduExpanded}
                     onEditClick={() => setIsConfirmEditOpen(true)}
+                    registeredWeight={registeredWeight}
                 />
 
                 {/* RIGHT COLUMN: Calendar & Symptoms */}
@@ -282,9 +286,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 currentWeek={currentWeek}
                 logs={logs}
                 saveLogForDate={saveLogForDate}
+                onDeleteLog={onDeleteLog}
                 setIsWeightPickerOpen={setIsWeightPickerOpen}
                 hasVetWarningForSelected={hasVetWarningForSelected}
                 hasNauseaInEarlyWeeksForSelected={hasNauseaInEarlyWeeksForSelected}
+                registeredWeight={registeredWeight}
             />
 
             {/* Weight Picker Modal */}

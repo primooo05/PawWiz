@@ -27,6 +27,7 @@ interface CycleProgressCardProps {
     isEduExpanded: boolean;
     setIsEduExpanded: (val: boolean) => void;
     onEditClick: () => void;
+    registeredWeight?: number;
 }
 
 export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
@@ -42,6 +43,7 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
     isEduExpanded,
     setIsEduExpanded,
     onEditClick,
+    registeredWeight,
 }) => {
     return (
         <div className="p-8 bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center border border-slate-50 h-full w-full">
@@ -149,13 +151,17 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
                                 <Scale className="h-5 w-5" strokeWidth={2} />
                             </div>
                             <span className="text-[10px] font-bold text-sky-800 bg-sky-100/50 px-2 py-0.5 rounded-full">
-                                {activeSummaryLog.weight !== undefined ? 'Logged' : 'None'}
+                                {activeSummaryLog.weight !== undefined || registeredWeight !== undefined ? 'Logged' : 'None'}
                             </span>
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Weight</p>
                             <p className="text-base font-black text-slate-800 mt-1">
-                                {activeSummaryLog.weight !== undefined ? `${activeSummaryLog.weight} kg` : 'Not logged'}
+                                {activeSummaryLog.weight !== undefined 
+                                    ? `${activeSummaryLog.weight} kg` 
+                                    : registeredWeight !== undefined 
+                                        ? `${registeredWeight} kg` 
+                                        : 'Not logged'}
                             </p>
                         </div>
                     </div>
