@@ -58,28 +58,27 @@ export default function Login() {
   }, [location.state]);
 
   return (
-    <div className="min-h-dvh w-full bg-white bg-grid-pattern relative overflow-hidden flex flex-col justify-between items-center pt-20 sm:pt-24 lg:pt-28 pb-10 sm:pb-12 px-4 sm:px-6">
+    <div className="min-h-dvh w-full bg-white bg-grid-pattern relative overflow-hidden">
       <Navbar />
 
       {/* Decorative Circles */}
       <CircleWrapper isTransitioning={isTransitioning} isZIndexHigh={isZIndexHigh} />
 
-      {/* Main content wrapper */}
-      <div className={`relative w-full max-w-6xl flex-grow flex flex-col lg:flex-row items-center lg:items-stretch justify-center lg:justify-between gap-8 lg:gap-12 transition-opacity duration-300 ${isTransitioning
+      {/* Main content wrapper — full height minus navbar, centered */}
+      <div className={`relative w-full flex-1 flex flex-col lg:flex-row items-start justify-start gap-12 lg:gap-20 px-4 sm:px-6 pt-10 lg:pt-16 pb-12 max-w-6xl mx-auto transition-opacity duration-300 ${isTransitioning
         ? 'z-0 invisible opacity-0'
         : isZIndexHigh
           ? 'z-0 opacity-0'
           : 'z-10 opacity-100'
-        } my-auto`}>
+        }`}>
 
         {/* Left side: branding text (desktop) + text visible on mobile above the form */}
-        <div className="flex flex-col items-start justify-center lg:justify-between w-full lg:w-1/2 max-w-lg mx-auto lg:mx-0 relative">
-          {/* Branding copy — always visible, sits at the top on mobile */}
+        <div className="flex flex-col items-start justify-start w-full lg:w-1/2 max-w-lg mx-auto lg:mx-0 gap-6">
           <div>
-            <h1 className="px-0 sm:px-2 text-3xl sm:text-4xl lg:text-6xl font-black text-[#e9c46a] leading-tight tracking-tight uppercase select-none mb-4 sm:mb-6">
+            <h1 className="px-0 sm:px-2 text-3xl sm:text-4xl lg:text-6xl font-black text-[#e9c46a] leading-tight tracking-tight uppercase select-none">
               LET THE CATS DOMINATE!
             </h1>
-            <p className="text-sm lg:text-base text-slate-500 leading-relaxed font-medium italic mb-6 sm:mb-8">
+            <p className="mt-3 text-sm lg:text-base text-slate-500 leading-relaxed font-medium italic">
               Login and PawWiz will help you to tell you immediately anything before it became an emergency! Plant Toxicity Checker, Feeding guide, and Pregnancy Monitoring, Health Tracker built for furparents!
             </p>
           </div>
@@ -87,12 +86,12 @@ export default function Login() {
           {/* Illustration — desktop only; mobile version rendered below the form */}
           <CatsLogin
             aria-hidden="true"
-            className="hidden lg:block w-full max-w-lg object-contain select-none pointer-events-none self-start lg:scale-115 lg:-translate-y-10 z-0"
+            className="hidden lg:block w-full max-w-lg object-contain select-none pointer-events-none lg:-translate-y-190"
           />
         </div>
 
         {/* Right side: Login form + mobile illustration */}
-        <div className="w-full lg:w-1/2 max-w-md mx-auto lg:mx-0 flex flex-col justify-center relative z-10">
+        <div className="w-full lg:w-1/2 max-w-md mx-auto lg:mx-0 flex flex-col justify-start z-10 mt-2 lg:mt-40">
           {successMessage && (
             <div className="mb-6 p-4 bg-teal-50 text-teal-700 rounded-xl text-sm text-center">
               {successMessage}
@@ -245,10 +244,10 @@ export default function Login() {
             </>
           )}
 
-          {/* Illustration — mobile only, sits below the submit button */}
+          {/* Illustration — hidden on mobile */}
           <CatsLogin
             aria-hidden="true"
-            className="lg:hidden w-full max-w-xs sm:max-w-sm object-contain select-none pointer-events-none mx-auto mt-8"
+            className="hidden w-full max-w-xs sm:max-w-sm object-contain select-none pointer-events-none mx-auto mt-8"
           />
         </div>
 
