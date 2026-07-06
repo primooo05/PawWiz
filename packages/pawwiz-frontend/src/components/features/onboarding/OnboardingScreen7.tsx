@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import catScreen7 from '../../../assets/Cat_Screen7.svg';
+import React, { useState, useEffect } from 'react';
+import catPeek1 from '../../../assets/Cat_PasswordPeek1.svg';
+import catPeek2 from '../../../assets/Cat_PasswordPeek2.svg';
 import { TextField } from '../../ui/forms/TextField';
 
 interface OnboardingScreen7Props {
@@ -14,160 +15,6 @@ interface OnboardingScreen7Props {
   handleCreateProfileClick: () => void;
   handleBackClick: () => void;
   showKeyboardHint?: boolean;
-}
-
-/**
- * Eyelid animation keyframes (5 states, looping):
- * State 1 (Before Upper)  → State 2 (After Upper)  → State 3 (Mid Lower)
- * → State 4 (After Lower) → State 5 (Mid Lower)   → back to State 1
- */
-interface EyelidState {
-  // Upper eyelid left
-  ulCx: number; ulCy: number; ulRx: number; ulRy: number;
-  // Upper eyelid right
-  urCx: number; urCy: number; urRx: number; urRy: number;
-  // Lower eyelid left
-  llCx: number; llCy: number; llRx: number; llRy: number;
-  // Lower eyelid right
-  lrCx: number; lrCy: number; lrRx: number; lrRy: number;
-}
-
-const EYELID_STATES: EyelidState[] = [
-  // State 1: Before Upper Eyelid (just starting to close — minimal coverage)
-  {
-    ulCx: 40.5, ulCy: 47, ulRx: 15.5, ulRy: 4,
-    urCx: 59.5, urCy: 47, urRx: 15.5, urRy: 4,
-    llCx: 37.5, llCy: 51, llRx: 15.5, llRy: 4,
-    lrCx: 49.5, lrCy: 41, lrRx: 15.5, lrRy: 4,
-  },
-  // State 2: After Upper Eyelid (upper lids descend)
-  {
-    ulCx: 40.5, ulCy: 48, ulRx: 15.5, ulRy: 10,
-    urCx: 59.5, urCy: 47, urRx: 15.5, urRy: 10,
-    llCx: 37.5, llCy: 51, llRx: 15.5, llRy: 4,
-    lrCx: 49.5, lrCy: 41, lrRx: 15.5, lrRy: 4,
-  },
-  // State 3: Mid Lower Eyelid (lower lids rise)
-  {
-    ulCx: 40.5, ulCy: 48, ulRx: 15.5, ulRy: 10,
-    urCx: 59.5, urCy: 47, urRx: 15.5, urRy: 10,
-    llCx: 37.5, llCy: 51, llRx: 15.5, llRy: 10,
-    lrCx: 49.5, lrCy: 41, lrRx: 15.5, lrRy: 10,
-  },
-  // State 4: After Lower Eyelid (fully closed — max coverage)
-  {
-    ulCx: 40.5, ulCy: 48, ulRx: 15.5, ulRy: 10,
-    urCx: 59.5, urCy: 47, urRx: 15.5, urRy: 10,
-    llCx: 37.5, llCy: 58, llRx: 15.5, llRy: 12,
-    lrCx: 62.5, lrCy: 57, lrRx: 15.5, lrRy: 13,
-  },
-  // State 5: Mid Lower (same as State 3 — eyelids opening back up)
-  {
-    ulCx: 40.5, ulCy: 48, ulRx: 15.5, ulRy: 10,
-    urCx: 59.5, urCy: 47, urRx: 15.5, urRy: 10,
-    llCx: 37.5, llCy: 51, llRx: 15.5, llRy: 10,
-    lrCx: 49.5, lrCy: 41, lrRx: 15.5, lrRy: 10,
-  },
-];
-
-// Duration in ms for each transition between states.
-// Longer hold at the "closed" state for a natural, sleepy blink rhythm.
-// Sequence: 1→2 (closing top), 2→3 (closing bottom joins), 3→4 (fully shut),
-//           4→5 (hold closed then start opening), 5→1 (fully open)
-const FRAME_DURATIONS = [
-  800,   // State 1 → 2: upper lids begin to drop (slow, deliberate)
-  600,   // State 2 → 3: lower lids join in
-  500,   // State 3 → 4: final close (a bit faster — gravity)
-  1400,  // State 4 → 5: hold fully closed, then slowly start to open (restful)
-  900,   // State 5 → 1: open back up gently
-];
-
-// Ease-in-out for smooth, organic motion
-function easeInOut(t: number): number {
-  return t < 0.5
-    ? 2 * t * t
-    : 1 - Math.pow(-2 * t + 2, 2) / 2;
-}
-
-function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
-function lerpState(from: EyelidState, to: EyelidState, t: number): EyelidState {
-  return {
-    ulCx: lerp(from.ulCx, to.ulCx, t),
-    ulCy: lerp(from.ulCy, to.ulCy, t),
-    ulRx: lerp(from.ulRx, to.ulRx, t),
-    ulRy: lerp(from.ulRy, to.ulRy, t),
-    urCx: lerp(from.urCx, to.urCx, t),
-    urCy: lerp(from.urCy, to.urCy, t),
-    urRx: lerp(from.urRx, to.urRx, t),
-    urRy: lerp(from.urRy, to.urRy, t),
-    llCx: lerp(from.llCx, to.llCx, t),
-    llCy: lerp(from.llCy, to.llCy, t),
-    llRx: lerp(from.llRx, to.llRx, t),
-    llRy: lerp(from.llRy, to.llRy, t),
-    lrCx: lerp(from.lrCx, to.lrCx, t),
-    lrCy: lerp(from.lrCy, to.lrCy, t),
-    lrRx: lerp(from.lrRx, to.lrRx, t),
-    lrRy: lerp(from.lrRy, to.lrRy, t),
-  };
-}
-
-function useEyelidAnimation(isAnimating: boolean): EyelidState {
-  const [currentState, setCurrentState] = useState<EyelidState>(EYELID_STATES[0]);
-  const rafRef = useRef<number>(0);
-  const startTimeRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (!isAnimating) {
-      setCurrentState(EYELID_STATES[0]);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      return;
-    }
-
-    startTimeRef.current = performance.now();
-
-    // Pre-compute cumulative durations for the cycle
-    const totalCycleDuration = FRAME_DURATIONS.reduce((sum, d) => sum + d, 0);
-    const cumulativeDurations: number[] = [];
-    let sum = 0;
-    for (const d of FRAME_DURATIONS) {
-      cumulativeDurations.push(sum);
-      sum += d;
-    }
-
-    const animate = (now: number) => {
-      const elapsed = now - startTimeRef.current;
-      const cycleTime = elapsed % totalCycleDuration;
-
-      // Find which frame we're in
-      let frameIndex = 0;
-      for (let i = FRAME_DURATIONS.length - 1; i >= 0; i--) {
-        if (cycleTime >= cumulativeDurations[i]) {
-          frameIndex = i;
-          break;
-        }
-      }
-
-      const nextIndex = (frameIndex + 1) % EYELID_STATES.length;
-      const frameDuration = FRAME_DURATIONS[frameIndex];
-      const frameElapsed = cycleTime - cumulativeDurations[frameIndex];
-      const rawT = Math.min(frameElapsed / frameDuration, 1);
-      const t = easeInOut(rawT); // Apply easing for organic motion
-
-      setCurrentState(lerpState(EYELID_STATES[frameIndex], EYELID_STATES[nextIndex], t));
-      rafRef.current = requestAnimationFrame(animate);
-    };
-
-    rafRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [isAnimating]);
-
-  return currentState;
 }
 
 export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
@@ -187,9 +34,8 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [introComplete, setIntroComplete] = useState(false);
 
-  // Cat closes eyes whenever any password field is revealed
+  // Cat ducks when any password field is revealed
   const isPasswordVisible = showPassword || showConfirmPassword;
-  const eyelidState = useEyelidAnimation(isPasswordVisible);
 
   // Staggered intro: trigger after screen becomes active
   useEffect(() => {
@@ -205,77 +51,54 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
     <div className={`flex flex-col md:grid md:grid-cols-2 md:items-start justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
-      {/* 1. ChatBubble & Mascot SVG */}
-      <div className={`md:col-start-2 md:row-start-1 md:row-span-2 flex-1 flex justify-center mt-[1px] items-center relative transition-all duration-500 ease-out w-full ${
+      {/* 1. ChatBubble & Mascot */}
+      <div className={`md:col-start-2 md:row-start-1 md:row-span-2 flex-1 flex justify-center items-end relative transition-all duration-500 ease-out w-full ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
-        {/* Speech Bubble — same design as other screens */}
+        {/* Speech Bubble */}
         {showBubble && (
-          <div className="absolute -top-26 left-4 md:-top-18 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-[-10] animate-fade-in">
+          <div className="absolute -top-26 left-4 md:-top-18 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-20 animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
-            {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
           </div>
         )}
 
-        {/* Cat image — no floating animation at all on this screen */}
-        <div className="relative">
+        {/*
+          Pure crossfade: both images sit at identical position.
+          peek2 (notebook up / peeking) is the default — opacity 1.
+          peek1 (notebook down / hiding) overlays it — opacity 0 by default.
+          Toggling the password eye fades one out and the other in at the
+          same position, making just the notebook appear to change state.
+        */}
+        <div className="relative w-36 h-36 md:w-[450px] md:h-[450px] select-none">
+          {/* peek2 — notebook raised, cat peeking (default) */}
           <img
-            src={catScreen7}
+            src={catPeek2}
             alt="Cat mascot"
-            className="w-36 h-36 md:w-[450px] md:h-[450px] object-contain select-none"
             draggable={false}
+            className="absolute inset-0 w-full h-full object-contain"
+            style={{
+              opacity: isPasswordVisible ? 0 : 1,
+              transition: 'opacity 400ms ease-in-out',
+            }}
           />
-          {/* Animated eyelid overlay — loops through states when password is visible */}
-          {isPasswordVisible && (
-            <svg
-              viewBox="0 0 100 100"
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              style={{ overflow: 'visible' }}
-            >
-              {/* Upper eyelid — left */}
-              <ellipse
-                cx={eyelidState.ulCx}
-                cy={eyelidState.ulCy}
-                rx={eyelidState.ulRx}
-                ry={eyelidState.ulRy}
-                fill="black"
-                opacity="1"
-              />
-              {/* Upper eyelid — right */}
-              <ellipse
-                cx={eyelidState.urCx}
-                cy={eyelidState.urCy}
-                rx={eyelidState.urRx}
-                ry={eyelidState.urRy}
-                fill="black"
-                opacity="1"
-              />
-              {/* Lower eyelid — left */}
-              <ellipse
-                cx={eyelidState.llCx}
-                cy={eyelidState.llCy}
-                rx={eyelidState.llRx}
-                ry={eyelidState.llRy}
-                fill="black"
-                opacity="1"
-              />
-              {/* Lower eyelid — right */}
-              <ellipse
-                cx={eyelidState.lrCx}
-                cy={eyelidState.lrCy}
-                rx={eyelidState.lrRx}
-                ry={eyelidState.lrRy}
-                fill="black"
-                opacity="1"
-              />
-            </svg>
-          )}
+          {/* peek1 — notebook lowered, cat hiding (shown on password reveal) */}
+          <img
+            src={catPeek1}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-contain"
+            style={{
+              opacity: isPasswordVisible ? 1 : 0,
+              transition: 'opacity 400ms ease-in-out',
+            }}
+          />
         </div>
       </div>
 
       {/* 2. Password Fields */}
-      <div className={`md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-end pb-16 items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
+      <div className={`md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-end pb-2 items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
         <label className="mb-2 block text-2xl text-slate-500 font-semibold pl-1">
@@ -337,7 +160,6 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
       <div className={`w-full md:absolute md:bottom-2 left-0 flex flex-col items-center gap-4 z-0 mt-6 md:mt-0 transition-all duration-500 delay-300 ease-out ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
-
         <div className="flex gap-4 w-full max-w-[420px] px-6 justify-center">
           <button
             onClick={handleBackClick}
