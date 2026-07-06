@@ -32,24 +32,24 @@ export default function DietSection({}: {}) {
           </div>
 
           <h2 className="reveal-item stagger-2 text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase">
-            Precision Diet Calculator
+            Your Cat's Meals,<br />Actually Measured
           </h2>
 
           {/* Stats */}
           <div className="reveal-item stagger-3 flex items-center gap-6 border-y border-slate-200/50 py-4 max-w-md ml-4 md:ml-6">
             <div className="flex-1">
-              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">45% Protein</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Optimal Ratio</span>
+              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">RER formula</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Vet-grade math</span>
             </div>
             <div className="w-[1px] h-8 bg-slate-200" />
             <div className="flex-1">
-              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">3-4x Daily</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Meal Portions</span>
+              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">Spoon, g, cup</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Your units</span>
             </div>
             <div className="w-[1px] h-8 bg-slate-200" />
             <div className="flex-1">
-              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">Life Stage</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Adaptive</span>
+              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">7 food types</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">+ custom foods</span>
             </div>
           </div>
 
@@ -59,27 +59,26 @@ export default function DietSection({}: {}) {
               onClick={() => setIsOpen(true)}
               className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-8 py-3.5 rounded-full text-xs tracking-widest transition-all duration-100 shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer"
             >
-              CALCULATE DIET
+              CALCULATE MY CAT'S DIET
             </button>
             <button
               onClick={() => setIsOpen(true)}
               className="bg-transparent hover:bg-slate-100 border border-slate-200 text-slate-900 font-extrabold px-6 py-3.5 rounded-full text-xs tracking-widest transition-all hover:-translate-y-0.5 flex items-center gap-2"
             >
-              <span>See meal examples</span>
+              <span>How are calories calculated?</span>
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
             </button>
           </div>
 
-          {/* Info & AI Assistant statement */}
+          {/* Info & AI statement */}
           <div className="space-y-3 pt-2">
             <p className="text-sm text-slate-500 leading-relaxed font-medium">
-              Science-backed meal planning tailored to your cat's weight, age, activity level,
-              and health conditions. Get calorie targets, macro splits, and food recommendations.
+              Most cat owners eyeball portions — and most cats are overfed. PawWiz converts your cat's weight, life stage, and food type into exact daily targets, then tracks every meal against them. Log breakfast in two taps. See exactly where your cat stands on calories and water before dinner.
             </p>
             <p className="text-xs italic text-slate-400 leading-relaxed font-medium">
-              Note: This is an AI assistant tool. You have the ability to tailor the inputs using our adjustment sliders to further discuss and plan a suitable diet for your cat.
+              Supports dry kibble, wet food, cooked chicken, fish, egg, mixed diets, and any custom food via label kcal. Use spoons, grams, or cups — whatever is on your counter.
             </p>
           </div>
         </div>
