@@ -365,6 +365,7 @@ export function usePregnancyTracker() {
         getDayBadgeClassName,
         handleStartTracking,
         logs,
+        setLogs,
         selectedDateStr,
         isBottomSheetOpen,
         openLogForDate,

@@ -77,6 +77,7 @@ const CatPregnancyTracker: React.FC = () => {
         getLocalDateStr,
         getDayBadgeClassName,
         logs,
+        setLogs,
         selectedDateStr,
         isBottomSheetOpen,
         openLogForDate,
@@ -101,6 +102,39 @@ const CatPregnancyTracker: React.FC = () => {
             setIsTracking(true);
         }
     }, [pregnancy.session, isTracking, setMatingDate, setIsTracking]);
+
+    // ── Sync database logs to local state ────────────────────────────────────
+    React.useEffect(() => {
+        if (pregnancy.session && pregnancy.session.weeklyHistory) {
+            const dbLogs: Record<string, any> = {};
+            pregnancy.session.weeklyHistory.forEach((group) => {
+                (group.logs || []).forEach((entry) => {
+                    const dateStr = entry.logDate.split('T')[0];
+                    dbLogs[dateStr] = {
+                        symptoms: entry.symptoms.map(s => {
+                            const map: Record<string, string> = {
+                                nausea: 'Nausea',
+                                nipple_changes: 'Nipple Changes',
+                                weight_gain: 'Weight Gain',
+                                lethargy: 'Lethargy',
+                                nesting_behavior: 'Nesting Behavior',
+                                milk_production: 'Milk Production',
+                                contractions: 'Contractions',
+                                appetite_changes: 'Appetite Changes',
+                            };
+                            return map[s] || s;
+                        }),
+                        moods: entry.moodBehavior.map(m => {
+                            return m.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                        }),
+                        weight: entry.weight ?? undefined,
+                        temperature: entry.temp ?? undefined,
+                    };
+                });
+            });
+            setLogs((prev) => ({ ...prev, ...dbLogs }));
+        }
+    }, [pregnancy.session, setLogs]);
 
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
