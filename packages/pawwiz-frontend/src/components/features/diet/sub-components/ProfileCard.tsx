@@ -208,7 +208,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
                             </div>
 
                             {/* Right Image Container */}
-                            <div className="w-32 h-32 shrink-0 bg-white border-2 border-[#1a1a1a] rounded-3xl overflow-hidden  relative z-10">
+                            <div className="w-32 h-32 shrink-0 bg-white border-2 border-[#1a1a1a] rounded-3xl overflow-hidden relative z-10 flex items-center justify-center">
                                 {photoUrl && !hasPhotoError ? (
                                     <>
                                         <img
