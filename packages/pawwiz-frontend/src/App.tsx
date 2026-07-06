@@ -23,6 +23,7 @@ export default function App() {
                      location.pathname === '/heat-tracker' ||
                      location.pathname === '/settings' ||
                      location.pathname === '/reset-password' ||
+                     location.pathname === '/docs' ||
                      location.pathname.startsWith('/health-timeline/');
 
   return (
