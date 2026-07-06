@@ -6,12 +6,15 @@ import DashboardView from './DashboardView';
 import FemaleOnlyModal from './FemaleOnlyModal';
 import FemaleCatSelector from './FemaleCatSelector';
 
-import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker';
+import { usePregnancyTracker, getInitialLogs } from '../../../hooks/trackers/usePregnancyTracker';
 import { useDietRecommender } from '../../../hooks/features/useDietRecommender';
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { useCatPregnancy } from '../../../hooks/features/useCatPregnancy';
 import { useNavigate } from 'react-router-dom';
 import InsightCardFeed from './flo/InsightCardFeed';
+import { supabase } from '../../../lib/supabase';
+import { API_BASE } from '../../../lib/config.js';
+import ConfirmationDialog from '../../ui/modals/ConfirmationDialog';
 
 const CatPregnancyTracker: React.FC = () => {
     const navigate = useNavigate();
@@ -52,6 +55,39 @@ const CatPregnancyTracker: React.FC = () => {
 
     const selectedCat = femaleRoster.find(c => c.id === selectedCatId);
     const selectedCatName = selectedCat ? selectedCat.name : (profile?.catName || 'Your Cat');
+
+    const [catToConfirmSetup, setCatToConfirmSetup] = React.useState<any | null>(null);
+
+    const handleSwitchCat = async (clickedId: string) => {
+        if (clickedId === selectedCatId) return;
+
+        const targetCat = femaleRoster.find(c => c.id === clickedId);
+        if (!targetCat) return;
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(
+                `${API_BASE}/api/pregnancy/session/active/${encodeURIComponent(clickedId)}`,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session?.access_token || ''}`,
+                    }
+                }
+            );
+            if (res.ok) {
+                const body = await res.json();
+                if (body && body.sessionId) {
+                    setSelectedCatId(clickedId);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        setCatToConfirmSetup(targetCat);
+    };
 
     // ── Backend session ──────────────────────────────────────────────────────
     const catIdForApi = selectedCatId && selectedCatId !== 'primary' ? selectedCatId : null;
@@ -96,12 +132,17 @@ const CatPregnancyTracker: React.FC = () => {
     // When the backend already has an active session for this cat, hydrate the
     // local tracker so the user goes straight to the dashboard on every visit.
     React.useEffect(() => {
-        if (pregnancy.session && !isTracking) {
-            const serverMatingDate = pregnancy.session.matingDate.split('T')[0];
-            setMatingDate(serverMatingDate);
-            setIsTracking(true);
+        if (!pregnancy.isLoading) {
+            if (pregnancy.session) {
+                const serverMatingDate = pregnancy.session.matingDate.split('T')[0];
+                setMatingDate(serverMatingDate);
+                setIsTracking(true);
+            } else {
+                setIsTracking(false);
+                setMatingDate('');
+            }
         }
-    }, [pregnancy.session, isTracking, setMatingDate, setIsTracking]);
+    }, [pregnancy.session, pregnancy.isLoading, setIsTracking, setMatingDate]);
 
     // ── Sync database logs to local state ────────────────────────────────────
     React.useEffect(() => {
@@ -132,9 +173,12 @@ const CatPregnancyTracker: React.FC = () => {
                     };
                 });
             });
-            setLogs((prev) => ({ ...prev, ...dbLogs }));
+            const baseLogs = getInitialLogs(pregnancy.session.matingDate.split('T')[0]);
+            setLogs({ ...baseLogs, ...dbLogs });
+        } else if (!pregnancy.isLoading && !pregnancy.session) {
+            setLogs({});
         }
-    }, [pregnancy.session, setLogs]);
+    }, [pregnancy.session, pregnancy.isLoading, setLogs]);
 
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
@@ -231,6 +275,7 @@ const CatPregnancyTracker: React.FC = () => {
                         matingDate={matingDate}
                         setMatingDate={setMatingDate}
                         onSubmit={startTrackingWithLoading}
+                        catName={selectedCatName}
                     />
                 ) : (
                     <>
@@ -246,6 +291,8 @@ const CatPregnancyTracker: React.FC = () => {
 
                         <DashboardView
                             catName={selectedCatName}
+                            selectedCatId={selectedCatId}
+                            onSwitchCat={handleSwitchCat}
                             setIsTracking={setIsTracking}
                             currentDay={currentDay}
                             daysRemaining={daysRemaining}
@@ -290,6 +337,25 @@ const CatPregnancyTracker: React.FC = () => {
                     onComplete={() => {
                         setIsLoading(false);
                         setIsTracking(true);
+                    }}
+                />
+            )}
+
+            {catToConfirmSetup && (
+                <ConfirmationDialog
+                    isOpen={!!catToConfirmSetup}
+                    title="Set Up Pregnancy Tracker?"
+                    message={`${catToConfirmSetup.name} does not have a data yet, do you want me to set up her pregnancy tracker?`}
+                    confirmText="Set Up"
+                    cancelText="Cancel"
+                    onConfirm={() => {
+                        setSelectedCatId(catToConfirmSetup.id);
+                        setIsTracking(false);
+                        setMatingDate('');
+                        setCatToConfirmSetup(null);
+                    }}
+                    onCancel={() => {
+                        setCatToConfirmSetup(null);
                     }}
                 />
             )}

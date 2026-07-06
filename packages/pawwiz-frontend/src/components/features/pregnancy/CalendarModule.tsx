@@ -77,7 +77,12 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({
 
                         const dateStr = getLocalDateStr(currentYear, currentMonthIndex, day);
                         const log = logs[dateStr];
-                        const hasSymptoms = log && log.symptoms && log.symptoms.length > 0;
+                        const hasLog = log && (
+                            (log.symptoms && log.symptoms.length > 0) ||
+                            (log.moods && log.moods.length > 0) ||
+                            log.weight !== undefined ||
+                            log.temperature !== undefined
+                        );
                         const weekMilestone = getWeekMilestone(day);
                         const isSelected = dateStr === selectedDateStr;
                         const loggable = isDateLoggable(currentYear, currentMonthIndex, day);
@@ -103,9 +108,9 @@ export const CalendarModule: React.FC<CalendarModuleProps> = ({
                                         {day}
                                     </div>
 
-                                    {/* Bottom indicators: dot for symptoms */}
+                                    {/* Bottom indicators: dot for logged data */}
                                     <div className="h-2 flex items-center justify-center">
-                                        {hasSymptoms && (
+                                        {hasLog && (
                                             <span className="h-1.5 w-1.5 rounded-full bg-teal-500"></span>
                                         )}
                                     </div>
