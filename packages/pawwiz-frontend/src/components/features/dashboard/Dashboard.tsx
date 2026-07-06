@@ -693,8 +693,8 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
 
-              {/* Pregnancy Tracker Card (female cats only) */}
-              {hasFemaleCat && (
+              {/* Pregnancy Tracker Card (only if pregnancy is being tracked) */}
+              {pregnancy.isTracking && (
               <div
                 onClick={() => navigate('/pregnancy-tracker')}
                 className="snap-center shrink-0 w-[82%] sm:w-[58%] md:w-auto cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1 rounded-3xl"
@@ -772,8 +772,8 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Pregnancy & Insights Section (female cats only) */}
-          {hasFemaleCat && (
+          {/* Pregnancy & Insights Section (only if pregnancy is being tracked) */}
+          {pregnancy.isTracking && (
             <div className="mt-16">
               <div className="border-l-4 border-[#1a1a1a] pl-4 mb-6">
                 <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
@@ -945,7 +945,12 @@ const Dashboard: React.FC = () => {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-        <BottomNav activeItem="dashboard" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" />
+        <BottomNav 
+          activeItem="dashboard" 
+          onItemClick={handleNavigation} 
+          className="w-full max-w-2xl md:w-auto md:scale-110"
+          hasUntracked={diet.profiles.some(p => !p.isTracking)}
+        />
       </div>
     </div>
   );

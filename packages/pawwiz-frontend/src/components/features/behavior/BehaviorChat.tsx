@@ -165,6 +165,7 @@ export const BehaviorChat: React.FC = () => {
           activeItem="behavior"
           onItemClick={handleNavigation}
           className="w-full max-w-2xl md:w-auto md:scale-110"
+          hasUntracked={profiles.some(p => !p.isTracking)}
         />
       </div>
     </div>

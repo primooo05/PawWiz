@@ -581,7 +581,12 @@ export default function Settings() {
 
             {/* Bottom Nav */}
             <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-                <BottomNav activeItem="settings" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" />
+                <BottomNav 
+                    activeItem="settings" 
+                    onItemClick={handleNavigation} 
+                    className="w-full max-w-2xl md:w-auto md:scale-110"
+                    hasUntracked={profiles.some(p => !p.isTracking)}
+                />
             </div>
 
             <AnimatePresence>
