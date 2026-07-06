@@ -157,7 +157,7 @@ const CatPregnancyTracker: React.FC = () => {
             <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-800 pb-20 flex flex-col">
                 <FemaleOnlyModal onClose={() => navigate('/dashboard')} />
                 <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-                    <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" />
+                    <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" hasUntracked={diet.profiles.some(p => !p.isTracking)} />
                 </div>
             </div>
         );
@@ -171,7 +171,7 @@ const CatPregnancyTracker: React.FC = () => {
                     <FemaleCatSelector cats={femaleRoster} onSelect={(id) => setSelectedCatId(id)} />
                 </main>
                 <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-                    <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" />
+                    <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" hasUntracked={diet.profiles.some(p => !p.isTracking)} />
                 </div>
             </div>
         );
@@ -249,7 +249,7 @@ const CatPregnancyTracker: React.FC = () => {
             </main>
 
             <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-                <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" />
+                <BottomNav activeItem="calendar" onItemClick={handleNavigation} className="w-full max-w-2xl md:w-auto md:scale-110" hasUntracked={diet.profiles.some(p => !p.isTracking)} />
             </div>
 
             {isLoading && (
