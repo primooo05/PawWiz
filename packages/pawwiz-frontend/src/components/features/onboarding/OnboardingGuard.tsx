@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useOnboardingContext } from '../../../context/OnboardingContext';
 
 /**
@@ -12,80 +12,86 @@ interface OnboardingGuardProps {
 }
 
 export function OnboardingGuard({ children }: OnboardingGuardProps) {
-  const { step, setStep, sessionId, sessionStep, fetchSession, ownerEmail } = useOnboardingContext();
+  const { step, setStep, sessionId, sessionStep, fetchSession } = useOnboardingContext();
 
-  const [loadingGuard, setLoadingGuard] = useState(false);
-  const [initialChecked, setInitialChecked] = useState(false);
+  // Refs for guard flags — mutations here never cause re-renders on their own.
+  // This is critical: sessionStep/ownerEmail are outputs of fetchSession, so
+  // putting them in the effect deps caused a re-trigger loop after every fetch.
+  const loadingGuardRef = useRef(false);
+  const lastCheckedStepRef = useRef<number | null>(null);
+  const checkedRef = useRef(false);
+
+  // Minimal forceUpdate so the spinner can appear/disappear without extra state.
+  const [, forceUpdate] = React.useReducer((n: number) => n + 1, 0);
 
   useEffect(() => {
+    // Same step, already checked — nothing to do.
+    if (checkedRef.current && lastCheckedStepRef.current === step) return;
+
+    // Reset for the new step.
+    checkedRef.current = false;
+    lastCheckedStepRef.current = step;
+
     let active = true;
 
     const runGuard = async () => {
-      console.log('runGuard triggered:', { step, sessionId, ownerEmail, sessionStep });
-      // Step 1 always allowed (entry point)
+      // Step 1 is always the entry point — always allowed.
       if (step === 1) {
-        if (active) setInitialChecked(true);
+        checkedRef.current = true;
+        forceUpdate();
         return;
       }
 
-      // Steps 6–8 are client-side transitions only; session is already validated
-      // by the time the user reaches step 5. No network round-trip needed and no
-      // spinner should ever appear for these steps, unless we need to hydrate state on refresh.
+      // Steps 6–8 are pure client-side transitions validated earlier in the
+      // flow — skip the network round-trip entirely.
       if (step >= 6) {
-        if (sessionId && !ownerEmail) {
-          // Hydrate the session state on page refresh
-        } else {
-          if (active) setInitialChecked(true);
-          return;
-        }
+        checkedRef.current = true;
+        forceUpdate();
+        return;
       }
 
-      // No session → force back to step 1
+      // No session on record → bounce back to start.
       if (!sessionId) {
-        if (active) {
-          setStep(1);
-          setInitialChecked(true);
-        }
+        setStep(1);
+        checkedRef.current = true;
+        forceUpdate();
         return;
       }
 
-      // Skip redundant network requests during active navigation
-      if (initialChecked && step <= sessionStep) {
+      // Fast path: sessionStep is already populated and the URL step is within
+      // normal progression range (allow +2 for single-cat skip from 5→7).
+      if (sessionStep > 0 && step <= sessionStep + 2) {
+        checkedRef.current = true;
+        forceUpdate();
         return;
       }
 
-      // Client-side fast rejection: step ahead of known session progress.
-      // Allow up to sessionStep + 2 through — covers both single-step and
-      // two-step progressions (e.g. step 5 → 7 for single-cat users) where
-      // the URL has advanced but sessionStep state has not yet flushed.
-      const isNormalProgression = step <= sessionStep + 2;
-      if (initialChecked && sessionStep > 0 && step > sessionStep && !isNormalProgression) {
-        if (active) setStep(sessionStep);
-        return;
-      }
+      // Need a network confirmation — show the spinner.
+      loadingGuardRef.current = true;
+      forceUpdate();
 
-      if (active) setLoadingGuard(true);
-
-      // Safety-net timeout: if the network call takes too long, fall back to step 1
+      // Safety-net: bail out after 5 s if the API is unresponsive.
       const timeout = setTimeout(() => {
-        if (active) {
-          setLoadingGuard(false);
-          setStep(1);
-          setInitialChecked(true);
-        }
+        if (!active) return;
+        loadingGuardRef.current = false;
+        checkedRef.current = true;
+        setStep(1);
+        forceUpdate();
       }, 5000);
 
       const data = await fetchSession(sessionId);
       clearTimeout(timeout);
       if (!active) return;
-      setLoadingGuard(false);
+
+      loadingGuardRef.current = false;
 
       if (!data) {
         setStep(1);
       } else if (step > data.step) {
         setStep(data.step);
       }
-      setInitialChecked(true);
+      checkedRef.current = true;
+      forceUpdate();
     };
 
     runGuard();
@@ -93,14 +99,15 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
     return () => {
       active = false;
     };
-  }, [step, sessionId, fetchSession, initialChecked, sessionStep, setStep, ownerEmail]);
 
-  // Show spinner only while fetching session data for steps 2–5.
-  // Steps 6–8 short-circuit above and never reach this render gate.
-  const isNormalProgression = step <= sessionStep + 2;
-  const isStepAhead = step < 6 && initialChecked && sessionStep > 0 && step > sessionStep && !isNormalProgression;
+    // Intentionally omit sessionStep, ownerEmail, fetchSession, setStep:
+    //   - sessionStep / ownerEmail are *outputs* of fetchSession — including them
+    //     would retrigger the guard immediately after it resolves, causing the loop.
+    //   - fetchSession / setStep are stable useCallback refs that never change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, sessionId]);
 
-  if (loadingGuard || (step > 1 && step < 6 && !initialChecked) || isStepAhead) {
+  if (loadingGuardRef.current || (step > 1 && step < 6 && !checkedRef.current)) {
     return (
       <div className="min-h-screen w-full bg-white bg-grid-pattern flex flex-col justify-center items-center">
         <div className="w-16 h-16 border-4 border-[#30c290] border-t-transparent rounded-full animate-spin mb-4" />

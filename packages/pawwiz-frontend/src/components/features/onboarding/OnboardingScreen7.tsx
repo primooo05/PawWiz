@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import catScreen7 from '../../../assets/Cat_Screen7.svg';
+import { TextField } from '../../ui/forms/TextField';
 
 interface OnboardingScreen7Props {
   active: boolean;
@@ -205,7 +206,7 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
       {/* 1. ChatBubble & Mascot SVG */}
-      <div className={`md:col-start-2 md:row-start-1 md:row-span-2 flex-1 flex justify-center items-center relative transition-all duration-500 ease-out w-full ${
+      <div className={`md:col-start-2 md:row-start-1 md:row-span-2 flex-1 flex justify-center mt-[1px] items-center relative transition-all duration-500 ease-out w-full ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
         {/* Speech Bubble — same design as other screens */}
@@ -274,56 +275,62 @@ export const OnboardingScreen7: React.FC<OnboardingScreen7Props> = ({
       </div>
 
       {/* 2. Password Fields */}
-      <div className={`md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex'-col justify-center items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
+      <div className={`md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-end pb-16 items-center md:items-stretch text-center md:text-left space-y-4 transition-all duration-500 delay-150 ease-out ${
         introComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
       }`}>
-        <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide text-center md:text-left">
+        <label className="mb-2 block text-2xl text-slate-500 font-semibold pl-1">
           Set a Password
         </label>
 
         {/* Password field */}
-        <div className="relative w-full">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter Password"
-            className="w-full px-5 py-3.5 pr-12 bg-[#2ec4b6] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#2ec4b6] focus:ring-opacity-40"
-            disabled={isTyping || !active}
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            disabled={isTyping || !active}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-          </button>
-        </div>
+        <TextField
+          id="password"
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          label="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter Password"
+          disabled={isTyping || !active}
+          autoComplete="new-password"
+          reserveErrorSpace={false}
+          trailing={
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              disabled={isTyping || !active}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          }
+        />
 
         {/* Confirm Password field */}
-        <div className="relative w-full">
-          <input
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm Password"
-            className="w-full px-5 py-3.5 pr-12 bg-[#30c290] border-none rounded-2xl outline-none text-white font-semibold placeholder:text-teal-100/70 shadow-sm transition-all focus:ring-2 focus:ring-[#30c290] focus:ring-opacity-40"
-            disabled={isTyping || !active}
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword((v) => !v)}
-            disabled={isTyping || !active}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
-            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-          >
-            {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
-          </button>
-        </div>
+        <TextField
+          id="confirm-password"
+          name="confirmPassword"
+          type={showConfirmPassword ? 'text' : 'password'}
+          label="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="Confirm Password"
+          disabled={isTyping || !active}
+          autoComplete="new-password"
+          reserveErrorSpace={false}
+          trailing={
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              disabled={isTyping || !active}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white transition-colors bg-transparent border-none cursor-pointer p-1"
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+            >
+              {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          }
+        />
       </div>
 
       {/* Bottom Actions Overlay */}
