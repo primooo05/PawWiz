@@ -29,7 +29,8 @@ const CatPregnancyTracker: React.FC = () => {
         .map((p) => ({ id: p.catId ?? p.id, name: p.name, photoUrl: p.photoUrl ?? null }));
 
     // Fallback: primary profile cat is female but no diet profile exists yet.
-    if (femaleRoster.length === 0 && profile?.catSex === 'female') {
+    // catSex from the backend may be 'Female' (capitalised) or 'female' — normalise.
+    if (femaleRoster.length === 0 && profile?.catSex?.toLowerCase() === 'female') {
         femaleRoster.push({ id: 'primary', name: profile.catName || 'Your Cat', photoUrl: null });
     }
     const hasFemaleCat = femaleRoster.length > 0;
@@ -39,7 +40,7 @@ const CatPregnancyTracker: React.FC = () => {
     // selectedCatId stays null so the user explicitly picks from the selector.
     const activeProfileIsFemale = (() => {
         const activeProfile = diet.profiles.find((p) => p.id === diet.activeProfileId);
-        return activeProfile ? activeProfile.gender === 'female' : profile?.catSex === 'female';
+        return activeProfile ? activeProfile.gender === 'female' : profile?.catSex?.toLowerCase() === 'female';
     })();
 
     const [selectedCatId, setSelectedCatId] = React.useState<string | null>(null);

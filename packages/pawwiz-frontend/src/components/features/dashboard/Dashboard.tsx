@@ -170,7 +170,7 @@ const Dashboard: React.FC = () => {
 
   // --- Gender gating: pregnancy features require at least one female cat ---
   const femaleCats = diet.profiles.filter((p) => p.gender === 'female');
-  const hasFemaleCat = femaleCats.length > 0 || profile?.catSex === 'female';
+  const hasFemaleCat = femaleCats.length > 0 || profile?.catSex?.toLowerCase() === 'female';
 
   // --- Nutrition analytics (real data from the active diet profile) ---
   const activeMeals = diet.activeProfile?.loggedMeals ?? [];
