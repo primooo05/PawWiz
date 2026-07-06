@@ -17,6 +17,9 @@ import type { BehaviorDecodeRequest, BehaviorDecodeResponse, ConversationalReply
  * Patterns that indicate the current message is a conversational follow-up
  * referencing something already discussed. These should bypass the vague/follow-up
  * gate and go straight to the AI with prior context attached.
+ *
+ * Deliberately excludes "My cat is/does/was ..." openers — those are new
+ * behavior descriptions, not follow-up references to a prior exchange.
  */
 const CONVERSATIONAL_PATTERNS = [
   /^is\s+this\s+(normal|okay|ok|common|expected|dangerous|serious|bad|good)/i,
@@ -27,7 +30,9 @@ const CONVERSATIONAL_PATTERNS = [
   /^(thanks?|thank you|ok|okay|i see|got it|understood|makes sense|wow|oh|really)[,.]?\s*(but|so|what|why|how|is|can)?\b/i,
   /^(can you|could you|please)\s+(explain|tell me|help me|elaborate)/i,
   /^(tell me more|more info|more details|explain)/i,
-  /^(she|he|it|my cat)\s+(does|did|is|was|seems?|looks?|sounds?|keeps?|keeps on|always|never|usually|sometimes)\b/i,
+  // Only match bare pronouns (she/he/it) as back-references — NOT "my cat is/does"
+  // which is always a new behavior description, not a conversational follow-up.
+  /^(she|he|it)\s+(does|did|is|was|seems?|looks?|sounds?|keeps?|keeps on|always|never|usually|sometimes)\b/i,
 ];
 
 /** True when the current message is a conversational reference rather than a new behavior description. */
@@ -591,6 +596,81 @@ Answer the owner's question directly based on the conversation above. Factor in 
             'Observe if pupils normalize before resuming gentle chin scratches.',
           ],
     };
+  }
+
+  /**
+   * Extract structured BehaviorLog entries from a completed AI decode.
+   *
+   * When the behavior decoder has already produced a `BehaviorAnalysis` result,
+   * we derive the log entries directly from the AI's own `catState` and confidence
+   * — no second AI call needed. For conversational replies (no structured analysis)
+   * we fall back to a lightweight deterministic mapping.
+   *
+   * Returns an array of `ExtractedBehavior`-shaped objects ready to persist.
+   */
+  extractFromDecodeResult(
+    userMessage: string,
+    decodeResult: DecoderResponse,
+  ): Array<{
+    behaviorType: string;
+    intensity: 'mild' | 'moderate' | 'severe';
+    description: string;
+    context?: string;
+    confidence: number;
+  }> {
+    if (decodeResult.type === 'analysis') {
+      const { catState, decodedMeaning, confidenceScore, actionPlan } = decodeResult.analysis;
+
+      // Map the AI's catState enum → our stored behavior type vocabulary
+      const stateToType: Record<string, string> = {
+        'Happy/Relaxed': 'affectionate',
+        'Anxious/Stressed': 'anxious',
+        'Playful': 'playful',
+        'Aggressive/Defensive': 'aggressive',
+        'Overstimulated': 'aggressive',
+        'Sick/In Pain': 'lethargic',
+        'Unknown': 'vocalization',
+      };
+
+      const behaviorType = stateToType[catState] ?? 'vocalization';
+
+      // Derive intensity from confidence score + state severity
+      const severeStates = new Set(['Aggressive/Defensive', 'Overstimulated', 'Sick/In Pain']);
+      const moderateStates = new Set(['Anxious/Stressed']);
+      let intensity: 'mild' | 'moderate' | 'severe' = 'mild';
+      if (severeStates.has(catState)) {
+        intensity = confidenceScore >= 0.5 ? 'severe' : 'moderate';
+      } else if (moderateStates.has(catState)) {
+        intensity = confidenceScore >= 0.6 ? 'moderate' : 'mild';
+      }
+
+      // Build context string from action plan keywords
+      const contextParts: string[] = [];
+      const lowerMsg = userMessage.toLowerCase();
+      if (/morn|dawn|early|wak/i.test(lowerMsg)) contextParts.push('morning');
+      if (/afternoon|midday|day/i.test(lowerMsg)) contextParts.push('afternoon');
+      if (/evening|dusk|sunset/i.test(lowerMsg)) contextParts.push('evening');
+      if (/night|midnight|\d+am/i.test(lowerMsg)) contextParts.push('night');
+      if (/food|eat|meal|fed|feed/i.test(lowerMsg)) contextParts.push('feeding');
+      if (/play|toy|game/i.test(lowerMsg)) contextParts.push('playing');
+      if (/noise|vacuum|thunder|firework|stranger|visitor/i.test(lowerMsg)) contextParts.push('stress');
+      // Also pick up context clues from the action plan
+      for (const step of (actionPlan ?? [])) {
+        if (/vet|veterinarian/i.test(step)) contextParts.push('health concern');
+        if (/stress|anxiety/i.test(step)) contextParts.push('anxiety trigger');
+      }
+
+      return [{
+        behaviorType,
+        intensity,
+        description: decodedMeaning ?? userMessage,
+        context: contextParts.length > 0 ? [...new Set(contextParts)].join(', ') : undefined,
+        confidence: confidenceScore ?? 0.5,
+      }];
+    }
+
+    // For conversational/clarifying replies — nothing substantive to log
+    return [];
   }
 }
 

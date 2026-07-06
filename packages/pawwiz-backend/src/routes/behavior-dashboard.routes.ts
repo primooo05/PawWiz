@@ -9,6 +9,7 @@ import {
   getBehaviorPatterns,
   getDailyTimeline,
   getInsights,
+  getBehaviorTrend,
 } from '../controllers/behavior-dashboard.controller.js';
 
 const router = Router();
@@ -24,5 +25,8 @@ router.get('/timeline', getDailyTimeline);
 
 /** GET /api/behavior/dashboard/insights */
 router.get('/insights', getInsights);
+
+/** GET /api/behavior/dashboard/trend?days=7|30|all */
+router.get('/trend', getBehaviorTrend);
 
 export default router;

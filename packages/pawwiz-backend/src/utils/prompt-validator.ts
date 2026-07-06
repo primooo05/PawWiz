@@ -169,6 +169,19 @@ const ALREADY_SPECIFIC_MARKERS = [
   'vet', 'moved', 'guests', 'alone',
   // physical degree (high specificity, rarely in opening questions)
   'loudly', 'softly', 'gently', 'obsessively', 'barely', 'stopped',
+  // temporal change markers — indicate a specific behavioral shift, not a thin opener
+  'suddenly', 'all of a sudden', 'out of nowhere', 'just started', 'started to',
+  'recently', 'lately', 'today', 'yesterday', 'now but', 'but now', 'used to',
+  'anymore', 'no longer', 'still', 'keeps', 'keeps on',
+  // frequency + situational triggers — "every time X", "whenever X"
+  'every time', 'everytime', 'whenever', 'each time', 'every morning',
+  'every night', 'when i come', 'when i get', 'when i return', 'when i arrive',
+  'when i leave', 'when i wake', 'when i feed', 'when i pick',
+  'return from', 'come home', 'get home', 'arrive home',
+  // compound behavioral descriptions (two behaviors = enough detail)
+  'but also', 'and then', 'and bites', 'but bites', 'then bites',
+  'and scratches', 'but scratches', 'and hisses', 'but hisses',
+  'and attacks', 'but attacks',
 ];
 
 /**

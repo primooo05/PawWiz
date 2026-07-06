@@ -32,6 +32,7 @@ export const behaviorSchema = z.object({
   vocalDescription: z.string().min(1),
   bodyLanguageSigns: z.array(z.string()).nonempty(),
   context: z.string().min(1),
+  chatId: z.string().optional(),
   conversationHistory: z.array(
     z.object({
       role: z.enum(['user', 'wiz']),

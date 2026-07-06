@@ -312,6 +312,7 @@ export function useBehaviorChat(catId?: string | null | undefined) {
             context: parsed.context,
             conversationHistory: recentMessages.length > 0 ? recentMessages : undefined,
             catContext: catContext ?? undefined,
+            chatId: activeSessionId,
           }),
         });
 

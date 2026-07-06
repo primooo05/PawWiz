@@ -39,11 +39,28 @@ export const addMessage = withErrorHandling(async (req: Request, res: Response) 
   const chatId = req.params.id as string;
   const { speaker, text, analysis } = req.body;
 
+  // When a Wiz message arrives with a full analysis payload, reconstruct a
+  // DecoderResponse so the service can extract BehaviorLog entries from the
+  // AI's own classification (catState, confidence, decodedMeaning) rather than
+  // re-running keyword matching on the formatted response text.
+  let decodeResult: import('../services/behavior-decoder.service.js').DecoderResponse | undefined;
+  if (speaker === 'wiz' && analysis && analysis.catState) {
+    decodeResult = {
+      type: 'analysis' as const,
+      analysis: {
+        ...analysis,
+        // Ensure userMessage is threaded through for context extraction
+        userMessage: analysis.userMessage ?? text,
+      },
+    };
+  }
+
   const message = await behaviorChatService.addMessage(supabaseUserId, {
     chatId,
     speaker,
     text,
     analysis: analysis || null,
+    decodeResult,
   });
 
   res.status(201).json(message);
@@ -64,4 +81,16 @@ export const deleteChat = withErrorHandling(async (req: Request, res: Response) 
   const chatId = req.params.id as string;
   await behaviorChatService.deleteChat(supabaseUserId, chatId);
   res.status(204).send();
+});
+
+/**
+ * POST /api/behavior/backfill-logs
+ * One-shot backfill: scans all existing Wiz messages with a full analysis
+ * payload and writes missing BehaviorLog entries for them.
+ * Idempotent — already-logged messages are skipped.
+ */
+export const backfillBehaviorLogs = withErrorHandling(async (req: Request, res: Response) => {
+  const supabaseUserId = (req as any).user?.sub as string;
+  const result = await behaviorChatService.backfillBehaviorLogs(supabaseUserId);
+  res.json(result);
 });
