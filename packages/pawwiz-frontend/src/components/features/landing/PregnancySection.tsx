@@ -100,7 +100,7 @@ export default function PregnancySection() {
         
         {/* Left Column: Typography, Indented Stats, and Buttons */}
         <div className="space-y-8 text-left">
-          {/* Eyebrow tag (Editorial Japanese-minimalist style) */}
+          {/* Eyebrow tag */}
           <div className="reveal-item stagger-1 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-[#2ec4b6] rotate-45 flex-shrink-0" />
             <span className="text-[10px] font-black tracking-[0.25em] text-[#2ec4b6] uppercase">
@@ -108,18 +108,18 @@ export default function PregnancySection() {
             </span>
           </div>
 
-          {/* Heading with inline custom SVG paw icon */}
+          {/* Heading */}
           <h3 className="reveal-item stagger-2 text-4xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight flex items-center gap-2">
-            <span>Monitor your Cat Pregnancy</span>
+            <span>Your Cat is Expecting. Now What?</span>
             <PlainPawIcon className="w-6 h-6 text-[#2ec4b6] flex-shrink-0 align-middle inline" />
           </h3>
 
           {/* Paragraph description */}
           <p className="reveal-item stagger-3 text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
-            From mating to kittening, monitor and track every stage of your cat's pregnancy with a prep guide! Calculate progress, track milestones, and receive tailored warnings.
+            Most cat owners discover their cat is pregnant too late to prepare. PawWiz tracks every week — from the first day of mating to the moment kittens arrive — with a tailored action guide for each stage. No more guessing.
           </p>
 
-          {/* Horizontal stat row (Indented slightly for genuine asymmetry) */}
+          {/* Horizontal stat row */}
           <div className="reveal-item stagger-4 flex items-center gap-6 border-y border-slate-200/50 py-4 max-w-md ml-4 md:ml-6">
             <div className="flex-1">
               <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">63–67 days</span>
@@ -127,13 +127,13 @@ export default function PregnancySection() {
             </div>
             <div className="w-[1px] h-8 bg-slate-200" />
             <div className="flex-1">
-              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">9 weeks total</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Total Time</span>
+              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">9 weekly stages</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Tracked for you</span>
             </div>
             <div className="w-[1px] h-8 bg-slate-200" />
             <div className="flex-1">
-              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">1–6 kittens avg</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Average Litter</span>
+              <span className="text-lg md:text-xl font-sans font-black text-slate-900 tracking-tight tabular-nums block">Per-week guide</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Action checklist</span>
             </div>
           </div>
 
@@ -147,13 +147,13 @@ export default function PregnancySection() {
               className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-8 py-3.5 rounded-full text-xs tracking-widest transition-all duration-100
                 shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer"
             >
-              GET STARTED
+              TRACK MY CAT'S PREGNANCY
             </button>
             <button
               onClick={open}
               className="bg-transparent hover:bg-slate-100 border border-slate-200 text-slate-900 font-extrabold px-6 py-3.5 rounded-full text-xs tracking-widest transition-all hover:-translate-y-0.5 flex items-center gap-2"
             >
-              <span>See weekly milestones</span>
+              <span>What happens each week?</span>
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>

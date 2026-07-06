@@ -39,7 +39,7 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
         }
       `}</style>
 
-      {/* Main Title & Subtitle styled to match other sections */}
+      {/* Main Title & Subtitle */}
       <div className="space-y-5 text-center mb-10">
         <div className="reveal-item stagger-1 flex items-center justify-center gap-2">
           <span className="w-1.5 h-1.5 bg-[#2ec4b6] rotate-45 flex-shrink-0" />
@@ -48,10 +48,10 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
           </span>
         </div>
         <h2 className="reveal-item stagger-2 text-4xl md:text-6xl font-black text-slate-900 leading-tight tracking-tight uppercase max-w-3xl mx-auto">
-          WHY IS MY CAT LIKE THIS?
+          What Is Your Cat Actually Telling You?
         </h2>
         <p className="reveal-item stagger-3 text-sm md:text-base text-slate-500 leading-relaxed max-w-2xl mx-auto font-medium">
-          Ask "why does my cat do X?" — get a vet-informed explanation tailored to your cat's age, breed, and profile. From dead mouse gifts to 3 AM zoomies.
+          That slow blink, the 3 AM sprint, the chirp at the window — they all mean something. PawWiz's AI companion Wiz interprets your cat's body language and vocalizations in real time, logs the patterns over weeks, and tells you when something has changed. Google can explain cat behavior in general. Wiz knows <em>your</em> cat.
         </p>
       </div>
 
@@ -62,20 +62,20 @@ export default function BehaviorSection({ apiBase }: BehaviorSectionProps) {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-4 md:space-y-6 max-w-md">
             <span className="inline-block text-[10px] font-black tracking-widest text-[#e9c46a] uppercase bg-white/10 px-3 py-1 rounded-full border border-white/10">
-              Behavior Decoder Tool
+              Behavior Decoder + Memory
             </span>
             <h3 className="text-xl md:text-2xl font-extrabold uppercase tracking-tight leading-tight">
-              Decode Actions Instantly
+              Patterns You'd Never Notice Yourself
             </h3>
             <p className="text-xs md:text-sm text-white/90 leading-relaxed font-light">
-              Submit vocalizations, body posture, and context to get a vet-informed analysis of your pet's state.
+              Wiz doesn't just answer one question — it remembers. Every behavior you log gets tracked over time, so when your cat starts hiding more or grooming less, you'll know before it becomes a vet visit.
             </p>
             <button
               onClick={() => setIsOpen(true)}
               className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-5 py-3 rounded-xl text-xs tracking-wider transition-all duration-100
                 shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] cursor-pointer"
             >
-              GET TO KNOW YOUR CAT BETTER
+              MEET WIZ — DECODE YOUR CAT
             </button>
           </div>
 
