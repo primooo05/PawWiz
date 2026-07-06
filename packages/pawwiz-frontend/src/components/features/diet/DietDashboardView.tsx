@@ -3,7 +3,6 @@ import { getFelineFeedingGuideDetails } from '../../../hooks/features/useDietRec
 import type { MealLog, CatProfile } from '../../../hooks/features/useDietRecommender';
 import type { FoodType, MealUnit } from '../../../lib/foods';
 import ConfirmationDialog from '../../ui/modals/ConfirmationDialog';
-import { useNavigate } from 'react-router-dom';
 import { Sparkles, CheckCircle2, Calendar } from 'lucide-react';
 
 import MealsTracker from './sub-components/MealsTracker';
@@ -66,7 +65,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
     displayName,
     onEditProfile,
 }) => {
-    const navigate = useNavigate();
     const [isAskAiOpen, setIsAskAiOpen] = useState(false);
     const [wizPrefillQuestion, setWizPrefillQuestion] = useState<string | undefined>(undefined);
 
@@ -262,7 +260,6 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     <AnimatedAvatarGroup
                         avatars={avatarDataList}
                         onAvatarClick={(id) => switchProfile(id)}
-                        onAddClick={() => navigate('/settings')}
                     />
                 </div>
             </div>
