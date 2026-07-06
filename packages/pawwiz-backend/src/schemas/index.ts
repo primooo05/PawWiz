@@ -38,6 +38,14 @@ export const behaviorSchema = z.object({
       content: z.string(),
     })
   ).max(6).optional(),
+  catContext: z.object({
+    name: z.string().min(1),
+    sex: z.string().optional(),
+    lifeStage: z.string().optional(),
+    breed: z.string().nullable().optional(),
+    age: z.number().nullable().optional(),
+    catId: z.string().nullable().optional(),
+  }).optional(),
 });
 
 export const dietAdviceSchema = z.object({

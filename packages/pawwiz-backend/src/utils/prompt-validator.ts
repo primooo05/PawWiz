@@ -360,3 +360,89 @@ export function checkInappropriate(userMessage: string): { isInappropriate: bool
 
   return { isInappropriate: false, reason: '' };
 }
+
+// ─── Off-topic detection ─────────────────────────────────────────────────────
+// Patterns indicating the user is asking about something completely unrelated
+// to cats, animals, or pet behavior.
+
+const OFF_TOPIC_PATTERNS: RegExp[] = [
+  // Programming / CS topics
+  /\b(reverse|implement|write|code|debug|fix)\s+(a\s+)?(linked\s*list|array|function|algorithm|program|script|loop|class|binary\s*tree|hash\s*map|stack|queue)/i,
+  /\b(javascript|python|java|typescript|c\+\+|rust|golang|ruby|php|swift|kotlin|html|css|sql|react|angular|vue|node\.?js|assembly|c#|perl|bash|powershell|haskell|scala|lua|matlab)\b/i,
+  /\b(compile|runtime|syntax\s*error|segfault|null\s*pointer|stack\s*overflow|recursion|fibonacci|sorting|big[\s\-]?o|api|endpoint|database|deploy|docker|kubernetes)\b/i,
+  /\b(git|github|merge\s*conflict|pull\s*request|commit|branch|repo)\b/i,
+  // "print/output/log hello world" or "hello world in <language>"
+  /\b(print|output|log|display|echo)\s+.{0,20}hello\s*world/i,
+  /\bhello\s*world\s+in\s+\w/i,
+  // Generic programming constructs
+  /\b(for\s+loop|while\s+loop|if\s+else|try\s+catch|switch\s+case|variable|pointer|constructor|destructor|inheritance|polymorphism|encapsulation)\b/i,
+  // Building / creating tech products (website, app, bot, etc.)
+  /\b(help|how\s+to|how\s+do\s+i|can\s+you)\s+.{0,30}(build|create|make|design|develop|code|deploy)\s+.{0,20}(website|web\s*site|app|application|server|bot|program|software|platform|landing\s*page)/i,
+  /\b(help)\s+.{0,10}(with)\s+.{0,20}(website|web\s*site|app|project|homework|assignment|code|coding|programming)/i,
+
+  // Math / Science (not biology/vet-related)
+  /\b(solve|calculate|derive|integrate|differentiate|equation|formula|theorem|proof|matrix|algebra|calculus|geometry|trigonometry)\b/i,
+  /\b(quantum|physics|chemistry|molecule|electron|proton|neutron|photon|wavelength)\b/i,
+  /\bwhat\s+is\s+\d+\s*[\+\-\*\/x×÷]\s*\d+/i,
+
+  // General knowledge / trivia unrelated to animals
+  /\b(capital\s+of|president\s+of|who\s+invented|when\s+was.*founded|world\s+war|history\s+of)\b/i,
+  /\b(recipe|cook|bake|ingredient|restaurant|movie|film|song|album|book|novel|author)\b/i,
+  /\b(stock\s*market|bitcoin|crypto|investment|mortgage|loan|tax|salary)\b/i,
+  /\b(translate|translation|how\s+do\s+you\s+say)\b/i,
+
+  // Weather / travel / sports (not pet-related)
+  /\b(weather\s+in|forecast\s+for|flight\s+to|hotel\s+in|score\s+of|who\s+won.*game|world\s+cup|super\s*bowl|nba|nfl|fifa)\b/i,
+
+  // Work / office / school tasks
+  /\b(my\s+boss|my\s+manager|my\s+teacher|my\s+professor|my\s+client)\s+(wants|asked|needs|told)/i,
+  /\b(homework|assignment|essay|thesis|presentation|report|meeting|deadline|interview)\b/i,
+];
+
+/** Cute fallback responses for off-topic messages — rotated for variety. */
+const OFF_TOPIC_RESPONSES = [
+  "Meow? 🐾 I'm flattered you'd ask, but I'm only fluent in cat! I specialize in decoding feline behavior — try telling me what your cat is up to instead.",
+  "Hmm, that's outside my whisker range! 😸 I'm Wiz — I decode cat behavior, not linked lists. Tell me about your cat's latest antics and I'll work my magic.",
+  "I appreciate the challenge, but I'm strictly a cat behavior specialist! 🐱 My neurons are trained on purrs, not Python. What's your kitty doing right now?",
+  "Ooh, interesting question — but I'm just a cat whisperer! 🐾 I can decode meows, zoomies, and slow blinks. Anything your feline friend is up to?",
+  "I'd love to help, but my expertise stops at the scratching post! 😹 Ask me about your cat's behavior and I'll give you the real scoop.",
+];
+
+export interface OffTopicResult {
+  isOffTopic: boolean;
+  response: string;
+  suggestedPrompts: string[];
+}
+
+/**
+ * Detects messages that are clearly unrelated to cats, animals, or pet behavior.
+ * Returns a playful redirect when the user asks programming questions, math,
+ * general knowledge, etc.
+ */
+export function checkOffTopic(userMessage: string, catName?: string): OffTopicResult {
+  const trimmed = userMessage.trim();
+
+  // Short messages (< 3 words) that pass through other filters aren't off-topic
+  if (trimmed.split(/\s+/).length < 3) {
+    return { isOffTopic: false, response: '', suggestedPrompts: [] };
+  }
+
+  const isOff = OFF_TOPIC_PATTERNS.some((re) => re.test(trimmed));
+
+  if (!isOff) {
+    return { isOffTopic: false, response: '', suggestedPrompts: [] };
+  }
+
+  // Pick a random playful response
+  const response = OFF_TOPIC_RESPONSES[Math.floor(Math.random() * OFF_TOPIC_RESPONSES.length)];
+
+  const name = catName || 'your cat';
+  const suggestedPrompts = [
+    `${name} is meowing loudly at night`,
+    `${name} keeps kneading and purring`,
+    `${name} is hiding and seems scared`,
+    `${name} is chirping at birds through the window`,
+  ];
+
+  return { isOffTopic: true, response, suggestedPrompts };
+}

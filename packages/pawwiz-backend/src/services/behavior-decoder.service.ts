@@ -9,9 +9,9 @@
 import { Type } from '@google/genai';
 import { groqClient } from '../repositories/groq.repository.js';
 import { geminiClient } from '../repositories/gemini.repository.js';
-import { validatePrompt, checkInappropriate, isGreeting, generateFollowUp } from '../utils/prompt-validator.js';
+import { validatePrompt, checkInappropriate, checkOffTopic, isGreeting, generateFollowUp } from '../utils/prompt-validator.js';
 import { logger } from '../utils/winston.js';
-import type { BehaviorDecodeRequest, BehaviorDecodeResponse, ConversationalReply } from '../types/shared.js';
+import type { BehaviorDecodeRequest, BehaviorDecodeResponse, ConversationalReply, EnrichedBehaviorCatContext } from '../types/shared.js';
 
 /**
  * Patterns that indicate the current message is a conversational follow-up
@@ -127,17 +127,48 @@ class BehaviorDecoderService {
    */
   async decode(request: BehaviorDecodeRequest): Promise<DecoderResponse> {
     // Handle greetings with a friendly Wiz reply — no behavior analysis needed.
+    // When cat context is available, personalize the greeting with the cat's name and details.
     if (isGreeting(request.vocalDescription)) {
       logger.info('[BehaviorDecoder] Greeting detected — returning friendly response');
+      const ctx = request.catContext as EnrichedBehaviorCatContext | undefined;
+
+      let greeting: string;
+      const defaultSuggestions = [
+        'My cat is meowing loudly at night',
+        'My cat keeps kneading and purring',
+        'My cat is hiding and seems scared',
+        'My cat is chirping at birds through the window',
+      ];
+
+      if (ctx?.name) {
+        // Build a personalized greeting that shows we know the cat
+        let details = `I can see you have ${ctx.name}`;
+        if (ctx.breed) details += ` (${ctx.breed})`;
+        details += ` — a${ctx.sex === 'female' ? ' female' : ' male'} ${ctx.lifeStage ?? 'adult'}`;
+        if (ctx.age) details += `, ${ctx.age} ${ctx.lifeStage === 'kitten' ? 'months' : 'years'} old`;
+        details += '.';
+
+        // Add pregnancy awareness
+        if (ctx.isPregnant && ctx.gestationWeek) {
+          details += ` I also see ${ctx.name} is currently pregnant (week ${ctx.gestationWeek}) — I'll factor that into any behavior analysis!`;
+        }
+
+        greeting = `Hey! 👋 ${details} Tell me what ${ctx.name} is up to — describe any vocalizations, body language, or behavior you're curious about and I'll decode it for you.`;
+      } else {
+        greeting = "Hey! 👋 Great to meet you! I'm Wiz, your cat behavior specialist. Tell me what your cat is up to — describe their vocalizations, body language, or any behavior you're curious about and I'll decode it for you.";
+      }
+
       return {
         type: 'clarifying',
-        question: "Hey! 👋 Great to meet you! I'm Wiz, your cat behavior specialist. Tell me what your cat is up to — describe their vocalizations, body language, or any behavior you're curious about and I'll decode it for you.",
-        suggestedPrompts: [
-          'My cat is meowing loudly at night',
-          'My cat keeps kneading and purring',
-          'My cat is hiding and seems scared',
-          'My cat is chirping at birds through the window',
-        ],
+        question: greeting,
+        suggestedPrompts: ctx?.name
+          ? [
+              `${ctx.name} is meowing loudly at night`,
+              `${ctx.name} keeps kneading and purring`,
+              `${ctx.name} is hiding and seems scared`,
+              `${ctx.name} is chirping at birds through the window`,
+            ]
+          : defaultSuggestions,
       };
     }
 
@@ -221,6 +252,20 @@ class BehaviorDecoderService {
           'My cat is playing with toys',
           'My cat seems restless today',
         ],
+      };
+    }
+
+    // Check for off-topic messages (programming, math, general knowledge, etc.)
+    const catName = (request.catContext as EnrichedBehaviorCatContext | undefined)?.name;
+    const offTopic = checkOffTopic(request.vocalDescription, catName);
+    if (offTopic.isOffTopic) {
+      logger.info('[BehaviorDecoder] Off-topic message detected — returning playful redirect', {
+        vocalDescription: request.vocalDescription,
+      });
+      return {
+        type: 'clarifying',
+        question: offTopic.response,
+        suggestedPrompts: offTopic.suggestedPrompts,
       };
     }
 
@@ -323,13 +368,59 @@ class BehaviorDecoderService {
   /**
    * Build the behavior decode prompt from request data.
    * Includes cat profile context when provided for personalised decoding.
+   * When an EnrichedBehaviorCatContext is available (diet + pregnancy data),
+   * includes those details so the AI can factor in nutritional state, pregnancy
+   * stage, and physical condition into its behavioral analysis.
    * Includes conversation history when present so the AI can answer follow-ups
    * in context. Shared across all AI providers.
    */
   private buildPrompt(request: BehaviorDecodeRequest): string {
-    const catSection = request.catContext
-      ? `\nCat profile: ${request.catContext.name}${request.catContext.breed ? ` (${request.catContext.breed})` : ''}, ${request.catContext.sex ?? 'unknown sex'}, ${request.catContext.lifeStage ?? 'adult'}${request.catContext.age ? `, ${request.catContext.age} ${request.catContext.lifeStage === 'kitten' ? 'months' : 'years'} old` : ''}.\n`
-      : '';
+    const ctx = request.catContext as EnrichedBehaviorCatContext | undefined;
+
+    let catSection = '';
+    if (ctx) {
+      // Basic identity
+      catSection = `\nCat profile: ${ctx.name}`;
+      if (ctx.breed) catSection += ` (${ctx.breed})`;
+      catSection += `, ${ctx.sex ?? 'unknown sex'}, ${ctx.lifeStage ?? 'adult'}`;
+      if (ctx.age) catSection += `, ${ctx.age} ${ctx.lifeStage === 'kitten' ? 'months' : 'years'} old`;
+
+      // Physical condition (from diet profile)
+      if (ctx.weight) {
+        catSection += `, weight: ${ctx.weight}${ctx.isKg ? 'kg' : 'lbs'}`;
+      }
+      if (ctx.isSpayedNeutered !== undefined) {
+        catSection += `, ${ctx.isSpayedNeutered ? 'spayed/neutered' : 'intact (not spayed/neutered)'}`;
+      }
+      catSection += '.';
+
+      // Diet context
+      if (ctx.foodPreference || ctx.recentMealPattern || ctx.waterIntake !== undefined) {
+        catSection += '\nDiet info:';
+        if (ctx.foodPreference) catSection += ` food preference: ${ctx.foodPreference}.`;
+        if (ctx.recentMealPattern) catSection += ` ${ctx.recentMealPattern}.`;
+        if (ctx.waterIntake !== undefined && ctx.waterIntake !== null) {
+          catSection += ` Water intake today: ${ctx.waterIntake}ml.`;
+        }
+      }
+
+      // Pregnancy context (critical for behavior interpretation)
+      if (ctx.isPregnant && ctx.gestationWeek) {
+        catSection += `\n⚠️ PREGNANT — Week ${ctx.gestationWeek}/9-10 (day ${ctx.daysPregnant}).`;
+        if (ctx.pregnancySymptoms && ctx.pregnancySymptoms.length > 0) {
+          catSection += ` Recent symptoms: ${ctx.pregnancySymptoms.join(', ')}.`;
+        }
+        if (ctx.pregnancyMood && ctx.pregnancyMood.length > 0) {
+          catSection += ` Recent mood/behavior from pregnancy log: ${ctx.pregnancyMood.join(', ')}.`;
+        }
+        if (ctx.pregnancyAppetite) catSection += ` Appetite: ${ctx.pregnancyAppetite}.`;
+        if (ctx.pregnancyEnergy) catSection += ` Energy: ${ctx.pregnancyEnergy}.`;
+      } else if (ctx.isInHeat) {
+        catSection += '\nNote: This is an intact female who may be in or near a heat cycle.';
+      }
+
+      catSection += '\n';
+    }
 
     const historySection =
       request.conversationHistory && request.conversationHistory.length > 0
@@ -343,7 +434,7 @@ Current message: ${request.vocalDescription}
 Body Language Signs: ${request.bodyLanguageSigns.join(', ')}
 Context: ${request.context}
 
-${historySection ? 'Use the conversation history above to answer follow-up questions in context. ' : ''}${catSection ? `Use the cat profile above to personalise your analysis (e.g. kitten vs. senior behaviours differ). ` : ''}Analyze vocal signals, tail position, eye dilation, and ear positions. Return a detailed behavior decode response as JSON with these fields:
+${historySection ? 'Use the conversation history above to answer follow-up questions in context. ' : ''}${catSection ? `Use the cat profile above to personalise your analysis. Factor in the cat's physical condition, diet status, and reproductive state (pregnancy/heat) when interpreting behavior — these significantly affect feline mood, energy, and vocalization patterns. ` : ''}Analyze vocal signals, tail position, eye dilation, and ear positions. Return a detailed behavior decode response as JSON with these fields:
 - vocalAnalysis (string): Analysis of the vocal signals
 - bodyLanguageAnalysis (string): Analysis of the body language
 - decodedMeaning (string): Overall interpretation of the behavior
@@ -356,12 +447,34 @@ ${historySection ? 'Use the conversation history above to answer follow-up quest
    * Build a plain-text conversational prompt for follow-up questions.
    * Strips markdown formatting from Wiz history so the AI reasons against
    * clean text rather than its own rendering syntax.
-   * Includes cat context when provided for personalised answers.
+   * Includes enriched cat context when provided for personalised answers.
    */
   private buildConversationalPrompt(request: BehaviorDecodeRequest): string {
-    const catLine = request.catContext
-      ? `\nCat: ${request.catContext.name}${request.catContext.breed ? ` (${request.catContext.breed})` : ''}, ${request.catContext.sex ?? 'unknown sex'}, ${request.catContext.lifeStage ?? 'adult'}${request.catContext.age ? `, ${request.catContext.age} ${request.catContext.lifeStage === 'kitten' ? 'months' : 'years'} old` : ''}.\n`
-      : '';
+    const ctx = request.catContext as EnrichedBehaviorCatContext | undefined;
+
+    let catLine = '';
+    if (ctx) {
+      catLine = `\nCat: ${ctx.name}`;
+      if (ctx.breed) catLine += ` (${ctx.breed})`;
+      catLine += `, ${ctx.sex ?? 'unknown sex'}, ${ctx.lifeStage ?? 'adult'}`;
+      if (ctx.age) catLine += `, ${ctx.age} ${ctx.lifeStage === 'kitten' ? 'months' : 'years'} old`;
+      if (ctx.weight) catLine += `, ${ctx.weight}${ctx.isKg ? 'kg' : 'lbs'}`;
+      if (ctx.isSpayedNeutered !== undefined) {
+        catLine += ctx.isSpayedNeutered ? ', spayed/neutered' : ', intact';
+      }
+      catLine += '.';
+
+      if (ctx.isPregnant && ctx.gestationWeek) {
+        catLine += ` Currently pregnant (week ${ctx.gestationWeek}).`;
+        if (ctx.pregnancyMood && ctx.pregnancyMood.length > 0) {
+          catLine += ` Recent mood: ${ctx.pregnancyMood.join(', ')}.`;
+        }
+      }
+      if (ctx.recentMealPattern) {
+        catLine += ` Diet: ${ctx.recentMealPattern}.`;
+      }
+      catLine += '\n';
+    }
 
     const history = (request.conversationHistory ?? [])
       .map((t) => {
@@ -376,7 +489,7 @@ ${history}
 
 Owner's new message: ${request.vocalDescription}
 
-Answer the owner's question directly based on the conversation above. Be warm, concise, and practical.`;
+Answer the owner's question directly based on the conversation above. Factor in the cat's health profile (diet, weight, reproductive state) when relevant. Be warm, concise, and practical.`;
   }
 
   /**
