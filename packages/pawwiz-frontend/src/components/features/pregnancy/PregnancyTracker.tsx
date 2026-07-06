@@ -51,6 +51,9 @@ const CatPregnancyTracker: React.FC = () => {
         }
     }, [femaleRoster.length, activeProfileIsFemale, selectedCatId]);
 
+    const selectedCat = femaleRoster.find(c => c.id === selectedCatId);
+    const selectedCatName = selectedCat ? selectedCat.name : (profile?.catName || 'Your Cat');
+
     // ── Backend session ──────────────────────────────────────────────────────
     const catIdForApi = selectedCatId && selectedCatId !== 'primary' ? selectedCatId : null;
     const pregnancy = useCatPregnancy(catIdForApi);
@@ -214,6 +217,7 @@ const CatPregnancyTracker: React.FC = () => {
                         </div>
 
                         <DashboardView
+                            catName={selectedCatName}
                             setIsTracking={setIsTracking}
                             currentDay={currentDay}
                             daysRemaining={daysRemaining}

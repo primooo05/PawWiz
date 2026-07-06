@@ -39,6 +39,7 @@ interface DashboardViewProps {
     todayStr: string;
     todayLog: DailyLog;
     todayLoggable: boolean;
+    catName: string;
 
     // Derived values from parent/hook
     elapsedDayForSelected?: number | null;
@@ -78,12 +79,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     hasVetWarningForSelected = false,
     hasNauseaInEarlyWeeksForSelected = false,
     loggedToday = false,
+    catName,
 }) => {
     const [isWeightPickerOpen, setIsWeightPickerOpen] = useState(false);
     const [isEduExpanded, setIsEduExpanded] = useState(true);
     const [isConfirmEditOpen, setIsConfirmEditOpen] = useState(false);
 
-    const { profiles, activeProfileId, switchProfile, catName } = useDietRecommender();
+    const { profiles, activeProfileId, switchProfile } = useDietRecommender();
     const { profile } = useProfilePanel();
 
     const pregnancyGreeting = getTimeGreeting(
@@ -184,6 +186,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-x-12 gap-y-8 items-stretch flex-grow w-full">
                 {/* LEFT COLUMN: Molly's Cycle (Soft UI) */}
                 <CycleProgressCard
+                    catName={catName}
                     progressPercentage={progressPercentage}
                     currentWeek={currentWeek}
                     currentDay={currentDay}
