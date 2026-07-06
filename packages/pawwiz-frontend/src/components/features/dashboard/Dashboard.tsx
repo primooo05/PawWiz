@@ -9,7 +9,7 @@ import { CircleWrapper } from '../../ui/CircleWrapper';
 import { StackedBarChart, DonutChartLabeled, LineChart } from './charts/Charts';
 import { Activity, Apple, Heart, BarChart3, Droplet, Stethoscope } from 'lucide-react';
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
-import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker.js';
+import { useCatPregnancy } from '../../../hooks/features/useCatPregnancy.js';
 import { useDietRecommender, getAgeBracketInfo } from '../../../hooks/features/useDietRecommender';
 import { useBehaviorDashboard } from '../../../hooks/features/useBehaviorDashboard';
 import { getTimeGreeting } from '../../../utils/greeting';
@@ -64,8 +64,8 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile } = useProfilePanel();
-  const pregnancy = usePregnancyTracker();
   const diet = useDietRecommender();
+  const pregnancy = useCatPregnancy(diet.activeProfile?.catId ?? null);
   const behaviorDashboard = useBehaviorDashboard(diet.activeProfile?.catId ?? null);
 
   const [stats, setStats] = useState<DashboardStats>({});
@@ -317,10 +317,16 @@ const Dashboard: React.FC = () => {
       healthStatus: stats.behavior?.healthStatus || 'healthy',
     },
     pregnancy: {
-      isPregnant: pregnancy.isTracking,
-      weeksAlong: pregnancy.currentWeek,
-      estimatedDelivery: pregnancy.dueDateString,
-      currentStage: pregnancy.isTracking ? `Week ${pregnancy.currentWeek}` : 'Not tracking',
+      isPregnant: pregnancy.hasActiveSession,
+      weeksAlong: pregnancy.session?.gestationWeek,
+      estimatedDelivery: pregnancy.session
+        ? new Date(pregnancy.session.expectedDeliveryDate).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : undefined,
+      currentStage: pregnancy.session ? `Week ${pregnancy.session.gestationWeek}` : 'Not tracking',
       lastUpdate: stats.pregnancy?.lastUpdate,
     },
   };
@@ -657,7 +663,7 @@ const Dashboard: React.FC = () => {
               </div>
 
               {/* Pregnancy Tracker Card (only if pregnancy is being tracked) */}
-              {pregnancy.isTracking && (
+              {pregnancy.hasActiveSession && (
               <div
                 onClick={() => navigate('/pregnancy-tracker')}
                 className="snap-center shrink-0 w-[82%] sm:w-[58%] md:w-auto cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1 rounded-3xl"
@@ -736,7 +742,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Pregnancy & Insights Section (only if pregnancy is being tracked) */}
-          {pregnancy.isTracking && (
+          {pregnancy.hasActiveSession && (
             <div className="mt-16">
               <div className="border-l-4 border-[#1a1a1a] pl-4 mb-6">
                 <h2 className="text-2xl md:text-3xl font-black tracking-wider flex items-center gap-3">
@@ -753,7 +759,7 @@ const Dashboard: React.FC = () => {
                       Gestation Timeline
                     </h3>
                     <span className="text-xs font-black text-[#555]">
-                      {pregnancy.isTracking ? `Day ${pregnancy.currentDay} / 65` : 'Not tracking'}
+                      {pregnancy.hasActiveSession ? `Day ${pregnancy.session!.daysPregnant} / 65` : 'Not tracking'}
                     </span>
                   </div>
 
@@ -765,10 +771,10 @@ const Dashboard: React.FC = () => {
                       { label: 'Nesting', day: 50 },
                       { label: 'Birth', day: 65 },
                     ].map((step, idx, arr) => {
-                      const reached = pregnancy.currentDay >= step.day;
+                      const reached = (pregnancy.session?.daysPregnant ?? 0) >= step.day;
                       const isActive =
-                        pregnancy.currentDay >= step.day &&
-                        (idx === arr.length - 1 || pregnancy.currentDay < arr[idx + 1].day);
+                        (pregnancy.session?.daysPregnant ?? 0) >= step.day &&
+                        (idx === arr.length - 1 || (pregnancy.session?.daysPregnant ?? 0) < arr[idx + 1].day);
                       return (
                         <div key={step.label} className="flex-1 text-center relative">
                           {idx < arr.length - 1 && (
@@ -791,12 +797,12 @@ const Dashboard: React.FC = () => {
                   <div className="mt-6 bg-[#f5f5f0] border-3 border-[#1a1a1a] rounded-full h-4 overflow-hidden">
                     <div
                       className="h-full bg-[#30c290] border-r-2 border-[#1a1a1a] transition-all"
-                      style={{ width: `${Math.min(100, Math.max(0, pregnancy.progressPercentage))}%` }}
+                      style={{ width: `${Math.min(100, Math.max(0, (pregnancy.session?.daysPregnant ?? 0) / 65 * 100))}%` }}
                     />
                   </div>
                   <p className="text-xs font-black mt-2 text-right">
-                    {Math.round(pregnancy.progressPercentage)}% COMPLETE
-                    {pregnancy.isTracking ? ` · ${pregnancy.daysRemaining} DAYS LEFT` : ''}
+                    {Math.round((pregnancy.session?.daysPregnant ?? 0) / 65 * 100)}% COMPLETE
+                    {pregnancy.hasActiveSession ? ` · ${pregnancy.session!.daysRemaining} DAYS LEFT` : ''}
                   </p>
 
                   <button
@@ -822,7 +828,7 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-3 border-t-2 border-[#1a1a1a] pt-4">
-                    {pregnancy.currentWeek >= 7 ? (
+                    {(pregnancy.session?.gestationWeek ?? 0) >= 7 ? (
                       <p className="text-sm font-bold">→ Prepare a quiet birthing box in a warm, private spot</p>
                     ) : (
                       <p className="text-sm font-bold">→ Schedule a vet checkup to confirm pregnancy and litter size</p>
