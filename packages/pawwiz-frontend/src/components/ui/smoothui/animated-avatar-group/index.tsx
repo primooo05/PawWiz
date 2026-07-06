@@ -192,14 +192,15 @@ const AnimatedAvatarGroup = ({
                 </div>
               )}
 
-              {/* Status dot (e.g. "logged today") */}
-              {avatar.statusDot && (
+              {/* Status dot (e.g. "logged today" or active profile indicator) */}
+              {(avatar.statusDot || avatar.isActive) && (
                 <div
                   className={cn(
                     "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm z-[101] pointer-events-none",
-                    avatar.statusDot === 'green' ? 'bg-emerald-400' : 'bg-amber-400'
+                    avatar.statusDot === 'green' ? 'bg-emerald-400' :
+                    avatar.statusDot === 'amber' ? 'bg-amber-400' : 'bg-[#FFB870]'
                   )}
-                  aria-label={avatar.statusDot === 'green' ? 'Logged today' : 'Not logged yet'}
+                  aria-label={avatar.statusDot ? (avatar.statusDot === 'green' ? 'Logged today' : 'Not logged yet') : 'Active profile'}
                 />
               )}
 
