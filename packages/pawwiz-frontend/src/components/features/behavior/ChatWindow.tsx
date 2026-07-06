@@ -351,9 +351,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                   <div className="text-left">{renderMessageText(msg.text)}</div>
                 )}
 
-                <span className="text-[9px] text-slate-400 block mt-1.5 text-right">
-                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                <div className="flex items-center justify-end gap-1.5 mt-1.5">
+                  {/* Confidence badge — only on Wiz analysis bubbles */}
+                  {isWiz && msg.analysis && (
+                    <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
+                      msg.analysis.confidenceScore >= 0.7
+                        ? 'bg-emerald-100 text-emerald-600'
+                        : msg.analysis.confidenceScore >= 0.4
+                        ? 'bg-amber-100 text-amber-600'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {Math.round(msg.analysis.confidenceScore * 100)}% confidence
+                    </span>
+                  )}
+                  <span className="text-[9px] text-slate-400">
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
               </div>
             </div>
 

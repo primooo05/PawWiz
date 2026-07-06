@@ -20,12 +20,15 @@ export interface ChatSession {
   messages: ChatMessage[];
 }
 
-export function useBehaviorChat(catId?: string | null) {
+export function useBehaviorChat(catId?: string | null | undefined) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
+  // Tracks which session ID is currently having its title resolved from the backend.
+  // The sidebar renders a skeleton shimmer on that session's title while this is set.
+  const [titleLoadingSessionId, setTitleLoadingSessionId] = useState<string | null>(null);
   const msgIdCounter = useRef(1);
   // Tracks the last user message text per session — used to detect duplicate sends.
   const lastUserTextRef = useRef<string>('');
@@ -46,6 +49,11 @@ export function useBehaviorChat(catId?: string | null) {
 
   // ─── Load chats from backend on mount / when catId changes ─────────────────
   useEffect(() => {
+    // catId === undefined means profiles haven't loaded yet — skip to avoid
+    // creating orphan chats with catId=null that then disappear when the real
+    // catId arrives. Only fetch when catId is explicitly null or a real string.
+    if (catId === undefined) return;
+
     let active = true;
     // Reset session list immediately so stale chats from the previous cat
     // don't flash while the new cat's chats are loading.
@@ -161,6 +169,30 @@ export function useBehaviorChat(catId?: string | null) {
     }
   };
 
+  /**
+   * Fetch the backend-generated title for a chat session and apply it to state.
+   * Called after the first user message is sent so the RAKE-extracted title
+   * (computed server-side) replaces the optimistic raw-text title shown in the sidebar.
+   */
+  const fetchAndApplyTitle = async (chatId: string) => {
+    try {
+      setTitleLoadingSessionId(chatId);
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/api/behavior/chats/${chatId}`, { headers });
+      if (!res.ok) return;
+      const chat = await res.json();
+      if (chat?.title) {
+        setSessions((prev) =>
+          prev.map((s) => s.id === chatId ? { ...s, title: chat.title } : s)
+        );
+      }
+    } catch {
+      // Silent — optimistic title stays
+    } finally {
+      setTitleLoadingSessionId(null);
+    }
+  };
+
   // ─── Local session fallback ─────────────────────────────────────────────────
   const createLocalSession = (): ChatSession => ({
     id: `local-session-${Date.now()}`,
@@ -231,13 +263,19 @@ export function useBehaviorChat(catId?: string | null) {
         timestamp: new Date(),
       };
 
-      // Optimistic UI update
+      // Optimistic UI update — use raw text as placeholder title on first message.
+      // The backend runs RAKE keyword extraction server-side; we'll fetch the
+      // real title back once the AI response arrives.
+      const isFirstUserMessage =
+        sessions.find((s) => s.id === activeSessionId)
+          ?.messages.filter((m) => m.speaker === 'user').length === 0;
+
       setSessions((prev) =>
         prev.map((s) =>
           s.id === activeSessionId
             ? {
                 ...s,
-                title: s.messages.filter((m) => m.speaker === 'user').length === 0
+                title: isFirstUserMessage
                   ? trimmed.slice(0, 40) + (trimmed.length > 40 ? '…' : '')
                   : s.title,
                 messages: [...s.messages, userMsg],
@@ -335,6 +373,12 @@ export function useBehaviorChat(catId?: string | null) {
 
         // Persist Wiz response to server
         saveMessageToServer(activeSessionId, 'wiz', wizText, analysis);
+
+        // On the first exchange, fetch the RAKE-extracted title from the backend
+        // and apply it — replaces the optimistic raw-text placeholder in the sidebar.
+        if (isFirstUserMessage) {
+          fetchAndApplyTitle(activeSessionId);
+        }
       } catch {
         const errorMsg: ChatMessage = {
           id: generateLocalId(),
@@ -417,6 +461,7 @@ export function useBehaviorChat(catId?: string | null) {
     createNewSession,
     deleteSession,
     isInitialized,
+    titleLoadingSessionId,
   };
 }
 
@@ -467,9 +512,10 @@ function formatAnalysisResponse(data: BehaviorDecodeResponse): string {
   };
 
   const emoji = stateEmoji[data.catState] || '🐱';
-  const confidence = Math.round(data.confidenceScore * 100);
 
-  let response = `${emoji} **${data.catState}** (${confidence}% confidence)\n\n`;
+  // Confidence is no longer embedded in the message text — it's rendered
+  // in the bubble footer alongside the timestamp in ChatWindow.
+  let response = `${emoji} **${data.catState}**\n\n`;
   response += `${data.decodedMeaning}\n\n`;
   response += `**What to do:**\n`;
   data.actionPlan.forEach((action) => {

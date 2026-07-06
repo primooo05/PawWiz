@@ -82,6 +82,26 @@ export interface BehaviorCatContext {
   lifeStage?: string; // 'kitten' | 'adult' | 'senior'
   breed?: string | null;
   age?: number | null; // years (or months for kittens)
+  catId?: string | null; // DB cat ID — when present, backend enriches with diet + pregnancy data
+}
+
+/** Enriched cat context assembled server-side with diet + pregnancy data. */
+export interface EnrichedBehaviorCatContext extends BehaviorCatContext {
+  weight?: number | null;
+  isKg?: boolean;
+  isSpayedNeutered?: boolean;
+  foodPreference?: string | null;
+  waterIntake?: number | null;       // ml today
+  mealsLoggedToday?: number;
+  recentMealPattern?: string | null; // e.g. "2/3 meals logged, mostly wet food"
+  isPregnant?: boolean;
+  gestationWeek?: number | null;     // 1-10 if pregnant
+  daysPregnant?: number | null;
+  pregnancySymptoms?: string[];      // recent symptoms from pregnancy log
+  pregnancyMood?: string[];          // recent mood/behavior from pregnancy log
+  pregnancyAppetite?: string | null;
+  pregnancyEnergy?: string | null;
+  isInHeat?: boolean;                // relevant for unspayed females
 }
 
 export interface BehaviorDecodeRequest {

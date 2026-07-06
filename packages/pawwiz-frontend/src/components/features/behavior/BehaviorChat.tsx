@@ -24,7 +24,10 @@ export const BehaviorChat: React.FC = () => {
   const selectedCat = profiles.find((p) => p.id === effectiveCatId) ?? profiles[0];
 
   // The Cat DB id (from cats table) — used to scope behavior chats per cat.
-  const selectedCatDbId = selectedCat?.catId ?? null;
+  // Pass `undefined` while profiles are still loading to prevent premature
+  // chat fetches that would query with catId=null and create orphaned sessions.
+  const profilesReady = profiles.length > 0;
+  const selectedCatDbId = profilesReady ? (selectedCat?.catId ?? null) : undefined;
 
   const {
     sessions,
@@ -38,6 +41,7 @@ export const BehaviorChat: React.FC = () => {
     createNewSession,
     deleteSession,
     isInitialized,
+    titleLoadingSessionId,
   } = useBehaviorChat(selectedCatDbId);
 
   // Build a BehaviorCatContext snapshot from the selected diet profile
@@ -48,6 +52,7 @@ export const BehaviorChat: React.FC = () => {
         lifeStage: selectedCat.lifeStage,
         breed: selectedCat.breed ?? null,
         age: selectedCat.age,
+        catId: selectedCatDbId,
       }
     : undefined;
 
@@ -134,6 +139,7 @@ export const BehaviorChat: React.FC = () => {
           isOpen={isSidebarOpen}
           onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
           isLoading={isInitialLoading}
+          titleLoadingSessionId={titleLoadingSessionId}
         />
 
         {/* Center Panel: Chat Window */}

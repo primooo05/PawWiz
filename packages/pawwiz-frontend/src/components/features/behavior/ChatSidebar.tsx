@@ -10,6 +10,8 @@ interface ChatSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   isLoading?: boolean;
+  /** Session ID whose title is being fetched from the backend — shows shimmer. */
+  titleLoadingSessionId?: string | null;
 }
 
 // ─── Skeleton Components ─────────────────────────────────────────────────────
@@ -40,6 +42,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   isOpen,
   onToggle,
   isLoading = false,
+  titleLoadingSessionId = null,
 }) => {
   return (
     <>
@@ -108,12 +111,16 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         </svg>
                       </div>
 
-                      {/* Title */}
-                      <span className={`text-xs font-bold truncate flex-1 ${
-                        isActive ? 'text-white' : 'text-white/75'
-                      }`}>
-                        {session.title}
-                      </span>
+                      {/* Title — shimmer while backend title is loading */}
+                      {titleLoadingSessionId === session.id ? (
+                        <span className="flex-1 h-3 rounded-full bg-white/30 animate-pulse" />
+                      ) : (
+                        <span className={`text-xs font-bold truncate flex-1 ${
+                          isActive ? 'text-white' : 'text-white/75'
+                        }`}>
+                          {session.title}
+                        </span>
+                      )}
 
                       {/* Options / delete */}
                       <button
