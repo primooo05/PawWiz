@@ -279,9 +279,11 @@ export const useDietRecommender = () => {
             }
         });
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (active) {
+        // Listen for auth changes — skip INITIAL_SESSION since getSession() above
+        // already handles the first load. Without this guard, both fire on page
+        // load and trigger a duplicate set of backend requests.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (active && event !== 'INITIAL_SESSION') {
                 if (session) {
                     loadFromBackend(session);
                 } else {
