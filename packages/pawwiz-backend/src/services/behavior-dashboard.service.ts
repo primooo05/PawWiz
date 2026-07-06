@@ -55,7 +55,9 @@ class BehaviorDashboardService {
    * Get weekly behavior summary with daily breakdowns
    */
   async getWeeklySummary(supabaseUserId: string, catId?: string): Promise<WeeklySummary> {
+    console.log('[BehaviorDashboard] getWeeklySummary — userId:', supabaseUserId, 'catId:', catId);
     const logs = await getBehaviorLogsForUser(supabaseUserId, catId, 7);
+    console.log('[BehaviorDashboard] getWeeklySummary — logs fetched:', logs.length);
 
     if (logs.length === 0) {
       return {
@@ -99,8 +101,8 @@ class BehaviorDashboardService {
       });
     }
 
-    // Get overall top behaviors
-    const behaviorFreq = await getBehaviorTypeFrequency(supabaseUserId, 7);
+    // Get overall top behaviors — scoped to cat when catId is provided
+    const behaviorFreq = await getBehaviorTypeFrequency(supabaseUserId, 7, catId);
     const topBehaviors = behaviorFreq
       .map(item => ({ type: item.type, count: item.count }))
       .sort((a, b) => b.count - a.count)
@@ -143,11 +145,9 @@ class BehaviorDashboardService {
     catId?: string,
     days: number = 7
   ): Promise<BehaviorPattern[]> {
-    // Single fetch — logs are ordered newest-first by the repository. All
-    // per-type aggregation (frequency, intensity breakdown, contexts) is derived
-    // in memory, eliminating the previous N+1 (one query per behavior type plus
-    // a redundant re-fetch inside the loop).
+    console.log('[BehaviorDashboard] getBehaviorPatterns — userId:', supabaseUserId, 'catId:', catId, 'days:', days);
     const logs = await getBehaviorLogsForUser(supabaseUserId, catId, days);
+    console.log('[BehaviorDashboard] getBehaviorPatterns — logs fetched:', logs.length);
 
     const grouped = new Map<string, {
       frequency: number;
@@ -294,6 +294,7 @@ class BehaviorDashboardService {
     const BEHAVIOR_COLORS: Record<string, string> = {
       playful: '#4ECDC4',
       affectionate: '#FF6B35',
+      vocal: '#8b5cf6',
       vocalization: '#8b5cf6',
       anxious: '#F98080',
       aggressive: '#b91c1c',

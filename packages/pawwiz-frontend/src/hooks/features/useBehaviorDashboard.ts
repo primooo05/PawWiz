@@ -53,6 +53,7 @@ export function useBehaviorDashboard(catId?: string | null): UseBehaviorDashboar
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    console.log('[useBehaviorDashboard] fetchData triggered — catId:', catId);
     setIsLoading(true);
     setError(null);
     try {
@@ -79,9 +80,11 @@ export function useBehaviorDashboard(catId?: string | null): UseBehaviorDashboar
       if (!patternsRes.ok) throw new Error(`Patterns fetch failed: ${patternsRes.statusText}`);
 
       const weekData = await weekRes.json() as WeeklySummary;
+      console.log('[useBehaviorDashboard] weeklySummary — topBehaviors:', weekData.topBehaviors, 'days:', weekData.days.length);
       setWeeklySummary(weekData);
 
       const patternData = await patternsRes.json() as BehaviorPattern[];
+      console.log('[useBehaviorDashboard] patterns returned:', patternData.length, patternData.map(p => p.type + ':' + p.frequency));
       setPatterns(patternData);
 
       // Real per-bucket trend data — fall back to empty on error so the chart
