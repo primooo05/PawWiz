@@ -1,0 +1,893 @@
+[
+  {
+    "group": "Core / Identity",
+    "color": "#2ec4b6",
+    "models": [
+      {
+        "name": "Profile",
+        "table": "profiles",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "supabaseUserId",
+            "type": "String",
+            "flag": "UNIQUE"
+          },
+          {
+            "name": "displayName",
+            "type": "String"
+          },
+          {
+            "name": "catName",
+            "type": "String"
+          },
+          {
+            "name": "catBreed",
+            "type": "String?"
+          },
+          {
+            "name": "catMarking",
+            "type": "String?"
+          },
+          {
+            "name": "catSex",
+            "type": "String"
+          },
+          {
+            "name": "catLifeStage",
+            "type": "String"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "DietProfile",
+            "cardinality": "1:N",
+            "label": "dietProfiles"
+          },
+          {
+            "to": "Cat",
+            "cardinality": "1:N",
+            "label": "cats"
+          }
+        ]
+      },
+      {
+        "name": "OnboardingSession",
+        "table": "onboarding_sessions",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "step",
+            "type": "Int"
+          },
+          {
+            "name": "ownerName",
+            "type": "String?"
+          },
+          {
+            "name": "ownerEmail",
+            "type": "String?",
+            "flag": "IDX"
+          },
+          {
+            "name": "otpHash",
+            "type": "String?"
+          },
+          {
+            "name": "otpExpiresAt",
+            "type": "DateTime?"
+          },
+          {
+            "name": "otpVerified",
+            "type": "Boolean"
+          },
+          {
+            "name": "otpLastSentAt",
+            "type": "DateTime?"
+          },
+          {
+            "name": "otpAttempts",
+            "type": "Int"
+          },
+          {
+            "name": "catsCount",
+            "type": "String?"
+          },
+          {
+            "name": "customCatsCount",
+            "type": "String?"
+          },
+          {
+            "name": "catName",
+            "type": "String?"
+          },
+          {
+            "name": "catBreed",
+            "type": "String?"
+          },
+          {
+            "name": "catMarking",
+            "type": "String?"
+          },
+          {
+            "name": "catSex",
+            "type": "String?"
+          },
+          {
+            "name": "catLifeStage",
+            "type": "String?"
+          },
+          {
+            "name": "consumedAt",
+            "type": "DateTime?"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "Cat",
+            "cardinality": "1:N",
+            "label": "cats"
+          }
+        ]
+      },
+      {
+        "name": "Cat",
+        "table": "cats",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "profileId",
+            "type": "String?",
+            "flag": "FK"
+          },
+          {
+            "name": "name",
+            "type": "String"
+          },
+          {
+            "name": "breed",
+            "type": "String?"
+          },
+          {
+            "name": "marking",
+            "type": "String?"
+          },
+          {
+            "name": "sex",
+            "type": "String"
+          },
+          {
+            "name": "lifeStage",
+            "type": "String"
+          },
+          {
+            "name": "age",
+            "type": "Int?"
+          },
+          {
+            "name": "photoUrl",
+            "type": "String?"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "onboardingSessionId",
+            "type": "String?",
+            "flag": "FK"
+          }
+        ],
+        "relations": [
+          {
+            "to": "Profile",
+            "cardinality": "N:1",
+            "label": "profile"
+          },
+          {
+            "to": "DietProfile",
+            "cardinality": "1:N",
+            "label": "dietProfiles"
+          },
+          {
+            "to": "OnboardingSession",
+            "cardinality": "N:1",
+            "label": "onboardingSession"
+          },
+          {
+            "to": "HealthTimelineInsight",
+            "cardinality": "1:N",
+            "label": "healthTimelineInsights"
+          },
+          {
+            "to": "PregnancySession",
+            "cardinality": "1:N",
+            "label": "pregnancySessions"
+          },
+          {
+            "to": "BehaviorChat",
+            "cardinality": "1:N",
+            "label": "behaviorChats"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "group": "Diet Tracking",
+    "color": "#e9c46a",
+    "models": [
+      {
+        "name": "DietProfile",
+        "table": "diet_profiles",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "profileId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "catId",
+            "type": "String?",
+            "flag": "FK"
+          },
+          {
+            "name": "weight",
+            "type": "Float"
+          },
+          {
+            "name": "isKg",
+            "type": "Boolean"
+          },
+          {
+            "name": "foodPreference",
+            "type": "String"
+          },
+          {
+            "name": "isSpayedNeutered",
+            "type": "Boolean"
+          },
+          {
+            "name": "isTracking",
+            "type": "Boolean"
+          },
+          {
+            "name": "waterIntake",
+            "type": "Int"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "Profile",
+            "cardinality": "N:1",
+            "label": "profile"
+          },
+          {
+            "to": "Cat",
+            "cardinality": "N:1",
+            "label": "cat"
+          },
+          {
+            "to": "DietMealLog",
+            "cardinality": "1:N",
+            "label": "mealLogs"
+          }
+        ]
+      },
+      {
+        "name": "DietMealLog",
+        "table": "diet_meal_logs",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "dietProfileId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "mealName",
+            "type": "String"
+          },
+          {
+            "name": "foodType",
+            "type": "String?"
+          },
+          {
+            "name": "amount",
+            "type": "Float?"
+          },
+          {
+            "name": "unit",
+            "type": "String?"
+          },
+          {
+            "name": "kcal",
+            "type": "Float?"
+          },
+          {
+            "name": "status",
+            "type": "String"
+          },
+          {
+            "name": "timestamp",
+            "type": "String?"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime",
+            "flag": "IDX"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "DietProfile",
+            "cardinality": "N:1",
+            "label": "dietProfile"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "group": "Content Lookup",
+    "color": "#0f172a",
+    "models": [
+      {
+        "name": "Plant",
+        "table": "plants",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "commonName",
+            "type": "String",
+            "flag": "IDX"
+          },
+          {
+            "name": "scientificName",
+            "type": "String",
+            "flag": "UNIQUE"
+          },
+          {
+            "name": "toxicityStatus",
+            "type": "String"
+          },
+          {
+            "name": "severity",
+            "type": "String?"
+          },
+          {
+            "name": "clinicalSigns",
+            "type": "String[]"
+          },
+          {
+            "name": "source",
+            "type": "String"
+          },
+          {
+            "name": "mediaUrl",
+            "type": "String?"
+          },
+          {
+            "name": "perenualId",
+            "type": "String?"
+          },
+          {
+            "name": "physicalDescription",
+            "type": "String?"
+          },
+          {
+            "name": "cachedAt",
+            "type": "DateTime?"
+          },
+          {
+            "name": "lastVerifiedAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "//",
+            "type": "B-tree"
+          },
+          {
+            "name": "//",
+            "type": "below"
+          },
+          {
+            "name": "//",
+            "type": "used"
+          }
+        ],
+        "relations": []
+      }
+    ]
+  },
+  {
+    "group": "Behavior Decoder",
+    "color": "#0f172a",
+    "models": [
+      {
+        "name": "BehaviorChat",
+        "table": "behavior_chats",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "supabaseUserId",
+            "type": "String",
+            "flag": "IDX"
+          },
+          {
+            "name": "catId",
+            "type": "String?",
+            "flag": "FK"
+          },
+          {
+            "name": "title",
+            "type": "String"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "Cat",
+            "cardinality": "N:1",
+            "label": "cat"
+          },
+          {
+            "to": "BehaviorMessage",
+            "cardinality": "1:N",
+            "label": "messages"
+          },
+          {
+            "to": "BehaviorLog",
+            "cardinality": "1:N",
+            "label": "behaviorLogs"
+          }
+        ]
+      },
+      {
+        "name": "BehaviorMessage",
+        "table": "behavior_messages",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "chatId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "speaker",
+            "type": "String"
+          },
+          {
+            "name": "text",
+            "type": "String"
+          },
+          {
+            "name": "analysis",
+            "type": "Json?"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "BehaviorChat",
+            "cardinality": "N:1",
+            "label": "chat"
+          }
+        ]
+      },
+      {
+        "name": "BehaviorLog",
+        "table": "behavior_logs",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "chatId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "supabaseUserId",
+            "type": "String",
+            "flag": "IDX"
+          },
+          {
+            "name": "catId",
+            "type": "String?",
+            "flag": "IDX"
+          },
+          {
+            "name": "behaviorType",
+            "type": "String",
+            "flag": "IDX"
+          },
+          {
+            "name": "intensity",
+            "type": "String"
+          },
+          {
+            "name": "description",
+            "type": "String"
+          },
+          {
+            "name": "context",
+            "type": "String?"
+          },
+          {
+            "name": "extractedFrom",
+            "type": "String"
+          },
+          {
+            "name": "confidence",
+            "type": "Float"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime",
+            "flag": "IDX"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "BehaviorChat",
+            "cardinality": "N:1",
+            "label": "chat"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "group": "Health Timeline",
+    "color": "#2ec4b6",
+    "models": [
+      {
+        "name": "HealthTimelineInsight",
+        "table": "health_timeline_insights",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "catId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "type",
+            "type": "String",
+            "flag": "UNIQUE"
+          },
+          {
+            "name": "summary",
+            "type": "String"
+          },
+          {
+            "name": "detail",
+            "type": "String"
+          },
+          {
+            "name": "severity",
+            "type": "InsightSeverity"
+          },
+          {
+            "name": "eventIds",
+            "type": "Json"
+          },
+          {
+            "name": "source",
+            "type": "String"
+          },
+          {
+            "name": "generatedAt",
+            "type": "DateTime",
+            "flag": "UNIQUE"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "Cat",
+            "cardinality": "N:1",
+            "label": "cat"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "group": "Pregnancy Tracker",
+    "color": "#e9c46a",
+    "models": [
+      {
+        "name": "PregnancySession",
+        "table": "pregnancy_sessions",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "catId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "matingDate",
+            "type": "DateTime"
+          },
+          {
+            "name": "status",
+            "type": "String",
+            "flag": "IDX"
+          },
+          {
+            "name": "expectedDeliveryDate",
+            "type": "DateTime"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "Cat",
+            "cardinality": "N:1",
+            "label": "cat"
+          },
+          {
+            "to": "PregnancyLog",
+            "cardinality": "1:N",
+            "label": "pregnancyLogs"
+          },
+          {
+            "to": "PregnancyInsight",
+            "cardinality": "1:N",
+            "label": "pregnancyInsights"
+          }
+        ]
+      },
+      {
+        "name": "PregnancyLog",
+        "table": "pregnancy_logs",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "pregnancySessionId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "//",
+            "type": "──"
+          },
+          {
+            "name": "symptoms",
+            "type": "String[]"
+          },
+          {
+            "name": "moodBehavior",
+            "type": "String[]"
+          },
+          {
+            "name": "appetiteLevel",
+            "type": "String?"
+          },
+          {
+            "name": "energyLevel",
+            "type": "String?"
+          },
+          {
+            "name": "nestingObserved",
+            "type": "Boolean"
+          },
+          {
+            "name": "//",
+            "type": "──"
+          },
+          {
+            "name": "weight",
+            "type": "Float?"
+          },
+          {
+            "name": "temp",
+            "type": "Float?"
+          },
+          {
+            "name": "//",
+            "type": "──"
+          },
+          {
+            "name": "gestationWeek",
+            "type": "Int",
+            "flag": "IDX"
+          },
+          {
+            "name": "//",
+            "type": "──"
+          },
+          {
+            "name": "notes",
+            "type": "String?"
+          },
+          {
+            "name": "logDate",
+            "type": "DateTime"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          },
+          {
+            "name": "updatedAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "PregnancySession",
+            "cardinality": "N:1",
+            "label": "pregnancySession"
+          }
+        ]
+      },
+      {
+        "name": "PregnancyInsight",
+        "table": "pregnancy_insights",
+        "fields": [
+          {
+            "name": "id",
+            "type": "String",
+            "flag": "PK"
+          },
+          {
+            "name": "pregnancySessionId",
+            "type": "String",
+            "flag": "FK"
+          },
+          {
+            "name": "insightType",
+            "type": "String"
+          },
+          {
+            "name": "title",
+            "type": "String"
+          },
+          {
+            "name": "body",
+            "type": "String"
+          },
+          {
+            "name": "gestationWeek",
+            "type": "Int"
+          },
+          {
+            "name": "isRead",
+            "type": "Boolean",
+            "flag": "IDX"
+          },
+          {
+            "name": "createdAt",
+            "type": "DateTime"
+          }
+        ],
+        "relations": [
+          {
+            "to": "PregnancySession",
+            "cardinality": "N:1",
+            "label": "pregnancySession"
+          }
+        ]
+      }
+    ]
+  }
+]
