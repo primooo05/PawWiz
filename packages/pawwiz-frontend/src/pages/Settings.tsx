@@ -28,11 +28,13 @@ function CatAvatarTrigger({
     photoUrl,
     catName,
     onUploadSuccess,
+    variant = 'circle',
 }: {
     catProfileId: string;
     photoUrl?: string | null;
     catName: string;
     onUploadSuccess: (url: string) => void;
+    variant?: 'circle' | 'card';
 }) {
     const [supabaseUserId, setSupabaseUserId] = useState<string>('');
 
@@ -53,6 +55,57 @@ function CatAvatarTrigger({
             onUploadSuccess(url);
         }
     );
+
+    if (variant === 'card') {
+        return (
+            <div className="relative group w-full aspect-[4/3] rounded-2xl border-2 border-slate-900 bg-white flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:bg-slate-50 focus-within:ring-2 focus-within:ring-[#30c290] focus-within:ring-offset-2">
+                <button
+                    type="button"
+                    onClick={triggerUpload}
+                    disabled={uploading}
+                    aria-label={`Upload photo for ${catName}`}
+                    className="absolute inset-0 w-full h-full bg-transparent border-none cursor-pointer focus:outline-none z-10"
+                />
+                {uploading ? (
+                    <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin z-20" />
+                ) : photoUrl ? (
+                    <img src={photoUrl} alt={catName} className="w-full h-full object-cover z-0" />
+                ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-400 p-4 z-20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2 text-slate-500">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                        </svg>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Add Photo</span>
+                    </div>
+                )}
+                {/* Camera overlay on hover */}
+                {!uploading && (
+                    <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                            <circle cx="12" cy="13" r="3" />
+                        </svg>
+                    </div>
+                )}
+                {/* Hidden file input */}
+                <input
+                    ref={inputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    aria-hidden="true"
+                />
+                {/* Error tooltip */}
+                {error && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md whitespace-nowrap z-30">
+                        {error}
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="relative group shrink-0">
@@ -118,6 +171,15 @@ export default function Settings() {
     const [catToDelete, setCatToDelete] = useState<{ id: string; name: string } | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; catId: string } | null>(null);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
+    const [expandedCatId, setExpandedCatId] = useState<string | null>(null);
+    const [hoveredCatId, setHoveredCatId] = useState<string | null>(null);
+
+    // Default expand to first profile if loaded
+    useEffect(() => {
+        if (profiles.length > 0 && !expandedCatId) {
+            setExpandedCatId(profiles[0].id);
+        }
+    }, [profiles]);
 
     useEffect(() => {
         if (toast && toast.show) {
@@ -227,19 +289,19 @@ export default function Settings() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.state]);
 
-        const handleNavigation = (item: string) => {
+    const handleNavigation = (item: string) => {
         if (item === 'calendar') {
-        navigate('/pregnancy-tracker');
+            navigate('/pregnancy-tracker');
         } else if (item === 'dashboard') {
-        navigate('/dashboard');
+            navigate('/dashboard');
         } else if (item === 'diet-reco') {
-        navigate('/diet-recommender');
+            navigate('/diet-recommender');
         } else if (item === 'behavior') {
-        navigate('/behavior-chat');
+            navigate('/behavior-chat');
         } else if (item === 'settings') {
-        navigate('/settings');
+            navigate('/settings');
         } else if (item === 'plant') {
-        navigate('/');
+            navigate('/');
         }
     };
 
@@ -320,101 +382,161 @@ export default function Settings() {
                     </p>
                 </div>
 
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">Your Cats ({profiles.length})</h2>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
                     {/* Cats List Pane */}
-                    <div className="md:col-span-2 space-y-6">
-                        <div className="bg-white border-2 border-slate-900 rounded-[2rem] p-6 sm:p-8 shadow-[6px_6px_0_0_rgba(15,23,42,1)]">
-                            <h2 className="text-xl font-black mb-4 uppercase tracking-tight text-slate-900">Your Cats ({profiles.length})</h2>
-                            
-                            {profiles.length === 0 ? (
+                    <div className="md:col-span-2">
+                        {profiles.length === 0 ? (
+                            <div className="bg-white border-2 border-slate-900 rounded-[2rem] p-6 sm:p-8 shadow-[6px_6px_0_0_rgba(15,23,42,1)]">
                                 <p className="text-slate-500 italic py-4">No cat profiles found. Click Add Another Cat below to get started.</p>
-                            ) : (
-                                <div className="divide-y-2 divide-slate-100">
-                                    {profiles.map((cat) => {
-                                        const ageText = cat.lifeStage === 'kitten' 
-                                            ? `${cat.age} ${cat.age === 1 ? 'month' : 'months'}` 
-                                            : `${cat.age} ${cat.age === 1 ? 'year' : 'years'}`;
-                                        const weightText = `${cat.weight} ${cat.isKg ? 'kg' : 'lbs'}`;
+                            </div>
+                        ) : (
+                            <div className="flex flex-col pt-6 pb-4 w-full">
+                                {profiles.map((cat, index) => {
+                                    const isExpanded = cat.id === expandedCatId;
+                                    const isHovered = cat.id === hoveredCatId;
 
-                                        return (
-                                            <div key={cat.id} className="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 first:pt-0 last:pb-0">
-                                                <div className="flex items-center gap-4 min-w-0">
-                                                    {/* Avatar with upload trigger */}
-                                                    <CatAvatarTrigger
-                                                        catProfileId={cat.id}
-                                                        photoUrl={cat.photoUrl}
-                                                        catName={cat.name}
-                                                        onUploadSuccess={(url) => {
-                                                            // Update local state with new photo URL
-                                                            const updated = profiles.map(p =>
-                                                                p.id === cat.id ? { ...p, photoUrl: url } : p
-                                                            );
-                                                            // Update localStorage to persist across reloads
-                                                            localStorage.setItem('diet_profiles', JSON.stringify(updated));
-                                                            // Force component re-render by updating cat's photoUrl
-                                                            switchProfile(cat.id);
-                                                        }}
-                                                    />
-                                                    <div className="min-w-0">
-                                                        <h3 className="font-extrabold text-lg text-slate-900 truncate">{cat.name}</h3>
-                                                        <div className="flex flex-wrap gap-2 mt-1">
-                                                            <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-[#15AFB4] font-black text-[10px] uppercase rounded-md">
-                                                                {cat.gender}
-                                                            </span>
-                                                            <span className="px-2 py-0.5 bg-yellow-50 border border-yellow-200 text-yellow-700 font-black text-[10px] uppercase rounded-md">
-                                                                {cat.lifeStage} ({ageText})
-                                                            </span>
-                                                            <span className="px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-600 font-black text-[10px] uppercase rounded-md">
-                                                                {weightText}
-                                                            </span>
-                                                            <span className="px-2 py-0.5 bg-purple-50 border border-purple-200 text-purple-700 font-black text-[10px] uppercase rounded-md">
-                                                                {cat.foodPreference} preference
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            switchProfile(cat.id);
-                                                            navigate('/diet-recommender');
-                                                        }}
-                                                        className="flex-1 sm:flex-none bg-[#30c290] hover:bg-[#39d3c5] text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
-                                                    >
-                                                        Select
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openEditCatForm(cat)}
-                                                        className="flex-1 sm:flex-none bg-white hover:bg-slate-50 text-slate-700 font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-2 border-slate-900 shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCatToDelete({ id: cat.id, name: cat.name })}
-                                                        className="flex-1 sm:flex-none bg-rose-500 hover:bg-rose-600 text-white font-extrabold px-4 py-2 rounded-xl text-xs uppercase tracking-wider border-none shadow-[2px_2px_0_0_#1e293b] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer"
-                                                    >
-                                                        Delete
-                                                    </button>
+                                    const cardColors = [
+                                        { bg: '#FFF4B0', text: '#8A4F00' }, // Yellow-gold
+                                        { bg: '#FFD6D6', text: '#C05C5C' }, // Pastel Pink
+                                        { bg: '#D4EBF7', text: '#2C5E7A' }, // Pastel Blue
+                                        { bg: '#C6F1E6', text: '#1E6F5C' }, // Mint Green
+                                        { bg: '#E5D7FA', text: '#5D4A7A' }, // Pastel Purple
+                                    ];
+                                    const colors = cardColors[index % cardColors.length];
+                                    const zIndex = isExpanded ? 50 : isHovered ? 40 : 10 + index * 10;
+
+                                    const ageText = cat.lifeStage === 'kitten'
+                                        ? `${cat.age} ${cat.age === 1 ? 'month' : 'months'}`
+                                        : `${cat.age} ${cat.age === 1 ? 'year' : 'years'}`;
+                                    const weightText = `${cat.weight} ${cat.isKg ? 'kg' : 'lbs'}`;
+
+                                    return (
+                                        <div
+                                            key={cat.id}
+                                            onMouseEnter={() => setHoveredCatId(cat.id)}
+                                            onMouseLeave={() => setHoveredCatId(null)}
+                                            onClick={() => setExpandedCatId(isExpanded ? null : cat.id)}
+                                            className={`relative flex flex-col transition-all duration-300 ease-out cursor-pointer group w-full
+                                                ${index > 0 ? '-mt-10' : ''}
+                                                ${isExpanded ? 'scale-[1.01]' : 'scale-100'}
+                                                hover:-translate-y-4`}
+                                            style={{ zIndex }}
+                                        >
+                                            {/* Folder Tab */}
+                                            <div className="flex">
+                                                <div
+                                                    className="h-7 px-4 border-t-2 border-x-2 border-slate-900 rounded-t-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors"
+                                                    style={{
+                                                        backgroundColor: colors.bg,
+                                                        borderColor: '#0f172a',
+                                                        color: colors.text,
+                                                    }}
+                                                >
+                                                    {cat.name}
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
 
-                            {!showAddForm && (
-                                <button
-                                    type="button"
-                                    onClick={openAddCatForm}
-                                    className="mt-6 w-full py-4 px-6 rounded-2xl bg-[#FFB870] hover:bg-[#ffc58a] text-slate-900 font-extrabold text-md border-none cursor-pointer transition-all duration-200 shadow-[0_4px_0_0_#1e293b] active:shadow-none active:translate-y-[4px]"
-                                >
-                                    + Add Another Cat
-                                </button>
-                            )}
-                        </div>
+                                            {/* Folder Body */}
+                                            <div
+                                                className="border-2 border-slate-900 rounded-b-2xl rounded-tr-2xl p-4 shadow-[4px_4px_0_0_rgba(15,23,42,1)] flex flex-col gap-3 transition-colors -mt-[2px] w-full"
+                                                style={{
+                                                    backgroundColor: colors.bg,
+                                                }}
+                                            >
+                                                {/* Header: Cat Name, Breed */}
+                                                <div className="flex justify-between items-center gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-black text-slate-900 text-base">
+                                                            {cat.name}
+                                                        </span>
+                                                        <span className="text-[9px] font-black text-slate-500 uppercase px-1.5 py-0.5 bg-white/50 rounded border border-slate-300">
+                                                            {cat.breed || 'Domestic Short'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Expandable Details Container */}
+                                                <motion.div
+                                                    initial={false}
+                                                    animate={{ height: isExpanded ? 'auto' : 0, opacity: isExpanded ? 1 : 0 }}
+                                                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="pt-3 border-t border-slate-900/10 flex flex-col gap-3">
+                                                        {/* Cat Photo Frame - Resized smaller */}
+                                                        <div className="w-full max-w-[200px] mx-auto" onClick={(e) => e.stopPropagation()}>
+                                                            <CatAvatarTrigger
+                                                                catProfileId={cat.id}
+                                                                photoUrl={cat.photoUrl}
+                                                                catName={cat.name}
+                                                                variant="card"
+                                                                onUploadSuccess={(url) => {
+                                                                    const updated = profiles.map(p =>
+                                                                        p.id === cat.id ? { ...p, photoUrl: url } : p
+                                                                    );
+                                                                    localStorage.setItem('diet_profiles', JSON.stringify(updated));
+                                                                    switchProfile(cat.id);
+                                                                }}
+                                                            />
+                                                        </div>
+
+                                                        {/* Spec tags & Action Buttons */}
+                                                        <div className="flex flex-wrap gap-1">
+                                                            <span className="px-1.5 py-0.5 bg-white/70 border border-slate-300 text-slate-700 font-extrabold text-[9px] uppercase rounded">
+                                                                {cat.gender}
+                                                            </span>
+                                                            <span className="px-1.5 py-0.5 bg-white/70 border border-slate-300 text-slate-700 font-extrabold text-[9px] uppercase rounded">
+                                                                {cat.lifeStage} ({ageText})
+                                                            </span>
+                                                            <span className="px-1.5 py-0.5 bg-white/70 border border-slate-300 text-slate-700 font-extrabold text-[9px] uppercase rounded">
+                                                                {weightText}
+                                                            </span>
+                                                            <span className="px-1.5 py-0.5 bg-white/70 border border-slate-300 text-slate-700 font-extrabold text-[9px] uppercase rounded">
+                                                                {cat.foodPreference} Pref
+                                                            </span>
+                                                            <span className="px-1.5 py-0.5 bg-white/70 border border-slate-300 text-slate-700 font-extrabold text-[9px] uppercase rounded">
+                                                                {cat.isTracking ? 'Active' : 'Standby'}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex gap-2 justify-end mt-1" onClick={(e) => e.stopPropagation()}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openEditCatForm(cat)}
+                                                                className="bg-white hover:bg-slate-50 text-slate-700 font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider border-2 border-slate-900 shadow-[1.5px_1.5px_0_0_#0f172a] active:shadow-none active:translate-y-[1.5px] transition-all cursor-pointer"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setCatToDelete({ id: cat.id, name: cat.name })}
+                                                                className="bg-rose-500 hover:bg-rose-600 text-white font-extrabold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider border-2 border-slate-900 shadow-[1.5px_1.5px_0_0_#0f172a] active:shadow-none active:translate-y-[1.5px] transition-all cursor-pointer"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {!showAddForm && (
+                            <button
+                                type="button"
+                                onClick={openAddCatForm}
+                                className="w-full py-4 px-6 rounded-2xl bg-[#FFB870] hover:bg-[#ffc58a] text-slate-900 font-extrabold text-md border-2 border-slate-900 cursor-pointer transition-all duration-200 shadow-[4px_4px_0_0_#0f172a] active:shadow-none active:translate-y-[4px]"
+                            >
+                                + Add Another Cat
+                            </button>
+                        )}
                     </div>
 
                     {/* Quick Stats/Tip Column */}
@@ -422,153 +544,168 @@ export default function Settings() {
                         <div className="bg-[#15AFB4] border-2 border-slate-900 rounded-[2rem] p-6 text-white shadow-[6px_6px_0_0_rgba(15,23,42,1)]">
                             <h3 className="font-black text-lg uppercase mb-2">Multiple Cats?</h3>
                             <p className="text-xs font-semibold leading-relaxed opacity-95">
-                                PawWiz allows you to track diet, guidelines, and meal schedules for multiple cats at once. Switch between profiles seamlessly in the Diet Dashboard!
+                                PawWiz allows you to track diet, guidelines, and meal schedules for multiple cats at once. Switch between profiles seamlessly in every Feature!
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Add Another Cat Form Modal/Accordion */}
-                {showAddForm && (
-                    <div className="mt-8 bg-white border-2 border-slate-900 rounded-[2.5rem] p-8 shadow-[6px_6px_0_0_rgba(15,23,42,1)]">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black uppercase text-slate-900">{editingCatId ? 'Edit Cat Profile' : 'Add Another Cat'}</h2>
-                            <button 
-                                onClick={closeCatForm}
-                                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleAddCatSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6 text-left">
-                            {/* Cat Name */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                    Cat's Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newCatName}
-                                    onChange={(e) => setNewCatName(e.target.value)}
-                                    placeholder="e.g. Aki"
-                                    required
-                                    className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl font-bold text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white"
-                                />
-                            </div>
-
-                            {/* Gender */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                    Gender
-                                </label>
-                                <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewCatGender('male')}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'male' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                    >
-                                        Male
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewCatGender('female')}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'female' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                    >
-                                        Female
-                                    </button>
+                {/* Add Another Cat Form Modal/Accordion as a Folder */}
+                <AnimatePresence>
+                    {showAddForm && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                            exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="flex flex-col overflow-visible"
+                        >
+                            <div className="flex mt-8">
+                                <div className="h-7 px-4 bg-[#FFB870] border-t-2 border-x-2 border-slate-900 rounded-t-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center text-slate-900">
+                                    {editingCatId ? 'Edit Profile' : 'New Cat'}
                                 </div>
                             </div>
-
-                            {/* Life Stage */}
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                    Life Stage
-                                </label>
-                                <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
+                            <div className="bg-white border-2 border-slate-900 rounded-b-2xl rounded-tr-2xl p-8 shadow-[6px_6px_0_0_rgba(15,23,42,1)] -mt-[2px]">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-black uppercase text-slate-900">{editingCatId ? 'Edit Cat Profile' : 'Add Another Cat'}</h2>
                                     <button
-                                        type="button"
-                                        onClick={() => {
-                                            setNewCatLifeStage('kitten');
-                                        }}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'kitten' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                        onClick={closeCatForm}
+                                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer"
                                     >
-                                        Kitten
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setNewCatLifeStage('adult');
-                                        }}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'adult' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                    >
-                                        Adult
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setNewCatLifeStage('senior');
-                                        }}
-                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'senior' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                    >
-                                        Senior
+                                        ✕
                                     </button>
                                 </div>
-                            </div>
 
-                            {/* Breed */}
-                            <div className="flex flex-col space-y-1.5 w-full">
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                    Breed
-                                </label>
-                                <SearchableDropdown
-                                    value={newCatBreed}
-                                    onChange={setNewCatBreed}
-                                    options={breedOptions}
-                                    placeholder="Search breed..."
-                                    loading={breedLoading}
-                                />
-                            </div>
+                                <form onSubmit={handleAddCatSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6 text-left">
+                                    {/* Cat Name */}
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                            Cat's Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newCatName}
+                                            onChange={(e) => setNewCatName(e.target.value)}
+                                            placeholder="e.g. Aki"
+                                            required
+                                            className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-900 rounded-xl font-bold text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white"
+                                        />
+                                    </div>
 
-                            {/* Marking */}
-                            <div className="flex flex-col space-y-1.5 w-full">
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
-                                    Marking
-                                </label>
-                                <SearchableDropdown
-                                    value={newCatMarking}
-                                    onChange={setNewCatMarking}
-                                    options={markingOptions}
-                                    placeholder="Search marking..."
-                                />
-                            </div>
+                                    {/* Gender */}
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                            Gender
+                                        </label>
+                                        <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewCatGender('male')}
+                                                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'male' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                            >
+                                                Male
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewCatGender('female')}
+                                                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatGender === 'female' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                            >
+                                                Female
+                                            </button>
+                                        </div>
+                                    </div>
 
-                            {/* Action Buttons */}
-                            <div className="col-span-1 md:col-span-2 flex justify-end gap-4 pt-4 border-t-2 border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={closeCatForm}
-                                    className="bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider cursor-pointer transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none"
-                                >
-                                    {editingCatId ? 'Save Changes' : 'Confirm'}
-                                </button>
+                                    {/* Life Stage */}
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                            Life Stage
+                                        </label>
+                                        <div className="flex bg-slate-100 rounded-2xl p-1 border border-slate-200 w-fit">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setNewCatLifeStage('kitten');
+                                                }}
+                                                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'kitten' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                            >
+                                                Kitten
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setNewCatLifeStage('adult');
+                                                }}
+                                                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'adult' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                            >
+                                                Adult
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setNewCatLifeStage('senior');
+                                                }}
+                                                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${newCatLifeStage === 'senior' ? 'bg-[#30c290] text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                                            >
+                                                Senior
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Breed */}
+                                    <div className="flex flex-col space-y-1.5 w-full">
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                            Breed
+                                        </label>
+                                        <SearchableDropdown
+                                            value={newCatBreed}
+                                            onChange={setNewCatBreed}
+                                            options={breedOptions}
+                                            placeholder="Search breed..."
+                                            loading={breedLoading}
+                                        />
+                                    </div>
+
+                                    {/* Marking */}
+                                    <div className="flex flex-col space-y-1.5 w-full">
+                                        <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                            Marking
+                                        </label>
+                                        <SearchableDropdown
+                                            value={newCatMarking}
+                                            onChange={setNewCatMarking}
+                                            options={markingOptions}
+                                            placeholder="Search marking..."
+                                        />
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="col-span-1 md:col-span-2 flex justify-end gap-4 pt-4 border-t-2 border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={closeCatForm}
+                                            className="bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-600 font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider cursor-pointer transition-all"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="bg-[#e9c46a] hover:bg-[#f0cc74] text-slate-900 font-extrabold px-6 py-3 rounded-xl text-xs uppercase tracking-wider shadow-[0_4px_0_0_#b8862a] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer border-none"
+                                        >
+                                            {editingCatId ? 'Save Changes' : 'Confirm'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                        </form>
-                    </div>
-                )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Account Section */}
                 <div className="mt-12 border-t-2 border-slate-200 pt-12">
                     <div className="bg-rose-50 border-2 border-rose-200 rounded-[2rem] p-8">
                         <h2 className="text-xl font-black mb-2 uppercase tracking-tight text-slate-900">Account</h2>
                         <p className="text-sm text-slate-600 mb-6">Manage your account settings and preferences</p>
-                        
+
                         <button
                             onClick={() => setShowLogoutConfirm(true)}
                             className="w-full md:w-auto px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-extrabold uppercase tracking-wider rounded-xl border-none shadow-[0_4px_0_0_#b91c1c] active:shadow-none active:translate-y-[4px] transition-all cursor-pointer"
@@ -581,9 +718,9 @@ export default function Settings() {
 
             {/* Bottom Nav */}
             <div className="fixed bottom-5 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-30 flex justify-center px-4 md:px-0">
-                <BottomNav 
-                    activeItem="settings" 
-                    onItemClick={handleNavigation} 
+                <BottomNav
+                    activeItem="settings"
+                    onItemClick={handleNavigation}
                     className="w-full max-w-2xl md:w-auto md:scale-110"
                     hasUntracked={profiles.some(p => !p.isTracking)}
                 />
