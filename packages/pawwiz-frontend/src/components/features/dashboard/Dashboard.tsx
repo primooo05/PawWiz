@@ -66,7 +66,7 @@ const Dashboard: React.FC = () => {
   const { profile } = useProfilePanel();
   const pregnancy = usePregnancyTracker();
   const diet = useDietRecommender();
-  const behaviorDashboard = useBehaviorDashboard(diet.activeProfileId);
+  const behaviorDashboard = useBehaviorDashboard(diet.activeProfile?.catId ?? null);
 
   const [stats, setStats] = useState<DashboardStats>({});
   const [catName, setCatName] = useState<string>('Your Cat');
@@ -433,7 +433,13 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={220} />
+                    <StackedBarChart
+                      labels={behaviorTrend.labels}
+                      series={behaviorTrend.series}
+                      height={220}
+                      yAxisLabel="Occurrences"
+                      xAxisLabel={trendPeriod === '7' ? 'Day of Week' : trendPeriod === '30' ? 'Week' : 'Month'}
+                    />
                   )}
                 </div>
               )}

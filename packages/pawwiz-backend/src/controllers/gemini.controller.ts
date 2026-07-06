@@ -16,6 +16,8 @@ import { dietOptimizationService } from '../services/diet-optimization.service.j
 import { behaviorDecoderService } from '../services/behavior-decoder.service.js';
 import { dietAdvisorService } from '../services/diet-advisor.service.js';
 import { behaviorContextService } from '../services/behavior-context.service.js';
+import { createBehaviorLog } from '../repositories/behavior-log.repository.js';
+import { logger } from '../utils/winston.js';
 
 /**
  * POST /api/gemini/diet/optimize
@@ -35,9 +37,13 @@ export const optimizeDiet = withErrorHandling(async (req: Request, res: Response
  * When catContext.catId is provided, the controller enriches the context
  * with the cat's current diet profile and pregnancy status from the DB
  * before delegating to the decoder service.
+ *
+ * After a successful full analysis, a BehaviorLog entry is written
+ * immediately — no round-trip through the frontend required.
  */
 export const decodeBehavior = withErrorHandling(async (req: Request, res: Response) => {
   const body = req.body;
+  const supabaseUserId = (req as any).user?.sub as string;
 
   // Enrich cat context with diet + pregnancy data when catId is available
   if (body.catContext?.catId) {
@@ -45,6 +51,46 @@ export const decodeBehavior = withErrorHandling(async (req: Request, res: Respon
   }
 
   const result = await behaviorDecoderService.decode(body);
+
+  // Write a BehaviorLog immediately when we get a full analysis result.
+  // This is more reliable than waiting for the frontend to save the Wiz message
+  // back with the analysis payload — it fires regardless of network hiccups or
+  // response type mismatches on the client side.
+  if (result.type === 'analysis' && body.chatId) {
+    setImmediate(async () => {
+      try {
+        const extracted = behaviorDecoderService.extractFromDecodeResult(
+          body.vocalDescription ?? '',
+          result,
+        );
+        for (const behavior of extracted) {
+          await createBehaviorLog({
+            chatId: body.chatId,
+            supabaseUserId,
+            catId: body.catContext?.catId ?? undefined,
+            behaviorType: behavior.behaviorType,
+            intensity: behavior.intensity,
+            description: behavior.description,
+            context: behavior.context,
+            extractedFrom: body.vocalDescription ?? '',
+            confidence: behavior.confidence,
+          });
+        }
+        if (extracted.length > 0) {
+          logger.debug('[decodeBehavior] Behavior log written from decode', {
+            supabaseUserId,
+            chatId: body.chatId,
+            types: extracted.map(b => b.behaviorType),
+          });
+        }
+      } catch (err) {
+        logger.warn('[decodeBehavior] Non-fatal: failed to write behavior log', {
+          error: (err as Error).message,
+        });
+      }
+    });
+  }
+
   res.json(result);
 });
 

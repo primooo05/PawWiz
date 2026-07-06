@@ -279,7 +279,88 @@ class BehaviorDashboardService {
   }
 
   /**
-   * Helper: Determine average intensity from breakdown
+   * Get actual per-day or per-week behavior counts for the trend chart.
+   * Returns { labels, series } shaped exactly like the frontend's TrendDataByPeriod.
+   *
+   * days=7  → one bucket per weekday (Mon–Sun), labels = ['Mon'…'Sun']
+   * days=30 → one bucket per week (W1–W4)
+   * days=all (365) → one bucket per month (Jan–Dec)
+   */
+  async getDailyTrend(
+    supabaseUserId: string,
+    days: number,
+    catId?: string
+  ): Promise<{ labels: string[]; series: Array<{ name: string; color: string; data: number[] }> }> {
+    const BEHAVIOR_COLORS: Record<string, string> = {
+      playful: '#4ECDC4',
+      affectionate: '#FF6B35',
+      vocalization: '#8b5cf6',
+      anxious: '#F98080',
+      aggressive: '#b91c1c',
+      lethargic: '#94a3b8',
+      grooming: '#06B6D4',
+      toileting: '#F59E0B',
+    };
+
+    const now = new Date();
+    let labels: string[];
+    let bucketCount: number;
+    let getBucket: (date: Date) => number;
+
+    if (days <= 7) {
+      // Daily buckets: Mon=0 … Sun=6
+      labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      bucketCount = 7;
+      getBucket = (d: Date) => {
+        const day = d.getDay(); // 0=Sun … 6=Sat
+        return day === 0 ? 6 : day - 1; // shift so Mon=0
+      };
+    } else if (days <= 30) {
+      // Weekly buckets W1–W4
+      labels = ['W1', 'W2', 'W3', 'W4'];
+      bucketCount = 4;
+      const rangeStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      getBucket = (d: Date) => {
+        const msFromStart = d.getTime() - rangeStart.getTime();
+        const weekIndex = Math.floor(msFromStart / (7 * 24 * 60 * 60 * 1000));
+        return Math.min(weekIndex, 3);
+      };
+    } else {
+      // Monthly buckets — current year
+      labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      bucketCount = 12;
+      getBucket = (d: Date) => d.getMonth();
+    }
+
+    const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const logs = await getBehaviorLogsForDateRange(supabaseUserId, start, now, catId);
+
+    if (logs.length === 0) {
+      return { labels, series: [] };
+    }
+
+    // Aggregate into type → bucket → count
+    const typeMap = new Map<string, number[]>();
+    for (const log of logs) {
+      if (!typeMap.has(log.behaviorType)) {
+        typeMap.set(log.behaviorType, Array(bucketCount).fill(0));
+      }
+      const bucket = getBucket(log.createdAt);
+      if (bucket >= 0 && bucket < bucketCount) {
+        typeMap.get(log.behaviorType)![bucket]++;
+      }
+    }
+
+    const series = Array.from(typeMap.entries()).map(([type, data]) => ({
+      name: type.charAt(0).toUpperCase() + type.slice(1),
+      color: BEHAVIOR_COLORS[type] ?? '#94a3b8',
+      data,
+    }));
+
+    return { labels, series };
+  }
+
+  /**
    */
   private determineAverageIntensity(breakdown: {
     mild: number;

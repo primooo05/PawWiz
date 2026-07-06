@@ -41,12 +41,14 @@ export const StackedBarChart: React.FC<{
   labels: string[];
   series: ChartSeries[];
   height?: number;
-}> = ({ labels, series, height = 240 }) => {
+  yAxisLabel?: string;
+  xAxisLabel?: string;
+}> = ({ labels, series, height = 240, yAxisLabel = 'Occurrences', xAxisLabel }) => {
   const { ref, width } = useMeasure<HTMLDivElement>();
-  const padL = 30;
+  const padL = 52;  // extra room for y-axis label
   const padR = 10;
   const padT = 12;
-  const padB = 26;
+  const padB = xAxisLabel ? 44 : 26;  // extra room for x-axis label
   const plotW = Math.max(0, width - padL - padR);
   const plotH = height - padT - padB;
 
@@ -61,6 +63,19 @@ export const StackedBarChart: React.FC<{
     <div ref={ref} className="w-full">
       {width > 0 && (
         <svg width={width} height={height} role="img" aria-label="Bar chart">
+          {/* Y-axis label — rotated vertically */}
+          <text
+            x={0}
+            y={0}
+            transform={`translate(12, ${padT + plotH / 2}) rotate(-90)`}
+            textAnchor="middle"
+            fontSize={10}
+            fontWeight={800}
+            fill="#888"
+          >
+            {yAxisLabel}
+          </text>
+
           {[0, 0.25, 0.5, 0.75, 1].map((t, idx) => {
             const gy = padT + plotH - t * plotH;
             return (
@@ -98,7 +113,7 @@ export const StackedBarChart: React.FC<{
                 })}
                 <text
                   x={x + barW / 2}
-                  y={height - 8}
+                  y={padT + plotH + 16}
                   textAnchor="middle"
                   fontSize={11}
                   fontWeight={800}
@@ -109,6 +124,20 @@ export const StackedBarChart: React.FC<{
               </g>
             );
           })}
+
+          {/* X-axis label — centered below day labels */}
+          {xAxisLabel && (
+            <text
+              x={padL + plotW / 2}
+              y={height - 6}
+              textAnchor="middle"
+              fontSize={10}
+              fontWeight={800}
+              fill="#888"
+            >
+              {xAxisLabel}
+            </text>
+          )}
         </svg>
       )}
     </div>

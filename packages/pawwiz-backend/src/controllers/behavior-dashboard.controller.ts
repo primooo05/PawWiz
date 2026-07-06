@@ -61,3 +61,18 @@ export const getInsights = withErrorHandling(async (req: Request, res: Response)
   );
   res.json(insights);
 });
+
+/** GET /api/behavior/dashboard/trend?days=7|30|365 — Per-bucket behavior trend data for charts */
+export const getBehaviorTrend = withErrorHandling(async (req: Request, res: Response) => {
+  const supabaseUserId = (req as any).user?.sub as string;
+  const { catId, days = '7' } = req.query;
+
+  const daysNum = days === 'all' ? 365 : parseInt(days as string, 10);
+
+  const trend = await behaviorDashboardService.getDailyTrend(
+    supabaseUserId,
+    daysNum,
+    catId as string | undefined
+  );
+  res.json(trend);
+});

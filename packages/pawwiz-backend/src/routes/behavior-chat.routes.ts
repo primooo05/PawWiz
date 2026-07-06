@@ -13,12 +13,14 @@ import {
   addMessage,
   updateChat,
   deleteChat,
+  backfillBehaviorLogs,
 } from '../controllers/behavior-chat.controller.js';
 import {
   getWeeklySummary,
   getBehaviorPatterns,
   getDailyTimeline,
   getInsights,
+  getBehaviorTrend,
 } from '../controllers/behavior-dashboard.controller.js';
 
 const behaviorChatRouter = Router();
@@ -36,10 +38,14 @@ behaviorChatRouter.delete('/chats/:id', deleteChat);
 // Messages within a chat
 behaviorChatRouter.post('/chats/:id/messages', addMessage);
 
+// One-shot backfill for existing conversations
+behaviorChatRouter.post('/backfill-logs', backfillBehaviorLogs);
+
 // Dashboard & Analytics
 behaviorChatRouter.get('/dashboard/week', getWeeklySummary);
 behaviorChatRouter.get('/dashboard/patterns', getBehaviorPatterns);
 behaviorChatRouter.get('/dashboard/timeline', getDailyTimeline);
 behaviorChatRouter.get('/dashboard/insights', getInsights);
+behaviorChatRouter.get('/dashboard/trend', getBehaviorTrend);
 
 export { behaviorChatRouter };
