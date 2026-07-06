@@ -72,6 +72,7 @@ function OnboardingView() {
     sendOtp,
     verifyOtp,
     checkEmail,
+    fetchSession,
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
@@ -449,10 +450,18 @@ function OnboardingView() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      console.log('handleAccountCreation triggered:', { ownerEmail, password, sessionId });
-      // Guard: password lives only in React state and is lost on page refresh.
-      // If either field is empty here, the user must re-enter their password.
-      if (!ownerEmail?.trim() || !password?.trim()) {
+      // ownerEmail and ownerName live in useOnboarding state. If the user navigated
+      // through steps ≥ 6 without a page refresh the guard skips fetchSession, so
+      // these may be empty. Fetch the session once to restore all fields.
+      let resolvedEmail = ownerEmail?.trim();
+      let resolvedName = ownerName?.trim();
+      if ((!resolvedEmail || !resolvedName) && sessionId) {
+        const data = await fetchSession(sessionId);
+        resolvedEmail = data?.ownerEmail?.trim() ?? resolvedEmail ?? '';
+        resolvedName = data?.ownerName?.trim() ?? resolvedName ?? '';
+      }
+
+      if (!resolvedEmail || !password?.trim()) {
         showStaticBubble('Please re-enter your password — it was lost on refresh. Meow!');
         setTimeout(() => hideBubble(), 4000);
         setIsSubmitting(false);
@@ -461,7 +470,7 @@ function OnboardingView() {
 
       // 1. Create Supabase Auth account
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: ownerEmail,
+        email: resolvedEmail,
         password: password,
       });
       if (authError) {
@@ -481,13 +490,13 @@ function OnboardingView() {
           throw new Error('Something went wrong. Please try again.');
         }
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: ownerEmail,
+          email: resolvedEmail,
           password: password,
         });
         if (signInError || !signInData.session) {
           throw new Error(signInError?.message || 'Failed to acquire verified session.');
           // Account is created and email is verified — just send them through.
-          navigate(redirectTo, { state: { displayName: ownerName, catName } });
+          navigate(redirectTo, { state: { displayName: resolvedName, catName } });
           return;
         }
         session = signInData.session;
@@ -503,7 +512,7 @@ function OnboardingView() {
         },
         body: JSON.stringify({
           supabaseUserId: authData.user.id,
-          displayName: ownerName,
+          displayName: resolvedName,
           onboardingSessionId: sessionId,
         }),
       });
@@ -519,7 +528,7 @@ function OnboardingView() {
         onComplete: () => {
           setIsTransitioning(true);
           setIsZIndexHigh(true);
-          setTimeout(() => navigate(redirectTo, { state: { displayName: ownerName, catName, animateIn: true } }), 2000);
+          setTimeout(() => navigate(redirectTo, { state: { displayName: resolvedName, catName, animateIn: true } }), 2000);
         },
       });
     } catch (err: any) {

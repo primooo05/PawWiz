@@ -33,8 +33,8 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
     <div className={`flex flex-col md:grid md:grid-cols-2 md:items-start justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
       active ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
     }`}>
-      {/* 1. Header & Paragraph */}
-      <div className="md:col-start-1 md:row-start-1 flex flex-col justify-center items-center md:items-start text-center md:text-left space-y-6 w-full max-w-md">
+      {/* 1. Header & Paragraph — hidden on mobile (mascot column takes full width) */}
+      <div className="hidden md:flex md:col-start-1 md:row-start-1 flex-col justify-center items-center md:items-start text-center md:text-left space-y-6 w-full max-w-md">
         <h1 className="text-3xl md:text-5xl font-black text-slate-900 leading-tight">
           Verify your email
         </h1>
@@ -43,11 +43,21 @@ export const OnboardingScreenOtp: React.FC<OnboardingScreenOtpProps> = ({
         </p>
       </div>
 
+      {/* Mobile-only compact header — sits above the mascot, no overlap */}
+      <div className="md:hidden flex flex-col items-center text-center space-y-2 w-full max-w-md px-2">
+        <h1 className="text-2xl font-black text-slate-900 leading-tight">
+          Verify your email
+        </h1>
+        <p className="text-sm text-slate-600 font-medium">
+          We sent a 6-digit code to your email.
+        </p>
+      </div>
+
       {/* 2. ChatBubble & Mascot SVG */}
       <div className="md:col-start-2 md:row-start-1 md:row-span-2 flex justify-center items-center relative w-full">
-        {/* Custom Speech Bubble */}
+        {/* Custom Speech Bubble — hidden on mobile to avoid overlapping the mascot */}
         {showBubble && (
-          <div className="absolute -top-4 left-4 md:-top-16 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-10 animate-fade-in">
+          <div className="hidden md:block absolute -top-4 left-4 md:-top-16 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-10 animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
             {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
