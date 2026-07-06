@@ -15,6 +15,7 @@ const WEEK_DESCRIPTIONS: Record<number, string> = {
 };
 
 interface CycleProgressCardProps {
+    catName: string;
     progressPercentage: number;
     currentWeek: number;
     currentDay: number;
@@ -29,6 +30,7 @@ interface CycleProgressCardProps {
 }
 
 export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
+    catName,
     progressPercentage,
     currentWeek,
     currentDay,
@@ -44,7 +46,7 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
     return (
         <div className="p-8 bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col items-center border border-slate-50 h-full w-full">
             <div className="w-full flex justify-between items-center mb-8">
-                <h2 className="text-[1.35rem] font-bold text-[#1e293b]">Molly's Cycle</h2>
+                <h2 className="text-[1.35rem] font-bold text-[#1e293b]">{catName}'s Cycle</h2>
                 <button
                     onClick={onEditClick}
                     className="text-xs font-bold text-teal-400 hover:text-teal-600 transition-all duration-200 active:scale-95 cursor-pointer"
@@ -205,7 +207,7 @@ export const CycleProgressCard: React.FC<CycleProgressCardProps> = ({
                     </button>
                     {isEduExpanded && (
                         <div className="p-5 text-xs font-semibold text-slate-700 leading-relaxed bg-white animate-fadeIn">
-                            {WEEK_DESCRIPTIONS[currentWeek] || "Molly is growing her kittens. Keep her comfortable and fed with high-quality kitten formula."}
+                            {(WEEK_DESCRIPTIONS[currentWeek] || "Molly is growing her kittens. Keep her comfortable and fed with high-quality kitten formula.").replace(/Molly/g, catName)}
                         </div>
                     )}
                 </div>

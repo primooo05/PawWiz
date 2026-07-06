@@ -39,6 +39,9 @@ interface DashboardViewProps {
     todayStr: string;
     todayLog: DailyLog;
     todayLoggable: boolean;
+    catName: string;
+    selectedCatId: string;
+    onSwitchCat: (id: string) => void;
 
     // Derived values from parent/hook
     elapsedDayForSelected?: number | null;
@@ -78,12 +81,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     hasVetWarningForSelected = false,
     hasNauseaInEarlyWeeksForSelected = false,
     loggedToday = false,
+    catName,
+    selectedCatId,
+    onSwitchCat,
 }) => {
     const [isWeightPickerOpen, setIsWeightPickerOpen] = useState(false);
     const [isEduExpanded, setIsEduExpanded] = useState(true);
     const [isConfirmEditOpen, setIsConfirmEditOpen] = useState(false);
 
-    const { profiles, activeProfileId, switchProfile, catName } = useDietRecommender();
+    const { profiles } = useDietRecommender();
     const { profile } = useProfilePanel();
 
     const pregnancyGreeting = getTimeGreeting(
@@ -113,17 +119,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     // are not eligible and switching to one would land on a blocked state.
     const avatarDataList = profiles
         .filter((p) => p.gender === 'female')
-        .map((p) => ({
-            id: p.id,
-            name: p.name,
-            src: p.photoUrl || undefined,
-            alt: p.name,
-            isActive: p.id === activeProfileId,
-            isNew: !p.isTracking,
-            statusDot: p.id === activeProfileId
-                ? (loggedToday ? 'green' as const : 'amber' as const)
-                : null,
-        }));
+        .map((p) => {
+            const pId = p.catId ?? p.id;
+            return {
+                id: pId,
+                name: p.name,
+                src: p.photoUrl || undefined,
+                alt: p.name,
+                isActive: pId === selectedCatId,
+                isNew: !p.isTracking,
+                statusDot: pId === selectedCatId
+                    ? (loggedToday ? 'green' as const : 'amber' as const)
+                    : null,
+            };
+        });
 
     const activeSummaryDateStr = selectedDateStr || todayStr;
     const activeSummaryLog = logs[activeSummaryDateStr] || { symptoms: [], moods: [] };
@@ -177,13 +186,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 title={pregnancyGreeting.title}
                 subtitle={pregnancyGreeting.subtitle}
                 avatars={avatarDataList}
-                onAvatarClick={(id) => switchProfile(id)}
+                onAvatarClick={onSwitchCat}
                 className="mb-8"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-x-12 gap-y-8 items-stretch flex-grow w-full">
                 {/* LEFT COLUMN: Molly's Cycle (Soft UI) */}
                 <CycleProgressCard
+                    catName={catName}
                     progressPercentage={progressPercentage}
                     currentWeek={currentWeek}
                     currentDay={currentDay}
@@ -258,6 +268,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         openLogForDate={openLogForDate}
                         currentWeek={currentWeek}
                         todayLog={todayLog}
+                        loggedToday={loggedToday}
                     />
                 </div>
             </div>

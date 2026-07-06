@@ -7,17 +7,19 @@ interface SetupViewProps {
     matingDate: string;
     setMatingDate: (date: string) => void;
     onSubmit: (e: React.FormEvent) => void;
+    catName: string;
 }
 
 export const SetupView: React.FC<SetupViewProps> = ({
     matingDate,
     setMatingDate,
     onSubmit,
+    catName,
 }) => {
     return (
         <div className="max-w-md mx-auto mt-12 p-10 bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-center border border-slate-50">
             <div className="text-4xl mb-4">🗓️</div>
-            <h2 className="text-2xl font-bold mb-2 text-slate-800">Set up Molly's Profile</h2>
+            <h2 className="text-2xl font-bold mb-2 text-slate-800">Set up {catName}'s Profile</h2>
             <p className="text-slate-500 mb-8 text-sm">
                 Enter the date of the first successful mating to establish Day 1 of the cycle.
             </p>

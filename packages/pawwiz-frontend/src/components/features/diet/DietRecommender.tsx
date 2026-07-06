@@ -159,6 +159,7 @@ export const DietRecommender: React.FC = () => {
                     addWater={addWater}
                     resetWater={resetWater}
                     displayName={displayName}
+                    onEditProfile={() => setIsSetupModalOpen(true)}
                 />
                 
                 {/* Setup Modal Overlay */}

@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import AnimatedAvatarGroup, { type AvatarData } from '../ui/smoothui/animated-avatar-group';
 
 export interface GreetingHeaderProps {
@@ -26,8 +25,6 @@ export const GreetingHeader: React.FC<GreetingHeaderProps> = ({
     onAddClick,
     className = '',
 }) => {
-    const navigate = useNavigate();
-
     return (
         <div className={`w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${className}`}>
             <div>
@@ -40,7 +37,7 @@ export const GreetingHeader: React.FC<GreetingHeaderProps> = ({
                     <AnimatedAvatarGroup
                         avatars={avatars}
                         onAvatarClick={onAvatarClick}
-                        onAddClick={onAddClick ?? (() => navigate('/settings'))}
+                        onAddClick={onAddClick}
                     />
                 </div>
             )}

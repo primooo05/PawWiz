@@ -24,7 +24,7 @@ export interface DailyLog {
     temperature?: number;
 }
 
-const getInitialLogs = (matingDateStr: string): Record<string, DailyLog> => {
+export const getInitialLogs = (matingDateStr: string): Record<string, DailyLog> => {
     if (!matingDateStr) return {};
     const base = new Date(matingDateStr);
 
@@ -365,6 +365,7 @@ export function usePregnancyTracker() {
         getDayBadgeClassName,
         handleStartTracking,
         logs,
+        setLogs,
         selectedDateStr,
         isBottomSheetOpen,
         openLogForDate,

@@ -310,6 +310,17 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                             <button type="button" onClick={() => setStep('amount')}
                                 className="w-full py-3.5 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer"
                             >Next: Set amount →</button>
+                            {(() => {
+                                const targetMeal = loggedMeals.find(m => m.id === editingMealId || m.mealName === initialMealName);
+                                if (targetMeal && targetMeal.status !== 'skipped') {
+                                    return (
+                                        <button type="button" onClick={() => onSkip(targetMeal)}
+                                            className="w-full py-3 bg-amber-50 text-amber-800 border-2 border-amber-200 rounded-xl font-black hover:bg-amber-100 transition-all cursor-pointer text-center"
+                                        >Skip Meal</button>
+                                    );
+                                }
+                                return null;
+                            })()}
                             <button type="button" onClick={onClose}
                                 className="w-full py-3 border-2 border-slate-200 rounded-xl font-black text-slate-500 hover:bg-slate-50 transition-all cursor-pointer text-sm"
                             >Cancel</button>
@@ -477,17 +488,7 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                                     className="w-full py-3.5 bg-[#2ec4b6] text-white border-2 border-slate-900 rounded-xl font-black hover:bg-[#20a396] shadow-[2px_2px_0_0_rgba(15,23,42,1)] active:shadow-none transition-all cursor-pointer"
                                 >{isEditing ? '✓ Save changes' : '✓ Log Meal'}</button>
 
-                                {!isEditing && (() => {
-                                    const targetMeal = loggedMeals.find(m => m.mealName === initialMealName);
-                                    if (targetMeal?.status === 'pending') {
-                                        return (
-                                            <button type="button" onClick={() => onSkip(targetMeal)}
-                                                className="w-full py-3 bg-amber-50 text-amber-800 border-2 border-amber-200 rounded-xl font-black hover:bg-amber-100 transition-all cursor-pointer text-center"
-                                            >Skip Meal</button>
-                                        );
-                                    }
-                                    return null;
-                                })()}
+
 
                                 {isEditing && (
                                     <button type="button" onClick={() => { if (editingMealId) onReset(editingMealId); }}
