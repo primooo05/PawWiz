@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase.js';
-import { API_BASE } from '../../../lib/config.js';
 import BottomNav from '../../layout/BottomNav.js';
 import GreetingHeader from '../../layout/GreetingHeader';
 import QuickLogBar from '../quicklog/QuickLogBar';
@@ -12,9 +11,10 @@ import { Activity, Apple, Heart, BarChart3, Droplet, Stethoscope } from 'lucide-
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { usePregnancyTracker } from '../../../hooks/trackers/usePregnancyTracker.js';
 import { useDietRecommender, getAgeBracketInfo } from '../../../hooks/features/useDietRecommender';
+import { useBehaviorDashboard } from '../../../hooks/features/useBehaviorDashboard';
 import { getTimeGreeting } from '../../../utils/greeting';
 import HealthInsightsWidget from './HealthInsightsWidget.js';
-import { SkeletonLine, SkeletonAvatar, SkeletonProfileCard, SkeletonImageCard, SkeletonMessages } from '../../ui/skeletons/SkeletonLoader';
+import { SkeletonLine, SkeletonImageCard } from '../../ui/skeletons/SkeletonLoader';
 
 // Neo-brutalist palette (shared with charts)
 const ORANGE = '#FF6B35';
@@ -63,14 +63,14 @@ interface DashboardStats {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, isLoading: isProfileLoading } = useProfilePanel();
+  const { profile } = useProfilePanel();
   const pregnancy = usePregnancyTracker();
   const diet = useDietRecommender();
+  const behaviorDashboard = useBehaviorDashboard(diet.activeProfileId);
 
   const [stats, setStats] = useState<DashboardStats>({});
-  const [behaviorPatterns, setBehaviorPatterns] = useState<Array<{ type: string; frequency: number }>>([]);
   const [catName, setCatName] = useState<string>('Your Cat');
-  const [isBehaviorLoading, setIsBehaviorLoading] = useState(true);
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('7');
 
   const [isTransitioning, setIsTransitioning] = useState(
     !!(location.state as { animateIn?: boolean })?.animateIn
@@ -89,54 +89,25 @@ const Dashboard: React.FC = () => {
     }
   }, [location.state]);
 
-  // Pull behavior data from the real behavior-dashboard endpoints (there is no
-  // /api/dashboard/stats aggregator). Exposed as a callback so it can be
-  // re-run after a Quick Log entry to keep the composition live.
-  const refreshBehaviorStats = useCallback(async () => {
-    setIsBehaviorLoading(true);
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const headers = { Authorization: `Bearer ${session.access_token}` };
-
-      const [patternsRes, insightsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/behavior/dashboard/patterns?days=7`, { headers }),
-        fetch(`${API_BASE}/api/behavior/dashboard/insights`, { headers }),
-      ]);
-
-      const behavior: DashboardStats['behavior'] = {};
-
-      if (patternsRes.ok) {
-        const patterns: Array<{ type: string; frequency: number }> = await patternsRes.json();
-        setBehaviorPatterns(patterns);
-        behavior.totalEventsWeek = patterns.reduce((sum, p) => sum + (p.frequency || 0), 0);
-        const top = [...patterns].sort((a, b) => b.frequency - a.frequency)[0];
-        if (top) behavior.primaryBehavior = capitalize(top.type);
-      }
-
-      if (insightsRes.ok) {
-        const insights: { overallTrend?: string } = await insightsRes.json();
-        if (insights.overallTrend) {
-          behavior.overallTrend = insights.overallTrend;
-          const trend = insights.overallTrend.toLowerCase();
-          behavior.healthStatus = trend.includes('concern')
-            ? 'concerning'
-            : trend.includes('attention')
-              ? 'needs_attention'
-              : 'healthy';
-        }
-      }
-
+  // Update stats when behavior data loads
+  useEffect(() => {
+    if (!behaviorDashboard.isLoading && behaviorDashboard.patterns.length > 0) {
+      const behavior: DashboardStats['behavior'] = {
+        overallTrend: behaviorDashboard.weeklySummary?.concernFlags.length
+          ? behaviorDashboard.weeklySummary.concernFlags[0]
+          : 'Monitoring behaviors normally',
+        totalEventsWeek: behaviorDashboard.patterns.reduce((sum, p) => sum + p.frequency, 0),
+        primaryBehavior: behaviorDashboard.patterns.length > 0
+          ? capitalize(behaviorDashboard.patterns[0].type)
+          : undefined,
+        healthStatus:
+          behaviorDashboard.weeklySummary?.concernFlags && behaviorDashboard.weeklySummary.concernFlags.length > 0
+            ? 'needs_attention'
+            : 'healthy',
+      };
       setStats({ behavior });
-    } catch (err) {
-      console.error('Failed to fetch behavior stats:', err);
-    } finally {
-      setIsBehaviorLoading(false);
     }
-  }, []);
+  }, [behaviorDashboard.isLoading, behaviorDashboard.patterns, behaviorDashboard.weeklySummary]);
 
   useEffect(() => {
     (async () => {
@@ -147,9 +118,8 @@ const Dashboard: React.FC = () => {
         navigate('/login');
         return;
       }
-      refreshBehaviorStats();
     })();
-  }, [navigate, refreshBehaviorStats]);
+  }, [navigate]);
 
   // Keep the greeting/activity cat name in sync with the active diet profile.
   useEffect(() => {
@@ -165,8 +135,6 @@ const Dashboard: React.FC = () => {
     else if (item === 'plant') navigate('/');
   };
 
-  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>('7');
-
   // Count logged meals that are completed
   const completedMealsCount = diet.activeProfile
     ? diet.loggedMeals.filter((meal) => meal.status === 'logged').length
@@ -174,8 +142,8 @@ const Dashboard: React.FC = () => {
   const totalMealsCount = diet.activeProfile ? diet.loggedMeals.length : 3;
 
   // --- Gender gating: pregnancy features require at least one female cat ---
-  const femaleCats = diet.profiles.filter((p) => p.gender === 'female');
-  const hasFemaleCat = femaleCats.length > 0 || profile?.catSex?.toLowerCase() === 'female';
+  // const femaleCats = diet.profiles.filter((p) => p.gender === 'female');
+  // const hasFemaleCat = femaleCats.length > 0 || profile?.catSex?.toLowerCase() === 'female';
 
   // --- Nutrition analytics (real data from the active diet profile) ---
   const activeMeals = diet.activeProfile?.loggedMeals ?? [];
@@ -270,39 +238,10 @@ const Dashboard: React.FC = () => {
     return items;
   }, [diet.activeProfile, waterNow, waterGoal]);
 
-  // --- Behavior analytics (representative series until a trend endpoint exists) ---
-  const behaviorTrendByPeriod: Record<TrendPeriod, { labels: string[]; series: { name: string; color: string; data: number[] }[] }> = {
-    '7': {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      series: [
-        { name: 'Playful', color: TEAL, data: [3, 2, 4, 3, 5, 4, 3] },
-        { name: 'Anxious', color: PINK, data: [1, 3, 1, 2, 1, 0, 1] },
-        { name: 'Affectionate', color: ORANGE, data: [2, 1, 2, 3, 2, 3, 2] },
-      ],
-    },
-    '30': {
-      labels: ['W1', 'W2', 'W3', 'W4'],
-      series: [
-        { name: 'Playful', color: TEAL, data: [22, 18, 25, 20] },
-        { name: 'Anxious', color: PINK, data: [8, 12, 6, 7] },
-        { name: 'Affectionate', color: ORANGE, data: [14, 11, 16, 13] },
-      ],
-    },
-    all: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-      series: [
-        { name: 'Playful', color: TEAL, data: [80, 92, 75, 88, 95] },
-        { name: 'Anxious', color: PINK, data: [30, 25, 40, 22, 18] },
-        { name: 'Affectionate', color: ORANGE, data: [55, 60, 50, 62, 58] },
-      ],
-    },
-  };
-  const behaviorTrend = behaviorTrendByPeriod[trendPeriod];
-
-  // Real behavior composition (mood mix) derived from the last 7 days of logs.
+  // Real behavior composition (mood mix) derived from the patterns
   const behaviorComposition = useMemo(
     () =>
-      [...behaviorPatterns]
+      behaviorDashboard.patterns
         .filter((p) => p.frequency > 0)
         .sort((a, b) => b.frequency - a.frequency)
         .map((p) => ({
@@ -310,7 +249,7 @@ const Dashboard: React.FC = () => {
           color: BEHAVIOR_COLORS[p.type] ?? '#94a3b8',
           value: p.frequency,
         })),
-    [behaviorPatterns]
+    [behaviorDashboard.patterns]
   );
   const totalBehaviorLogs = behaviorComposition.reduce((sum, c) => sum + c.value, 0);
   const dominantBehavior = behaviorComposition[0];
@@ -318,6 +257,9 @@ const Dashboard: React.FC = () => {
     totalBehaviorLogs > 0 && dominantBehavior
       ? Math.round((dominantBehavior.value / totalBehaviorLogs) * 100)
       : 0;
+
+  // Use dynamic trend data from the hook
+  const behaviorTrend = behaviorDashboard.trendDataByPeriod[trendPeriod];
 
   const dashboardGreeting = getTimeGreeting(
     {
@@ -453,7 +395,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {isBehaviorLoading ? (
+              {behaviorDashboard.isLoading ? (
                 <div className="bg-white border-4 border-[#1a1a1a] p-5 rounded-3xl shadow-[4px_4px_0_0_#1a1a1a]">
                   <div className="mb-4">
                     <SkeletonLine width="w-32" height="h-2.5" className="mb-4" />
@@ -480,7 +422,20 @@ const Dashboard: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={220} />
+                  {behaviorDashboard.patterns.length === 0 ? (
+                    <div className="relative h-[220px] flex items-center justify-center bg-[#f5f5f0] border-2 border-dashed border-[#ccc] rounded-2xl">
+                      <div className="text-center">
+                        <p className="text-sm font-black text-[#888] uppercase tracking-wide">
+                          No behavior data available
+                        </p>
+                        <p className="text-xs font-bold text-[#aaa] mt-1">
+                          Start logging behaviors to see trends here
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <StackedBarChart labels={behaviorTrend.labels} series={behaviorTrend.series} height={220} />
+                  )}
                 </div>
               )}
             </div>
@@ -488,7 +443,7 @@ const Dashboard: React.FC = () => {
 
           {/* KPI Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
-            {isBehaviorLoading ? (
+            {behaviorDashboard.isLoading ? (
               <>
                 <div className="bg-white border-4 border-[#1a1a1a] rounded-2xl p-5">
                   <SkeletonLine width="w-20" height="h-2" className="mb-3" />
@@ -591,7 +546,7 @@ const Dashboard: React.FC = () => {
               onAddWater={(amount) => diet.addWater(amount)}
               catId={diet.activeProfileId || undefined}
               disabled={!diet.activeProfile}
-              onBehaviorLogged={refreshBehaviorStats}
+              onBehaviorLogged={behaviorDashboard.refreshData}
             />
           </div>
 
