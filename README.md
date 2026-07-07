@@ -59,6 +59,7 @@ Installs all workspace packages in one shot.
 cd packages/pawwiz-backend
 npm install
 cd packages/pawwiz-frontend
+npm install
 ```
 Installs all packages from different workspace.
 ---
