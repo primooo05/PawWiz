@@ -19,4 +19,44 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy vendor libraries into individually cacheable chunks.
+        // Each named chunk is hashed separately — a Supabase SDK update
+        // won't bust the motion cache, and vice versa.
+        manualChunks(id) {
+          // motion/react (Framer Motion) — animation runtime, ~100 kB gzip
+          if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion')) {
+            return 'vendor-motion';
+          }
+          // Supabase JS SDK — auth client, only needed on login/onboarding
+          if (id.includes('node_modules/@supabase')) {
+            return 'vendor-supabase';
+          }
+          // react-datepicker + date-fns — only used by trackers/diet
+          if (id.includes('node_modules/react-datepicker') || id.includes('node_modules/date-fns')) {
+            return 'vendor-datepicker';
+          }
+          // lucide-react — icon library, large but tree-shaken per-route already
+          if (id.includes('node_modules/lucide-react')) {
+            return 'vendor-lucide';
+          }
+          // zod — validation schema runtime
+          if (id.includes('node_modules/zod')) {
+            return 'vendor-zod';
+          }
+          // React core + React Router — always needed, keep together as the base
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/react-router') ||
+            id.includes('node_modules/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+        },
+      },
+    },
+  },
 })
