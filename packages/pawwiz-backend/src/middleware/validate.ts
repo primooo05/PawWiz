@@ -18,7 +18,11 @@ export const validate = (schema: ZodSchema, target: 'body' | 'query' = 'body') =
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        logger.warn('Validation failed', { errors: error.issues, [target]: target === 'query' ? req.query : req.body });
+        // Log field names only — never the values, which may contain PII (email, name, etc.)
+        logger.warn('Validation failed', {
+          fields: error.issues.map(i => i.path.join('.')),
+          target,
+        });
         res.status(400).json({ errors: error.issues });
       } else {
         next(error);

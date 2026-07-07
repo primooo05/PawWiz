@@ -12,10 +12,7 @@ import { quickLogBehaviorSchema } from '../schemas/quick-log.schemas.js';
 /** POST /api/quick-log/behavior — Record a single behavior with one tap */
 export const logQuickBehavior = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub as string;
-  console.log('[QuickLog] POST /api/quick-log/behavior — userId:', supabaseUserId, '| body:', req.body);
   const parsed = quickLogBehaviorSchema.parse(req.body);
-  console.log('[QuickLog] Schema parsed OK:', parsed);
   const log = await quickLogService.logBehavior(supabaseUserId, parsed);
-  console.log('[QuickLog] Behavior saved — id:', log.id, 'type:', log.behaviorType, 'catId:', log.catId);
   res.status(201).json(log);
 });

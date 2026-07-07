@@ -38,7 +38,11 @@ class MailerService {
    */
   async sendRecoveryEmail(to: string, ownerName: string, resetLink: string): Promise<void> {
     if (!this.transporter) {
-      logger.info(`[MailerService] Recovery link for ${to}: ${resetLink} (printed because SMTP credentials are absent)`);
+      // In dev mode without SMTP credentials, log a redacted indicator only —
+      // never log the actual reset link (contains a bearer token) or the address.
+      logger.info('[MailerService] Recovery email skipped — SMTP not configured (dev mode)', {
+        recipient: '[redacted]',
+      });
       return;
     }
 
@@ -50,12 +54,11 @@ class MailerService {
         html: this.buildRecoveryTemplate(ownerName, resetLink),
       });
 
-      logger.info('[MailerService] Recovery email accepted by provider', { messageId: info.messageId, to });
+      // Log only the provider-assigned message ID, not the recipient address.
+      logger.info('[MailerService] Recovery email accepted by provider', { messageId: info.messageId });
     } catch (err: unknown) {
       logger.error('[MailerService] Failed to send recovery email', {
         error: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-        to,
       });
       throw new Error(`Recovery email delivery failed: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -68,7 +71,11 @@ class MailerService {
    */
   async sendOtpEmail(to: string, ownerName: string, code: string): Promise<void> {
     if (!this.transporter) {
-      logger.info(`[MailerService] OTP for ${to}: ${code} (printed because SMTP credentials are absent)`);
+      // Never log the actual OTP code — even in dev mode a leaked hash + plaintext
+      // code bypasses the email-verification step entirely.
+      logger.info('[MailerService] OTP email skipped — SMTP not configured (dev mode)', {
+        recipient: '[redacted]',
+      });
       return;
     }
 
@@ -80,12 +87,10 @@ class MailerService {
         html: this.buildTemplate(ownerName, code),
       });
 
-      logger.info('[MailerService] OTP email accepted by provider', { messageId: info.messageId, to });
+      logger.info('[MailerService] OTP email accepted by provider', { messageId: info.messageId });
     } catch (err: unknown) {
       logger.error('[MailerService] Failed to send OTP email', {
         error: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : undefined,
-        to,
       });
       throw new Error(`OTP email delivery failed: ${err instanceof Error ? err.message : String(err)}`);
     }

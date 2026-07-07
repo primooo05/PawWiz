@@ -10,6 +10,7 @@ import {
   updateAvatarSchema,
 } from '../schemas/diet.schemas.js';
 import { prisma } from '../lib/prisma.js';
+import { logger } from '../utils/winston.js';
 
 export const getDietProfiles = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub;
@@ -86,24 +87,14 @@ export const uploadAvatarFile = withErrorHandling(async (req: Request, res: Resp
   const supabaseUserId = (req as any).user?.sub;
   const profileId = req.params.id as string;
 
-  // Check that file was uploaded
   const file = (req as any).file;
   if (!file) {
-    console.debug('[uploadAvatarFile] No file in request');
     res.status(400).json({ message: 'No file uploaded' });
     return;
   }
 
-  console.debug('[uploadAvatarFile] File received:', {
-    supabaseUserId,
-    profileId,
-    fileName: file.originalname,
-    fileSize: file.size,
-    mimeType: file.mimetype,
-  });
-
   try {
-    // Verify profile ownership by checking if this diet profile belongs to the authenticated user
+    // Verify profile ownership
     const dietProfile = await prisma.dietProfile.findFirst({
       where: {
         id: profileId,
@@ -113,18 +104,11 @@ export const uploadAvatarFile = withErrorHandling(async (req: Request, res: Resp
     });
 
     if (!dietProfile) {
-      console.debug('[uploadAvatarFile] Profile not found or not owned by user:', {
-        supabaseUserId,
-        profileId,
-      });
       res.status(403).json({ message: 'Profile not found or unauthorized' });
       return;
     }
 
-    // Derive extension from the MIME type (server-verified by multer) rather than
-    // the client-supplied filename, then build the storage path entirely from
-    // server-controlled values so a crafted filename like "../../other/file.jpg"
-    // cannot traverse outside the owner's folder.
+    // Derive extension from multer-verified MIME type (path traversal fix)
     const MIME_TO_EXT: Record<string, string> = {
       'image/jpeg': 'jpg',
       'image/png': 'png',
@@ -134,36 +118,20 @@ export const uploadAvatarFile = withErrorHandling(async (req: Request, res: Resp
     const ext = MIME_TO_EXT[file.mimetype] ?? 'jpg';
     const filePath = `${supabaseUserId}/${profileId}/${Date.now()}.${ext}`;
 
-    console.debug('[uploadAvatarFile] Uploading to Supabase:', { filePath });
-
-    // Import Supabase dynamically to avoid circular dependencies
     const { createClient } = await import('@supabase/supabase-js');
-    // Support both naming conventions: backend uses SUPABASE_URL, but fallback to VITE_SUPABASE_URL if available
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-    console.debug('[uploadAvatarFile] Supabase config check:', {
-      hasUrl: !!supabaseUrl,
-      hasServiceKey: !!supabaseServiceKey,
-      url: supabaseUrl ? '✓' : '✗ Missing SUPABASE_URL or VITE_SUPABASE_URL',
-      key: supabaseServiceKey ? '✓' : '✗ Missing SUPABASE_SERVICE_ROLE_KEY',
-    });
-
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('[uploadAvatarFile] Missing Supabase config:', {
-        SUPABASE_URL: process.env.SUPABASE_URL ? '✓' : '✗',
-        VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ? '✓' : '✗',
-        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓' : '✗',
-        allEnvKeys: Object.keys(process.env).filter(k => k.includes('SUPABASE')).sort(),
-      });
+      // Log presence flags only — never log env var names or values
+      logger.error('[uploadAvatarFile] Storage service misconfigured — required env vars absent');
       res.status(500).json({ message: 'Storage service unavailable' });
       return;
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Upload file to private bucket
-    const { error: uploadError, data: uploadData } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('cat_profile')
       .upload(filePath, file.buffer, {
         contentType: file.mimetype,
@@ -172,39 +140,24 @@ export const uploadAvatarFile = withErrorHandling(async (req: Request, res: Resp
       });
 
     if (uploadError) {
-      console.error('[uploadAvatarFile] Upload error:', {
-        message: uploadError.message,
-        statusCode: uploadError.statusCode,
-        name: uploadError.name,
-        fullError: uploadError,
-      });
-      res.status(500).json({ 
-        message: 'Failed to upload file',
-        error: uploadError.message,
-      });
+      // Log the SDK error internally but never forward it to the client
+      logger.error('[uploadAvatarFile] Storage upload failed', { name: uploadError.name });
+      res.status(500).json({ message: 'Failed to upload file' });
       return;
     }
 
-    console.debug('[uploadAvatarFile] Upload successful:', uploadData);
-
-    console.debug('[uploadAvatarFile] File uploaded, generating signed URL');
-
-    // Generate signed URL (valid for 1 year)
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from('cat_profile')
       .createSignedUrl(filePath, 365 * 24 * 60 * 60); // 1 year
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error('[uploadAvatarFile] Signed URL error:', signedUrlError);
+      logger.error('[uploadAvatarFile] Failed to generate signed URL');
       res.status(500).json({ message: 'Failed to generate URL' });
       return;
     }
 
     const publicUrl = signedUrlData.signedUrl;
 
-    console.debug('[uploadAvatarFile] Updating database:', { publicUrl });
-
-    // Update database with signed URL
     if (dietProfile?.catId) {
       await prisma.cat.update({
         where: { id: dietProfile.catId },
@@ -214,7 +167,9 @@ export const uploadAvatarFile = withErrorHandling(async (req: Request, res: Resp
 
     res.json({ photoUrl: publicUrl });
   } catch (error) {
-    console.error('[uploadAvatarFile] Unexpected error:', error);
+    logger.error('[uploadAvatarFile] Unexpected error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ message: 'Upload failed' });
   }
 });

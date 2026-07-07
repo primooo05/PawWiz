@@ -26,7 +26,6 @@ export const createProfile = withErrorHandling(async (req: Request, res: Respons
 
   res.status(201).json({
     id: profile.id,
-    supabaseUserId: profile.supabaseUserId,
     displayName: profile.displayName,
     catName: profile.catName,
     catBreed: profile.catBreed,
@@ -49,7 +48,6 @@ export const getProfile = withErrorHandling(async (req: Request, res: Response) 
 
   res.json({
     id: profile.id,
-    supabaseUserId: profile.supabaseUserId,
     displayName: profile.displayName,
     catName: profile.catName,
     catBreed: profile.catBreed,       // null when not set
@@ -73,7 +71,6 @@ export const updateProfile = withErrorHandling(async (req: Request, res: Respons
 
   res.json({
     id: profile.id,
-    supabaseUserId: profile.supabaseUserId,
     displayName: profile.displayName,
     updatedAt: profile.updatedAt,
   });

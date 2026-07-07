@@ -55,9 +55,8 @@ class BehaviorDashboardService {
    * Get weekly behavior summary with daily breakdowns
    */
   async getWeeklySummary(supabaseUserId: string, catId?: string): Promise<WeeklySummary> {
-    console.log('[BehaviorDashboard] getWeeklySummary — userId:', supabaseUserId, 'catId:', catId);
     const logs = await getBehaviorLogsForUser(supabaseUserId, catId, 7);
-    console.log('[BehaviorDashboard] getWeeklySummary — logs fetched:', logs.length);
+    logger.debug('[BehaviorDashboard] getWeeklySummary', { logCount: logs.length });
 
     if (logs.length === 0) {
       return {
@@ -145,9 +144,8 @@ class BehaviorDashboardService {
     catId?: string,
     days: number = 7
   ): Promise<BehaviorPattern[]> {
-    console.log('[BehaviorDashboard] getBehaviorPatterns — userId:', supabaseUserId, 'catId:', catId, 'days:', days);
     const logs = await getBehaviorLogsForUser(supabaseUserId, catId, days);
-    console.log('[BehaviorDashboard] getBehaviorPatterns — logs fetched:', logs.length);
+    logger.debug('[BehaviorDashboard] getBehaviorPatterns', { logCount: logs.length, days });
 
     const grouped = new Map<string, {
       frequency: number;
