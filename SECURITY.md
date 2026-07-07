@@ -2,7 +2,7 @@
 
 ## Vulnerability Disclosure
 
-We take security seriously and appreciate responsible disclosure. If you discover a security vulnerability in PawWiz, please report it privately to **[security-contact@example.com]** with:
+We take security seriously and appreciate responsible disclosure. If you discover a security vulnerability in PawWiz, please report it privately to **[security.pawwiz@gmail.com]** with:
 
 1. A clear description of the vulnerability
 2. Steps to reproduce (if applicable)
@@ -38,14 +38,52 @@ The PawWiz backend (`packages/pawwiz-backend`) enforces the following security b
 - **Bot protection**: Honeypot fields, rate limiting, and OTP email verification
 - **Security headers**: Helmet middleware (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, etc.)
 
-### Known Limitations
+## Known Issues & Applied Mitigations
 
-- **Stateless JWT auth**: Old tokens remain valid until expiry even after password reset. Requires separate Redis-backed denylist or Supabase webhook for immediate revocation.
-  - *Mitigation*: Set reasonable JWT expiry times (recommend < 1 hour for sensitive operations).
-- **Prompt injection**: User text reaches AI services with minimal transformation. While guardrails and structured output schemas reduce impact, deterministic systems cannot eliminate the risk entirely.
-  - *Mitigation*: System instructions hardened against override; output validated by schema; sensitive operations (e.g., toxicity verdicts) never rely solely on AI results — ASPCA database is ground truth.
-- **Email delivery**: OTP and recovery emails depend on Gmail SMTP uptime and mailbox delivery. No callback verification exists.
-  - *Mitigation*: 60-second resend cooldown prevents brute-force attacks on email channels.
+The following issues are known architectural limitations — they do not have a single clean code fix, but specific mitigations have been applied to reduce their risk.
+
+---
+
+### Stateless JWT Auth — Tokens Remain Valid After Password Reset
+
+**Root cause**: The backend verifies JWT signatures via JWKS on every request but maintains no revocation store. Once a token is issued, it is valid until expiry even if the account's password is subsequently changed.
+
+**What we did**:
+- JWT expiry is enforced by Supabase's Auth infrastructure. Tokens are short-lived.
+- The `/reset-password` flow uses Supabase's `PASSWORD_RECOVERY` session event and calls `supabase.auth.signOut()` after the reset completes, invalidating the recovery session immediately.
+- Rate limiting on `POST /api/auth/recover` (recovery link request) prevents an attacker from triggering rapid successive resets to deny service.
+
+**Residual risk**: An attacker who obtains a valid token before a password reset retains API access until that token's natural expiry. Full mitigation would require a Redis-backed token denylist or Supabase Admin `signOut(userId, 'others')` called on password change — accepted as a known limitation pending infrastructure investment.
+
+---
+
+### Prompt Injection via Behavior Chat Input
+
+**Root cause**: User-typed behavior descriptions are passed to Groq (Llama 3.3) and Gemini after lightweight pre-filtering. A well-crafted message could attempt to override the system prompt or leak model instructions.
+
+**What we did**:
+- Added explicit `<user_input>...</user_input>` delimiters wrapping all user-controlled content in every prompt (`buildPrompt()` and `buildConversationalPrompt()` in `behavior-decoder.service.ts`). This signals to the model that the enclosed text is untrusted.
+- Added a `systemInstruction` to Gemini's `generateText()` call (previously absent) explicitly instructing the model to ignore directives inside `<user_input>` blocks and never disclose the system prompt.
+- Groq already had a `<security_boundary>` block in its system message; tightened it to reinforce the untrusted-input framing.
+- Both providers use structured output schemas (Groq: `response_format: { type: 'json_object' }`, Gemini: `responseJsonSchema`). Any response that doesn't conform to the declared schema fails at `JSON.parse()` and falls through to the heuristic — no injected output can be persisted as a trusted analysis record.
+- `checkInappropriate()` and `checkOffTopic()` in `prompt-validator.ts` provide a pre-filter layer that intercepts common abuse patterns before they reach the AI.
+
+**Residual risk**: Indirect prompt injection via sufficiently novel payloads can never be fully eliminated at the application layer. The toxicity verdict is immune because it is derived exclusively from the ASPCA database — AI output is only used for plant name identification and is never trusted for the final safety classification.
+
+---
+
+### Email Delivery — No Delivery Confirmation
+
+**Root cause**: OTP and recovery emails are sent via Gmail SMTP. The backend has no way to confirm delivery to the recipient's inbox or detect silent drops.
+
+**What we did**:
+- OTP codes expire after **15 minutes**, limiting the window during which an intercepted or delayed code is useful.
+- A **60-second resend cooldown** enforced at the service layer prevents both accidental and deliberate code-flooding.
+- A **per-session brute-force lockout** (3 failed attempts) invalidates the active code and forces a fresh send, preventing offline guessing through the live endpoint.
+- The OTP hash stored in the database is **never returned to the client** in any API response (enforced by the `updatePublic()` projection on the onboarding repository — see OTP Hash Leakage fix below), so the only way to use a code is to actually receive the email.
+- Enumeration protection: `sendOtp()` returns an identical `{ cooldownSeconds: 60 }` response regardless of whether the email address is already registered, preventing account oracle attacks.
+
+**Residual risk**: If a user's email inbox is compromised, an attacker could receive the OTP directly. This is outside the application's trust boundary.
 
 ---
 
@@ -221,7 +259,7 @@ Before deploying a new version:
 
 ## Support
 
-For security-related questions or to report a vulnerability, contact **[security-contact@example.com]**.
+For security-related questions or to report a vulnerability, contact **[security.pawwiz@gmail.com]**.
 
 For other issues, visit our GitHub repository or documentation.
 
