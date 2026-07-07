@@ -135,7 +135,7 @@ npm run dev
 ---
 
 ### 5. Build for production
-
+Run this on root folder:
 ```bash
 npm run build
 ```
