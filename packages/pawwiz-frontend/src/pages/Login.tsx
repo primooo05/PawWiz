@@ -5,7 +5,9 @@ import Navbar from '../components/layout/Navbar';
 import { useLogin } from '../hooks/auth/useLogin';
 import { useForgotPassword } from '../hooks/auth/useForgotPassword';
 import { TextField } from '../components/ui/forms/TextField';
-import CatsLogin from '../assets/Cats_Login.svg?react';
+// Plain URL import — browser fetches as a static asset (cacheable, parallel to JS).
+// Previously used svgr (?react) which inlined 253 kB of SVG as JS.
+import catsLoginUrl from '../assets/Cats_Login.svg';
 
 const LOGIN_LABEL_CLASS = 'italic text-[#a0aec0] text-lg font-bold';
 
@@ -84,8 +86,11 @@ export default function Login() {
           </div>
 
           {/* Illustration — desktop only; mobile version rendered below the form */}
-          <CatsLogin
+          <img
+            src={catsLoginUrl}
+            alt=""
             aria-hidden="true"
+            loading="lazy"
             className="hidden lg:block w-full max-w-lg object-contain select-none pointer-events-none lg:-translate-y-190"
           />
         </div>
@@ -245,8 +250,11 @@ export default function Login() {
           )}
 
           {/* Illustration — hidden on mobile */}
-          <CatsLogin
+          <img
+            src={catsLoginUrl}
+            alt=""
             aria-hidden="true"
+            loading="lazy"
             className="hidden w-full max-w-xs sm:max-w-sm object-contain select-none pointer-events-none mx-auto mt-8"
           />
         </div>

@@ -1,11 +1,24 @@
+import { lazy, Suspense } from 'react';
 import { useLocation, useOutlet, Link } from 'react-router-dom';
-import { AnimatePresence } from 'motion/react';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ReturnToTop from './components/layout/ReturnToTop';
-import PageTransition from './components/layout/PageTransition';
 import { useScrollToTop } from './hooks/ui/useScrollToTop';
 import pawWizText from './assets/PawWiz_Text_logo.png';
+
+// Lazy-load PageTransition so motion/react (Framer Motion) is NOT in the
+// initial bundle. It loads alongside the first route chunk — by the time the
+// user navigates anywhere the animation library is already cached.
+const AnimatePresence  = lazy(() =>
+  import('motion/react').then(m => ({ default: m.AnimatePresence }))
+);
+const PageTransition = lazy(() => import('./components/layout/PageTransition'));
+
+// Instant passthrough while the animation chunk is downloading on first load.
+// Subsequent navigations use the real transition because the chunk is cached.
+function TransitionFallback({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
 
 export default function App() {
   useScrollToTop();
@@ -44,11 +57,13 @@ export default function App() {
           <Navbar />
         ) : null}
         <main className={hideHeader ? 'flex-grow pt-0' : 'flex-grow'}>
-          <AnimatePresence mode="wait" initial={false}>
-            <PageTransition routeKey={location.pathname}>
-              {outlet}
-            </PageTransition>
-          </AnimatePresence>
+          <Suspense fallback={<TransitionFallback>{outlet}</TransitionFallback>}>
+            <AnimatePresence mode="wait" initial={false}>
+              <PageTransition routeKey={location.pathname}>
+                {outlet}
+              </PageTransition>
+            </AnimatePresence>
+          </Suspense>
         </main>
         <ReturnToTop />
         {isLandingPage && <Footer />}

@@ -1,11 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { OverviewSection } from './docs/OverviewSection';
-import { EnvironmentSection } from './docs/EnvironmentSection';
-import { SecuritySection } from './docs/SecuritySection';
-import { TestingSection } from './docs/TestingSection';
-import { DiagramsSection } from './docs/DiagramsSection';
-import { DatabaseSection } from './docs/DatabaseSection';
+
+// Each section is lazy-loaded so only the visible one is parsed on first render.
+// The Docs page is judge/dev-facing and not on the critical path, so aggressive
+// splitting here is fine — each section is a self-contained card.
+const OverviewSection  = lazy(() => import('./docs/OverviewSection').then(m => ({ default: m.OverviewSection })));
+const EnvironmentSection = lazy(() => import('./docs/EnvironmentSection').then(m => ({ default: m.EnvironmentSection })));
+const SecuritySection  = lazy(() => import('./docs/SecuritySection').then(m => ({ default: m.SecuritySection })));
+const TestingSection   = lazy(() => import('./docs/TestingSection').then(m => ({ default: m.TestingSection })));
+const DiagramsSection  = lazy(() => import('./docs/DiagramsSection').then(m => ({ default: m.DiagramsSection })));
+const DatabaseSection  = lazy(() => import('./docs/DatabaseSection').then(m => ({ default: m.DatabaseSection })));
+
+function SectionFallback() {
+  return (
+    <div className="border-2 border-slate-900 rounded-2xl bg-white p-8 animate-pulse">
+      <div className="h-3 bg-slate-200 rounded w-24 mb-4" />
+      <div className="h-6 bg-slate-200 rounded w-48 mb-6" />
+      <div className="space-y-3">
+        <div className="h-3 bg-slate-100 rounded w-full" />
+        <div className="h-3 bg-slate-100 rounded w-5/6" />
+        <div className="h-3 bg-slate-100 rounded w-4/6" />
+      </div>
+    </div>
+  );
+}
 
 /**
  * PawWiz — Judge-facing documentation page (/docs).
@@ -92,22 +110,34 @@ export default function Docs() {
       {/* pt-[57px] matches the nav height (py-3 × 2 + text line ≈ 57px) */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 pt-[72px] space-y-10">
         {/* SECTION 1 — HERO & OVERVIEW */}
-        <OverviewSection />
+        <Suspense fallback={<SectionFallback />}>
+          <OverviewSection />
+        </Suspense>
 
         {/* SECTION 2 — ENVIRONMENT */}
-        <EnvironmentSection />
+        <Suspense fallback={<SectionFallback />}>
+          <EnvironmentSection />
+        </Suspense>
 
         {/* SECTION 3 — SECURITY */}
-        <SecuritySection />
+        <Suspense fallback={<SectionFallback />}>
+          <SecuritySection />
+        </Suspense>
 
         {/* SECTION 4 — TESTING & API */}
-        <TestingSection />
+        <Suspense fallback={<SectionFallback />}>
+          <TestingSection />
+        </Suspense>
 
         {/* SECTION 5 — INTERACTIVE DIAGRAMS */}
-        <DiagramsSection />
+        <Suspense fallback={<SectionFallback />}>
+          <DiagramsSection />
+        </Suspense>
 
         {/* SECTION 6 — DATABASE SCHEMA */}
-        <DatabaseSection />
+        <Suspense fallback={<SectionFallback />}>
+          <DatabaseSection />
+        </Suspense>
 
         <div className="text-center">
           <Link
