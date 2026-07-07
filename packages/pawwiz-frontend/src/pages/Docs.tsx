@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { OverviewSection } from './docs/OverviewSection';
 import { EnvironmentSection } from './docs/EnvironmentSection';
@@ -24,26 +25,65 @@ const NAV = [
 ];
 
 export default function Docs() {
+  const [activeId, setActiveId] = useState<string>('overview');
+
+  // Track which section is in view using IntersectionObserver
+  useEffect(() => {
+    const sectionEls = NAV.map(({ id }) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Pick the first intersecting entry that is visible — topmost wins
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      {
+        // Fire when the top 20% of each section enters the viewport
+        rootMargin: '-10% 0px -80% 0px',
+        threshold: 0,
+      }
+    );
+
+    sectionEls.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-200 pb-24">
       {/* Sticky in-page nav */}
-      <nav className="sticky top-0 z-30 bg-slate-200/90 backdrop-blur-sm border-b-2 border-slate-900">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex items-center gap-3 overflow-x-auto">
+      <nav className="sticky top-0 z-30 bg-slate-200/95 backdrop-blur-md border-b-2 border-slate-900 shadow-[0_2px_0_0_rgba(15,23,42,1)]">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
           <Link
             to="/"
-            className="flex-shrink-0 font-black uppercase tracking-tight text-slate-900 text-sm mr-2"
+            className="flex-shrink-0 font-black uppercase tracking-tight text-slate-900 text-sm mr-3 hover:opacity-70 transition-opacity"
           >
             🐾 PawWiz
           </Link>
-          {NAV.map((n) => (
-            <a
-              key={n.id}
-              href={`#${n.id}`}
-              className="flex-shrink-0 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-600 border-2 border-transparent hover:border-slate-900 rounded-full transition-colors"
-            >
-              {n.label}
-            </a>
-          ))}
+
+          {/* Divider */}
+          <span className="flex-shrink-0 w-px h-4 bg-slate-400 mr-1" />
+
+          {NAV.map((n) => {
+            const isActive = activeId === n.id;
+            return (
+              <a
+                key={n.id}
+                href={`#${n.id}`}
+                className={[
+                  'flex-shrink-0 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-full transition-all',
+                  isActive
+                    ? 'bg-slate-900 text-white border-2 border-slate-900'
+                    : 'text-slate-600 border-2 border-transparent hover:border-slate-900 hover:text-slate-900',
+                ].join(' ')}
+              >
+                {n.label}
+              </a>
+            );
+          })}
         </div>
       </nav>
 
