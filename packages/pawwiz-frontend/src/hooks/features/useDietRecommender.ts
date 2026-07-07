@@ -445,13 +445,17 @@ export const useDietRecommender = () => {
 
 
         const handleStartDietTracking = async () => {
-            setIsTracking(true); // Optimistic UI update
-
+            // No optimistic update here — setProfiles (via the server response) is
+            // the source of truth for isTracking. Premature setIsTracking(true) caused
+            // state drift when the request failed (banner stayed gone but profile
+            // still had isTracking: false in the profiles array).
             try {
                 const profileData = {
                     name: catName,
-                    gender,
-                    lifeStage,
+                    // Normalize to lowercase defensively — guards against any
+                    // capitalized values that may have slipped in from the Profile table.
+                    gender: (gender || 'male').toLowerCase() as 'male' | 'female',
+                    lifeStage: (lifeStage || 'adult').toLowerCase() as 'kitten' | 'adult' | 'senior',
                     age,
                     weight,
                     isKg,
@@ -468,8 +472,8 @@ export const useDietRecommender = () => {
                         body: JSON.stringify({
                             displayName: displayName || (catName ? `${catName}'s Owner` : 'Owner'),
                             catName: catName || 'My Cat',
-                            catSex: gender === 'female' ? 'female' : 'male',
-                            catLifeStage: lifeStage === 'kitten' ? 'kitten' : 'adult',
+                            catSex: profileData.gender,
+                            catLifeStage: profileData.lifeStage === 'kitten' ? 'kitten' : 'adult',
                         }),
                     });
                     if (!profileRes.ok) {
@@ -485,14 +489,16 @@ export const useDietRecommender = () => {
                         headers,
                         body: JSON.stringify(profileData),
                     });
-                    if (res.ok) {
-                        const newProf = await res.json();
-                        setProfiles([newProf]);
-                        setActiveProfileId(newProf.id);
-                        localStorage.setItem('diet_active_profile_id', newProf.id);
-                        saveProfilesToStorage([newProf]);
-                        syncStatesToSetup(newProf);
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(JSON.stringify(err));
                     }
+                    const newProf = await res.json();
+                    setProfiles([newProf]);
+                    setActiveProfileId(newProf.id);
+                    localStorage.setItem('diet_active_profile_id', newProf.id);
+                    saveProfilesToStorage([newProf]);
+                    syncStatesToSetup(newProf);
                 } else {
                     // Profile exists, update it via PUT
                     const res = await fetch(`${API_BASE}/api/diet/profiles/${activeProfileId}`, {
@@ -500,18 +506,20 @@ export const useDietRecommender = () => {
                         headers,
                         body: JSON.stringify(profileData),
                     });
-                    if (res.ok) {
-                        const updatedProf = await res.json();
-                        setProfiles(prev => {
-                            const updatedProfiles = prev.map(p => p.id === activeProfileId ? updatedProf : p);
-                            saveProfilesToStorage(updatedProfiles);
-                            return updatedProfiles;
-                        });
-                        syncStatesToSetup(updatedProf);
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(JSON.stringify(err));
                     }
+                    const updatedProf = await res.json();
+                    setProfiles(prev => {
+                        const updatedProfiles = prev.map(p => p.id === activeProfileId ? updatedProf : p);
+                        saveProfilesToStorage(updatedProfiles);
+                        return updatedProfiles;
+                    });
+                    syncStatesToSetup(updatedProf);
                 }
             } catch (e) {
-                console.error(e);
+                console.error('[handleStartDietTracking] Failed:', e);
             }
         };
 
