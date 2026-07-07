@@ -31,14 +31,15 @@ class OnboardingService {
 
   /**
    * Starts a new onboarding session.
-   * Returns the session ID and a one-time session token that must be supplied
-   * on all subsequent mutating operations. The token is stored hashed in the
-   * DB; the plaintext is returned only once at creation time.
+   * Returns only id, step, and the one-time session token. The token must be
+   * stored by the client and supplied as X-Session-Token on all subsequent
+   * mutating operations.
    */
-  async startSession(): Promise<OnboardingSession & { sessionToken: string }> {
+  async startSession(): Promise<{ id: string; step: number; sessionToken: string }> {
     const token = randomUUID();
     const session = await onboardingRepository.createWithToken(token);
-    return { ...session, sessionToken: token };
+    // Return the minimum fields needed by the client — no OTP state, no internal fields.
+    return { id: session.id, step: session.step, sessionToken: token };
   }
 
   /**
@@ -80,8 +81,9 @@ class OnboardingService {
    * Validates and updates session data for a specific step.
    * Enforces that all prior steps' data must exist.
    * Requires the session token issued at creation.
+   * Returns only public-safe fields — OTP secret material is never included.
    */
-  async updateStep(id: string, step: number, data: any, sessionToken?: string): Promise<OnboardingSession> {
+  async updateStep(id: string, step: number, data: any, sessionToken?: string) {
     const session = await this.getSession(id);
     await this.verifySessionToken(session, sessionToken);
 
@@ -126,7 +128,8 @@ class OnboardingService {
       throw AppError.badRequest('Invalid step for update');
     }
 
-    return onboardingRepository.update(id, updateData);
+    // Use updatePublic so OTP fields are never included in the response.
+    return onboardingRepository.updatePublic(id, updateData);
   }
 
   /**
@@ -188,8 +191,9 @@ class OnboardingService {
    * Verifies a user-supplied OTP code against the stored hash + TTL.
    * On success, advances session past step 3 (OTP gate).
    * Requires the session token issued at creation.
+   * Returns only public-safe fields — OTP secret material is never included.
    */
-  async verifyOtp(id: string, code: string, sessionToken?: string): Promise<OnboardingSession> {
+  async verifyOtp(id: string, code: string, sessionToken?: string) {
     const session = await this.getSession(id);
     await this.verifySessionToken(session, sessionToken);
 
@@ -213,6 +217,8 @@ class OnboardingService {
     const isValid = otpService.verifyOtp(code, session.otpHash, session.otpExpiresAt);
     if (!isValid) {
       // Count the failed attempt; invalidate the code once the cap is reached.
+      // This path throws — no session data is returned to the client, so using
+      // the internal update() here is fine.
       const nextAttempts = attempts + 1;
       await onboardingRepository.update(id, {
         otpAttempts: nextAttempts,
@@ -223,8 +229,10 @@ class OnboardingService {
       throw AppError.badRequest('Invalid or expired code');
     }
 
-    // Success — clear the OTP secret material and reset the attempt counter.
-    return onboardingRepository.update(id, {
+    // Success — clear the OTP secret material and advance the step.
+    // Use updatePublic so the cleared otpHash/otpExpiresAt/otpAttempts fields
+    // (and any other OTP state) are excluded from the HTTP response.
+    return onboardingRepository.updatePublic(id, {
       otpVerified: true,
       otpHash: null,
       otpExpiresAt: null,

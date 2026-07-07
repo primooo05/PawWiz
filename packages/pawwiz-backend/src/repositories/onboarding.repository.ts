@@ -78,6 +78,43 @@ class OnboardingRepository {
     }
   }
 
+  /**
+   * Update a session and return only the public-safe fields.
+   * Used by every path that returns session state to an unauthenticated client
+   * so that OTP secret material (otpHash, otpExpiresAt, otpAttempts,
+   * otpLastSentAt, sessionToken) is never included in the HTTP response.
+   */
+  async updatePublic(id: string, data: Prisma.OnboardingSessionUpdateInput) {
+    try {
+      return await prisma.onboardingSession.update({
+        where: { id },
+        data,
+        select: {
+          id: true,
+          step: true,
+          ownerName: true,
+          ownerEmail: true,
+          otpVerified: true,
+          catsCount: true,
+          customCatsCount: true,
+          catName: true,
+          catBreed: true,
+          catMarking: true,
+          catSex: true,
+          catLifeStage: true,
+          consumedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw AppError.notFound('Onboarding session not found');
+      }
+      throw error;
+    }
+  }
+
   async delete(id: string): Promise<OnboardingSession> {
     try {
       return await prisma.onboardingSession.delete({ where: { id } });
