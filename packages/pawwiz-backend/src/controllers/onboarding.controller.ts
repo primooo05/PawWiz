@@ -18,11 +18,13 @@ export const postCheckEmail = withErrorHandling(async (req: Request, res: Respon
 
 /**
  * POST /api/onboarding/start
- * Starts a new onboarding session and returns the session ID.
+ * Starts a new onboarding session and returns the session ID plus a one-time
+ * session token. The token must be stored by the client and supplied as the
+ * `X-Session-Token` header on all subsequent mutating operations.
  */
 export const startOnboarding = withErrorHandling(async (req: Request, res: Response) => {
   const session = await onboardingService.startSession();
-  res.status(201).json({ id: session.id, step: session.step });
+  res.status(201).json({ id: session.id, step: session.step, sessionToken: session.sessionToken });
 });
 
 /**
@@ -38,9 +40,11 @@ export const getOnboardingSession = withErrorHandling(async (req: Request, res: 
 /**
  * POST /api/onboarding/session/:id/update
  * Validates data for a step and updates the onboarding session progress.
+ * Requires the `X-Session-Token` header issued at session creation.
  */
 export const updateOnboardingStep = withErrorHandling(async (req: Request, res: Response) => {
   const id = req.params.id as string;
+  const sessionToken = req.headers['x-session-token'] as string | undefined;
   const { step, data } = req.body;
 
   if (typeof step !== 'number') {
@@ -49,7 +53,7 @@ export const updateOnboardingStep = withErrorHandling(async (req: Request, res: 
   }
 
   try {
-    const session = await onboardingService.updateStep(id, step, data);
+    const session = await onboardingService.updateStep(id, step, data, sessionToken);
     res.json(session);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -65,20 +69,24 @@ export const updateOnboardingStep = withErrorHandling(async (req: Request, res: 
  * POST /api/onboarding/session/:id/send-otp
  * Generates and sends a 6-digit OTP to the session's email.
  * Enforces a 60-second cooldown.
+ * Requires the `X-Session-Token` header issued at session creation.
  */
 export const postSendOtp = withErrorHandling(async (req: Request, res: Response) => {
   const id = req.params.id as string;
-  const result = await onboardingService.sendOtp(id);
+  const sessionToken = req.headers['x-session-token'] as string | undefined;
+  const result = await onboardingService.sendOtp(id, sessionToken);
   res.json(result);
 });
 
 /**
  * POST /api/onboarding/session/:id/verify-otp
  * Verifies the 6-digit OTP code and advances the session past the email gate.
+ * Requires the `X-Session-Token` header issued at session creation.
  */
 export const postVerifyOtp = withErrorHandling(async (req: Request, res: Response) => {
   const id = req.params.id as string;
+  const sessionToken = req.headers['x-session-token'] as string | undefined;
   const { code } = otpVerifySchema.parse(req.body);
-  const session = await onboardingService.verifyOtp(id, code);
+  const session = await onboardingService.verifyOtp(id, code, sessionToken);
   res.json(session);
 });

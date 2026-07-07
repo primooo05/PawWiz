@@ -51,6 +51,19 @@ class OnboardingRepository {
     });
   }
 
+  /**
+   * Create a new onboarding session with a pre-generated session token.
+   * The token is stored in plaintext and compared on subsequent requests.
+   */
+  async createWithToken(sessionToken: string): Promise<OnboardingSession> {
+    return prisma.onboardingSession.create({
+      data: {
+        step: 2,
+        sessionToken,
+      } as any,
+    });
+  }
+
   async update(id: string, data: Prisma.OnboardingSessionUpdateInput): Promise<OnboardingSession> {
     try {
       return await prisma.onboardingSession.update({

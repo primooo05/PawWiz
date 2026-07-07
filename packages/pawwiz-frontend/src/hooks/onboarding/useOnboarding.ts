@@ -6,6 +6,11 @@ export function useOnboarding() {
     const val = localStorage.getItem('pawwiz_onboarding_session_id');
     return (val === 'null' || val === 'undefined') ? null : val;
   });
+  // Session token issued at creation — required on all mutating operations to
+  // prevent UUID-only session takeover from a separate browser context.
+  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+    return localStorage.getItem('pawwiz_onboarding_session_token');
+  });
   const [sessionStep, setSessionStep] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +38,11 @@ export function useOnboarding() {
       const data = await res.json();
       if (!data?.id) throw new Error('Invalid onboarding session response');
       localStorage.setItem('pawwiz_onboarding_session_id', data.id);
+      // Persist the session token alongside the session ID so it survives page reloads.
+      if (data.sessionToken) {
+        localStorage.setItem('pawwiz_onboarding_session_token', data.sessionToken);
+        setSessionToken(data.sessionToken);
+      }
       setSessionId(data.id);
       setSessionStep(data.step);
       return data;
@@ -79,26 +89,33 @@ export function useOnboarding() {
 
   const submitStep = useCallback(async (step: number, stepData: any) => {
     let currentId = sessionId;
+    let currentToken = sessionToken;
     if (!currentId) {
       // Lazy init session if not exists
       const session = await initializeSession();
       if (!session) return false;
       currentId = session.id;
+      currentToken = session.sessionToken ?? null;
     }
 
     setLoading(true);
     setError(null);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (currentToken) headers['X-Session-Token'] = currentToken;
+
       const res = await fetch(`${API_BASE}/api/onboarding/session/${currentId}/update`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ step, data: stepData }),
       });
 
       if (!res.ok) {
         if (res.status === 404) {
           localStorage.removeItem('pawwiz_onboarding_session_id');
+          localStorage.removeItem('pawwiz_onboarding_session_token');
           setSessionId(null);
+          setSessionToken(null);
         }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `Failed to submit step ${step}`);
@@ -113,11 +130,13 @@ export function useOnboarding() {
     } finally {
       setLoading(false);
     }
-  }, [sessionId, initializeSession]);
+  }, [sessionId, sessionToken, initializeSession]);
 
   const resetSession = useCallback(() => {
     localStorage.removeItem('pawwiz_onboarding_session_id');
+    localStorage.removeItem('pawwiz_onboarding_session_token');
     setSessionId(null);
+    setSessionToken(null);
     setSessionStep(1);
     setOwnerName('');
     setOwnerEmail('');
@@ -133,14 +152,19 @@ export function useOnboarding() {
   const sendOtp = useCallback(async (id: string): Promise<{ cooldownSeconds: number } | null> => {
     setError(null);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (sessionToken) headers['X-Session-Token'] = sessionToken;
+
       const res = await fetch(`${API_BASE}/api/onboarding/session/${id}/send-otp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
       });
       if (!res.ok) {
         if (res.status === 404) {
           localStorage.removeItem('pawwiz_onboarding_session_id');
+          localStorage.removeItem('pawwiz_onboarding_session_token');
           setSessionId(null);
+          setSessionToken(null);
         }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to send OTP');
@@ -150,7 +174,7 @@ export function useOnboarding() {
       setError(err.message);
       throw err;
     }
-  }, []);
+  }, [sessionToken]);
 
   const checkEmail = useCallback(async (email: string): Promise<boolean> => {
     try {
@@ -170,15 +194,20 @@ export function useOnboarding() {
   const verifyOtp = useCallback(async (id: string, code: string): Promise<boolean> => {
     setError(null);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (sessionToken) headers['X-Session-Token'] = sessionToken;
+
       const res = await fetch(`${API_BASE}/api/onboarding/session/${id}/verify-otp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ code }),
       });
       if (!res.ok) {
         if (res.status === 404) {
           localStorage.removeItem('pawwiz_onboarding_session_id');
+          localStorage.removeItem('pawwiz_onboarding_session_token');
           setSessionId(null);
+          setSessionToken(null);
         }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'Failed to verify OTP');
@@ -190,10 +219,11 @@ export function useOnboarding() {
       setError(err.message);
       return false;
     }
-  }, []);
+  }, [sessionToken]);
 
   return {
     sessionId,
+    sessionToken,
     sessionStep,
     loading,
     error,

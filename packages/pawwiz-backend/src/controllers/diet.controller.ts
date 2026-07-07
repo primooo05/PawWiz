@@ -121,9 +121,18 @@ export const uploadAvatarFile = withErrorHandling(async (req: Request, res: Resp
       return;
     }
 
-    // Generate unique file path
-    const ext = file.originalname.split('.').pop() || 'jpg';
-    const filePath = `${supabaseUserId}/${profileId}/${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+    // Derive extension from the MIME type (server-verified by multer) rather than
+    // the client-supplied filename, then build the storage path entirely from
+    // server-controlled values so a crafted filename like "../../other/file.jpg"
+    // cannot traverse outside the owner's folder.
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    const ext = MIME_TO_EXT[file.mimetype] ?? 'jpg';
+    const filePath = `${supabaseUserId}/${profileId}/${Date.now()}.${ext}`;
 
     console.debug('[uploadAvatarFile] Uploading to Supabase:', { filePath });
 
