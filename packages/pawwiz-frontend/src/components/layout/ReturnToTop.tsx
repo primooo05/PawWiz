@@ -25,7 +25,7 @@ export default function ReturnToTop() {
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-[#e9c46a] text-white flex items-center justify-center shadow-[0_4px_0_0_#b8862a] hover:bg-[#f0cc74] active:shadow-none active:translate-y-[4px] cursor-pointer transition-all duration-200 ${
+      className={`fixed bottom-24 right-6 z-50 w-12 h-12 rounded-full bg-[#e9c46a] text-white flex items-center justify-center shadow-[0_4px_0_0_#b8862a] hover:bg-[#f0cc74] active:shadow-none active:translate-y-[4px] cursor-pointer transition-all duration-200 ${
         isVisible
           ? 'opacity-100 scale-100 translate-y-0'
           : 'opacity-0 scale-75 translate-y-8 pointer-events-none'
