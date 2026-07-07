@@ -10,7 +10,7 @@ import { usePregnancyTracker, getInitialLogs } from '../../../hooks/trackers/use
 import { useDietRecommender } from '../../../hooks/features/useDietRecommender';
 import { useProfilePanel } from '../../../hooks/features/useProfilePanel';
 import { useCatPregnancy } from '../../../hooks/features/useCatPregnancy';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import InsightCardFeed from './flo/InsightCardFeed';
 import { supabase } from '../../../lib/supabase';
 import { API_BASE } from '../../../lib/config.js';
@@ -18,6 +18,7 @@ import ConfirmationDialog from '../../ui/modals/ConfirmationDialog';
 
 const CatPregnancyTracker: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const diet = useDietRecommender();
     const { profile, isLoading: isProfileLoading } = useProfilePanel();
 
@@ -45,13 +46,20 @@ const CatPregnancyTracker: React.FC = () => {
         return activeProfile ? activeProfile.gender === 'female' : profile?.catSex?.toLowerCase() === 'female';
     })();
 
-    const [selectedCatId, setSelectedCatId] = React.useState<string | null>(null);
+    const passedCatId = (location.state as any)?.incomingCatId || null;
+    const [selectedCatId, setSelectedCatId] = React.useState<string | null>(passedCatId);
 
     React.useEffect(() => {
-        if (femaleRoster.length === 1 && activeProfileIsFemale && !selectedCatId) {
+        if (passedCatId && selectedCatId !== passedCatId) {
+            setSelectedCatId(passedCatId);
+        }
+    }, [passedCatId]);
+
+    React.useEffect(() => {
+        if (!passedCatId && femaleRoster.length === 1 && activeProfileIsFemale && !selectedCatId) {
             setSelectedCatId(femaleRoster[0].id);
         }
-    }, [femaleRoster.length, activeProfileIsFemale, selectedCatId]);
+    }, [passedCatId, femaleRoster.length, activeProfileIsFemale, selectedCatId]);
 
     const selectedCat = femaleRoster.find(c => c.id === selectedCatId);
     const selectedCatName = selectedCat ? selectedCat.name : (profile?.catName || 'Your Cat');

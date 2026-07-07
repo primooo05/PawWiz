@@ -6,6 +6,7 @@ import ReturnToTop from './components/layout/ReturnToTop';
 import PageTransition from './components/layout/PageTransition';
 import { useScrollToTop } from './hooks/ui/useScrollToTop';
 import pawWizText from './assets/PawWiz_Text_logo.png';
+import PipWidget from './components/ui/PipWidget';
 
 export default function App() {
   useScrollToTop();
@@ -20,11 +21,12 @@ export default function App() {
                      location.pathname === '/dashboard' || 
                      location.pathname === '/user-dashboard' ||
                      location.pathname === '/pregnancy-tracker' || 
-                     location.pathname === '/heat-tracker' ||
                      location.pathname === '/settings' ||
                      location.pathname === '/reset-password' ||
                      location.pathname === '/docs' ||
                      location.pathname.startsWith('/health-timeline/');
+
+  const showCompanion = !isLandingPage && !isLoginPage;
 
   return (
     <div className="min-h-screen bg-white text-slate-800 relative overflow-x-hidden">
@@ -51,6 +53,7 @@ export default function App() {
           </AnimatePresence>
         </main>
         <ReturnToTop />
+        {showCompanion && <PipWidget />}
         {isLandingPage && <Footer />}
       </div>
     </div>
