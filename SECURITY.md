@@ -14,11 +14,19 @@
 
 <br>
 
-![Aikido AI Code Audit Result](image-1.png)
+![Resolved Issues](image-2.png)
 
-*Figure 2: Resolved and Lack of Issues Found in Code Audit for PawWiz*
+*Figure 2: The Three (3) Resolved issues Found in Code Audit for PawWiz*
 
+As shown in Figure 2, Aikido's AI Code Audit identified **3 resolved issues** across the following vulnerability categories:
 
+| # | Category | Resolved In |
+|---|---|---|
+| 1 | **Exposure of Sensitive Information** | Vulnerabilities 7, 9 (see [Fixed Vulnerabilities](#fixed-vulnerabilities)) |
+| 2 | **Insecure Direct Object Reference (IDOR)** | Vulnerability 8 |
+| 3 | **Server-Side Request Forgery (SSRF)** | Vulnerability 6 |
+
+All three were confirmed, patched, and verified with 0 open issues remaining at audit completion.
 
 ---
 
