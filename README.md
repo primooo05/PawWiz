@@ -1,7 +1,6 @@
 # PawWiz
 
-AI-powered cat health assistant. Covers plant toxicity verification, personalized diet planning, behavior decoding, pregnancy & heat tracking, and a unified health timeline — all in a single mobile-first web app.
-
+AI-powered cat health assistant. Covers plant toxicity verification, personalized diet planning, behavior decoding, pregnancy tracking, and a unified health timeline — all in a single mobile-first web app.
 ---
 
 ## Features
@@ -14,7 +13,6 @@ AI-powered cat health assistant. Covers plant toxicity verification, personalize
 | **Behavior Dashboard** | Weekly summaries, recurring pattern analysis, daily timelines, and AI-generated insight cards (concern flags, positive indicators, recommendations) aggregated from logged behaviors. |
 | **Health Timeline** | Unified per-cat event timeline with AI-generated health insights and PDF export. Events are sourced from diet logs, behavior logs, and pregnancy records. |
 | **Pregnancy Tracker** | 9-week gestation tracker with per-week action checklists, Flo-style daily symptom/mood logging, and AI insight cards. Supports multiple sessions per cat. |
-| **Heat Tracker** | Heat-cycle tracking for female cats. |
 | **Settings** | Profile management, cat management, avatar upload to Supabase Storage. |
 
 ---
@@ -56,9 +54,13 @@ pawwiz-monorepo/                  ← npm workspaces root
 ```bash
 npm install
 ```
-
 Installs all workspace packages in one shot.
-
+```bash
+cd packages/pawwiz-backend
+npm install
+cd packages/pawwiz-frontend
+```
+Installs all packages from different workspace.
 ---
 
 ### 2. Configure environment variables
@@ -86,7 +88,7 @@ A single `.env` at the repo root serves both packages. The backend resolves it b
 
 **Optional** (app falls back to mocks/heuristics when absent):
 
-`GEMINI_API_KEY`, `GROQ_API_KEY`, `PLANTNET_API_KEY`, `PERENUAL_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`
+`GEMINI_API_KEY`, `GROQ_API_KEY`, `PLANTNET_API_KEY`, `PERENUAL_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`,`NODE_ENV`,`SHADOW_DATABASE_URL`
 
 Alternatively, use **Infisical** for centrally managed secrets — prefix any command with `infisical run --` and injected variables take precedence over `.env`.
 
@@ -105,6 +107,9 @@ npm run prisma:migrate -w packages/pawwiz-backend
 
 # Windows helper — wraps Infisical + forces DIRECT_URL
 migrate.bat <migration_name>
+
+# Generate prisma client on the root folder
+npm run prisma:generate -w packages/pawwiz-backend
 ```
 
 ---
