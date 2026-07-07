@@ -54,11 +54,15 @@ export const timelineController = {
 
   /** GET /api/timeline/:catId/insights */
   getInsights: withErrorHandling(async (req: Request, res: Response) => {
-    const _supabaseUserId = (req as any).user?.sub as string;
+    const supabaseUserId = (req as any).user?.sub as string;
     const catId = req.params.catId as string;
 
     const q = (req as any).validatedQuery ?? req.query;
     const severity = q.severity as string | undefined;
+
+    // Verify ownership before returning insights — the catId comes from the
+    // URL and must belong to the authenticated caller.
+    await timelineService.verifyOwnership(catId, supabaseUserId);
 
     const insights = await insightService.getInsightsForCat(catId, { severity });
 
@@ -67,10 +71,10 @@ export const timelineController = {
 
   /** POST /api/timeline/:catId/insights/refresh */
   refreshInsights: withErrorHandling(async (req: Request, res: Response) => {
-    const _supabaseUserId = (req as any).user?.sub as string;
+    const supabaseUserId = (req as any).user?.sub as string;
     const catId = req.params.catId as string;
 
-    await insightService.triggerOnDemandRefresh(catId);
+    await insightService.triggerOnDemandRefresh(catId, supabaseUserId);
 
     res.status(202).json({ message: 'Refresh job started' });
   }),
