@@ -32,6 +32,7 @@ model Profile {
 
 model OnboardingSession {
   id              String   @id @default(uuid())
+  sessionToken    String   @unique @map("session_token") @default(uuid())
   step            Int      @default(1)
   ownerName       String?  @map("owner_name")
   ownerEmail      String?  @map("owner_email")

@@ -37,30 +37,27 @@ export const createChat = withErrorHandling(async (req: Request, res: Response) 
 export const addMessage = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub as string;
   const chatId = req.params.id as string;
-  const { speaker, text, analysis } = req.body;
+  const { speaker, text } = req.body;
 
-  // When a Wiz message arrives with a full analysis payload, reconstruct a
-  // DecoderResponse so the service can extract BehaviorLog entries from the
-  // AI's own classification (catState, confidence, decodedMeaning) rather than
-  // re-running keyword matching on the formatted response text.
-  let decodeResult: import('../services/behavior-decoder.service.js').DecoderResponse | undefined;
-  if (speaker === 'wiz' && analysis && analysis.catState) {
-    decodeResult = {
-      type: 'analysis' as const,
-      analysis: {
-        ...analysis,
-        // Ensure userMessage is threaded through for context extraction
-        userMessage: analysis.userMessage ?? text,
-      },
-    };
+  // Security: validate speaker is one of the two allowed values.
+  if (speaker !== 'user' && speaker !== 'wiz') {
+    res.status(400).json({ message: 'Invalid speaker value.' });
+    return;
   }
 
+  // Security: always strip the client-supplied `analysis` field and never
+  // reconstruct a decodeResult from it. BehaviorLog entries are written
+  // server-side by the /api/gemini/behavior/decode handler immediately after
+  // the AI produces a result — before this endpoint is even called.
+  // Accepting a client-supplied analysis payload here would allow any
+  // authenticated user to fabricate arbitrary catState / confidence values
+  // and inject them into the behavior history without the AI being consulted.
   const message = await behaviorChatService.addMessage(supabaseUserId, {
     chatId,
     speaker,
     text,
-    analysis: analysis || null,
-    decodeResult,
+    analysis: null,       // always null — never trust client-supplied analysis
+    decodeResult: undefined, // never derive BehaviorLogs from client data
   });
 
   res.status(201).json(message);

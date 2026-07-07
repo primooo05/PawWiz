@@ -12,6 +12,7 @@ import { prisma } from '../lib/prisma.js';
 import { Prisma } from '@prisma/client';
 import type { OnboardingSession } from '@prisma/client';
 import { logger } from '../utils/winston.js';
+import { randomUUID } from 'crypto';
 import {
   onboardingStep2Schema,
   onboardingStep3Schema,
@@ -30,9 +31,30 @@ class OnboardingService {
 
   /**
    * Starts a new onboarding session.
+   * Returns the session ID and a one-time session token that must be supplied
+   * on all subsequent mutating operations. The token is stored hashed in the
+   * DB; the plaintext is returned only once at creation time.
    */
-  async startSession(): Promise<OnboardingSession> {
-    return onboardingRepository.create();
+  async startSession(): Promise<OnboardingSession & { sessionToken: string }> {
+    const token = randomUUID();
+    const session = await onboardingRepository.createWithToken(token);
+    return { ...session, sessionToken: token };
+  }
+
+  /**
+   * Verifies that the supplied token matches the session's stored token.
+   * Throws 401 if the token is missing or does not match — prevents
+   * UUID-only session takeover where an attacker enumerates session IDs
+   * without possessing the session token issued at creation.
+   */
+  private async verifySessionToken(session: OnboardingSession, suppliedToken: string | undefined): Promise<void> {
+    if (!suppliedToken) {
+      throw AppError.unauthorized('Session token is required');
+    }
+    const storedToken = (session as any).sessionToken as string | null;
+    if (!storedToken || storedToken !== suppliedToken) {
+      throw AppError.unauthorized('Invalid session token');
+    }
   }
 
   /**
@@ -57,9 +79,11 @@ class OnboardingService {
   /**
    * Validates and updates session data for a specific step.
    * Enforces that all prior steps' data must exist.
+   * Requires the session token issued at creation.
    */
-  async updateStep(id: string, step: number, data: any): Promise<OnboardingSession> {
+  async updateStep(id: string, step: number, data: any, sessionToken?: string): Promise<OnboardingSession> {
     const session = await this.getSession(id);
+    await this.verifySessionToken(session, sessionToken);
 
     // 1. Guard check: Ensure prior step data exists
     this.assertPriorStepsValid(session, step);
@@ -108,9 +132,11 @@ class OnboardingService {
   /**
    * Sends a 6-digit OTP to the session's ownerEmail.
    * Enforces a 60-second cooldown between sends.
+   * Requires the session token issued at creation.
    */
-  async sendOtp(id: string): Promise<{ cooldownSeconds: number }> {
+  async sendOtp(id: string, sessionToken?: string): Promise<{ cooldownSeconds: number }> {
     const session = await this.getSession(id);
+    await this.verifySessionToken(session, sessionToken);
 
     if (!session.ownerEmail || session.ownerEmail.trim().length === 0) {
       throw AppError.badRequest('Email address is required before OTP can be sent');
@@ -161,9 +187,11 @@ class OnboardingService {
   /**
    * Verifies a user-supplied OTP code against the stored hash + TTL.
    * On success, advances session past step 3 (OTP gate).
+   * Requires the session token issued at creation.
    */
-  async verifyOtp(id: string, code: string): Promise<OnboardingSession> {
+  async verifyOtp(id: string, code: string, sessionToken?: string): Promise<OnboardingSession> {
     const session = await this.getSession(id);
+    await this.verifySessionToken(session, sessionToken);
 
     if (!session.otpHash || !session.otpExpiresAt) {
       throw AppError.badRequest('No OTP has been issued for this session');

@@ -435,9 +435,11 @@ class BehaviorDecoderService {
         : '';
 
     return `Decode the following feline behavioral state.${catSection}${historySection}
+<user_input>
 Current message: ${request.vocalDescription}
 Body Language Signs: ${request.bodyLanguageSigns.join(', ')}
 Context: ${request.context}
+</user_input>
 
 ${historySection ? 'Use the conversation history above to answer follow-up questions in context. ' : ''}${catSection ? `Use the cat profile above to personalise your analysis. Factor in the cat's physical condition, diet status, and reproductive state (pregnancy/heat) when interpreting behavior — these significantly affect feline mood, energy, and vocalization patterns. ` : ''}Analyze vocal signals, tail position, eye dilation, and ear positions. Return a detailed behavior decode response as JSON with these fields:
 - vocalAnalysis (string): Analysis of the vocal signals
@@ -492,7 +494,9 @@ ${historySection ? 'Use the conversation history above to answer follow-up quest
     return `${catLine}Previous conversation:
 ${history}
 
+<user_input>
 Owner's new message: ${request.vocalDescription}
+</user_input>
 
 Answer the owner's question directly based on the conversation above. Factor in the cat's health profile (diet, weight, reproductive state) when relevant. Be warm, concise, and practical.`;
   }
