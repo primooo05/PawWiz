@@ -1,5 +1,32 @@
 import { Code, SectionCard, TEAL } from './shared';
 
+const AIKIDO_FINDINGS = [
+  {
+    num: '01',
+    category: 'Exposure of Sensitive Information',
+    detail:
+      'OTP hashes, bearer tokens, supabaseUserId, and full request bodies were exposed via API responses and server logs across 8 files (19 instances).',
+    fixedIn: 'Vulnerabilities 7 & 9',
+    commits: ['666d220', 'b1890f5'],
+  },
+  {
+    num: '02',
+    category: 'Insecure Direct Object Reference (IDOR)',
+    detail:
+      'POST /api/timeline/:catId/insights/refresh used the victim cat\'s stored owner ID for the ownership check, making it tautological — any authenticated user could trigger AI processing of another user\'s cat data.',
+    fixedIn: 'Vulnerability 8',
+    commits: ['6e8635b'],
+  },
+  {
+    num: '03',
+    category: 'Server-Side Request Forgery (SSRF)',
+    detail:
+      'cat.photoUrl was fetched server-side during PDF export with no destination allowlist, enabling SSRF to internal services (AWS metadata, loopback, VPC).',
+    fixedIn: 'Vulnerability 6',
+    commits: ['2aa6496'],
+  },
+];
+
 const AUTH_SNIPPET = `// middleware/auth.ts — Supabase JWT verification (ES256 JWKS + HS256 fallback)
 import jwt from 'jsonwebtoken';
 
@@ -103,13 +130,74 @@ const HARDENING = [
 export function SecuritySection() {
   return (
     <SectionCard id="security" eyebrow="Section 03" title="Security">
-      <p className="text-sm text-slate-600 font-medium mb-6">
+      <p className="text-sm text-slate-600 font-medium mb-8">
         Defense-in-depth across the auth surface, hardened against the OWASP Top 10
         (A01 · A04 · A07): Supabase JWT verification with issuer + audience validation,
         Zod input gating, HTML sanitization, IP-based rate limiting behind a trusted proxy,
         Helmet headers, honeypot bot traps, and OTP email verification with per-session
         brute-force lockout and enumeration-safe responses.
       </p>
+
+      {/* ── Aikido Audit Findings ─────────────────────────────────────── */}
+      <div className="mb-10">
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+            Aikido AI Code Audit — Resolved Findings
+          </h3>
+          <span
+            className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full"
+            style={{ backgroundColor: '#dcfce7', color: '#166534' }}
+          >
+            ✓ 3 / 3 Resolved
+          </span>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {AIKIDO_FINDINGS.map((f) => (
+            <div
+              key={f.num}
+              className="p-4 bg-white border-2 border-slate-900 rounded-2xl shadow-[3px_3px_0_0_rgba(15,23,42,1)] flex flex-col gap-2"
+            >
+              {/* Header row */}
+              <div className="flex items-start justify-between gap-2">
+                <span
+                  className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: TEAL, color: '#fff' }}
+                >
+                  #{f.num}
+                </span>
+                <span
+                  className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: '#dcfce7', color: '#166534' }}
+                >
+                  ✓ Fixed
+                </span>
+              </div>
+
+              {/* Category */}
+              <p className="font-black text-sm text-slate-900 leading-snug">{f.category}</p>
+
+              {/* Description */}
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed flex-1">{f.detail}</p>
+
+              {/* Footer — fix reference */}
+              <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+                <span className="text-[9px] font-black uppercase text-slate-400">{f.fixedIn}</span>
+                {f.commits.map((c) => (
+                  <code
+                    key={c}
+                    className="text-[9px] font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded"
+                  >
+                    {c}
+                  </code>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Code snippets ─────────────────────────────────────────────── */}
       <div className="grid gap-5 md:grid-cols-2 mb-6">
         <div>
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-2">JWT Verification</h3>
@@ -123,7 +211,7 @@ export function SecuritySection() {
         </div>
       </div>
 
-      {/* OWASP hardening delivered in the security & performance refactor */}
+      {/* ── OWASP hardening ───────────────────────────────────────────── */}
       <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mt-8 mb-3">
         OWASP Hardening
       </h3>
