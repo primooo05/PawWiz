@@ -15,6 +15,7 @@ import { timelineService } from './timeline.service.js';
 import { timelineRepository } from '../repositories/timeline.repository.js';
 import { sanitizeInsightInput } from './insight.service.js';
 import { AppError } from '../utils/errors.js';
+import { lookup } from 'dns/promises';
 import type { HealthEvent } from '../types/shared.js';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -64,10 +65,132 @@ function fmtMonthDay(dateStr: string): string {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d);
 }
 
+// ─── SSRF guard ──────────────────────────────────────────────────────────────
+//
+// Called before any outbound fetch so that a user-controlled URL stored in
+// cat.photoUrl cannot be used to probe internal services from the server's
+// network context (AWS metadata endpoint, VPC services, loopback, etc.).
+//
+// Strategy:
+//   1. Only allow https: (no http, file, data, ftp, etc.)
+//   2. Resolve the hostname to its IP addresses via DNS
+//   3. Reject any address that falls into a private/link-local/loopback range
+//
+// IPv4 blocked ranges:
+//   - 127.0.0.0/8       loopback
+//   - 10.0.0.0/8        RFC1918 private
+//   - 172.16.0.0/12     RFC1918 private
+//   - 192.168.0.0/16    RFC1918 private
+//   - 169.254.0.0/16    link-local (AWS/GCP/Azure metadata)
+//   - 100.64.0.0/10     CGNAT / shared address space
+//   - 0.0.0.0/8         "this" network
+//
+// IPv6 blocked ranges:
+//   - ::1               loopback
+//   - fc00::/7          Unique Local Addresses (ULA)
+//   - fe80::/10         link-local
+//   - ::ffff:0:0/96     IPv4-mapped (proxies any IPv4 range above via IPv6)
+
+const BLOCKED_IPV4_RANGES: Array<[number, number, number]> = [
+  // [network_as_uint32, mask_as_uint32, prefix_bits] — not actually used below
+  // We use a simpler octet-based check for readability.
+  // Encoded as [networkInt, maskInt] pairs treated as closures instead.
+] as any;
+
+function isBlockedIPv4(ip: string): boolean {
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(isNaN)) return true; // unparseable → block
+
+  const [a, b] = parts;
+  return (
+    a === 0                                    ||  // 0.0.0.0/8
+    a === 10                                   ||  // 10.0.0.0/8
+    a === 127                                  ||  // 127.0.0.0/8
+    (a === 169 && b === 254)                   ||  // 169.254.0.0/16 (link-local / metadata)
+    (a === 172 && b >= 16 && b <= 31)          ||  // 172.16.0.0/12
+    (a === 192 && b === 168)                   ||  // 192.168.0.0/16
+    (a === 100 && b >= 64 && b <= 127)            // 100.64.0.0/10 (CGNAT)
+  );
+}
+
+function isBlockedIPv6(ip: string): boolean {
+  const lower = ip.toLowerCase().replace(/^\[|\]$/g, '');
+  return (
+    lower === '::1'                             ||  // loopback
+    lower.startsWith('fc')                      ||  // ULA fc00::/7
+    lower.startsWith('fd')                      ||  // ULA fd00::/7
+    lower.startsWith('fe8')                     ||  // link-local fe80::/10
+    lower.startsWith('fe9')                     ||
+    lower.startsWith('fea')                     ||
+    lower.startsWith('feb')                     ||
+    lower.startsWith('::ffff:')                     // IPv4-mapped
+  );
+}
+
+/**
+ * Validates that a URL is safe to fetch from the server's network context.
+ * Throws an Error (not AppError — caller silently returns null) if the URL
+ * fails scheme validation or resolves to a blocked IP range.
+ */
+async function assertSafeFetchUrl(rawUrl: string): Promise<void> {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`SSRF guard: invalid URL "${rawUrl}"`);
+  }
+
+  // Only HTTPS is allowed — no http, file, data, ftp, etc.
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`SSRF guard: scheme "${parsed.protocol}" is not allowed`);
+  }
+
+  const hostname = parsed.hostname;
+
+  // Reject bare IP literals immediately (no DNS needed)
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    if (isBlockedIPv4(hostname)) {
+      throw new Error(`SSRF guard: IPv4 address ${hostname} is in a blocked range`);
+    }
+    return; // public IPv4 literal — allow
+  }
+  if (hostname.includes(':') || hostname.startsWith('[')) {
+    if (isBlockedIPv6(hostname)) {
+      throw new Error(`SSRF guard: IPv6 address ${hostname} is in a blocked range`);
+    }
+    return; // public IPv6 literal — allow
+  }
+
+  // Resolve hostname → IP(s) and check each one
+  let addresses: string[];
+  try {
+    const records = await lookup(hostname, { all: true });
+    addresses = records.map((r: { address: string }) => r.address);
+  } catch {
+    throw new Error(`SSRF guard: DNS resolution failed for "${hostname}"`);
+  }
+
+  for (const addr of addresses) {
+    if (addr.includes(':')) {
+      if (isBlockedIPv6(addr)) {
+        throw new Error(`SSRF guard: hostname "${hostname}" resolves to blocked IPv6 ${addr}`);
+      }
+    } else {
+      if (isBlockedIPv4(addr)) {
+        throw new Error(`SSRF guard: hostname "${hostname}" resolves to blocked IPv4 ${addr}`);
+      }
+    }
+  }
+}
+
 // ─── Image fetch helper ───────────────────────────────────────────────────────
 
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   try {
+    // SSRF guard: validate scheme and resolve hostname before making any request.
+    // Rejects loopback, RFC1918, link-local, CGNAT, and IPv4-mapped IPv6 ranges.
+    await assertSafeFetchUrl(url);
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);
     const response = await fetch(url, { signal: controller.signal });

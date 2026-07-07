@@ -66,5 +66,32 @@ export const updateWaterIntakeSchema = z.object({
 });
 
 export const updateAvatarSchema = z.object({
-  photoUrl: z.string().url('Must be a valid URL').max(2048, 'URL too long'),
+  // Restrict to the application's own Supabase Storage origin so arbitrary
+  // external URLs cannot be persisted onto cat.photoUrl and later fetched
+  // server-side during PDF export (SSRF). The allowed origin is derived from
+  // SUPABASE_URL at runtime; falls back to a broad https-only check when the
+  // env var is absent (e.g. local dev without Infisical).
+  photoUrl: z.string()
+    .url('Must be a valid URL')
+    .max(2048, 'URL too long')
+    .refine(
+      (url) => {
+        try {
+          const parsed = new URL(url);
+          // Must always be HTTPS
+          if (parsed.protocol !== 'https:') return false;
+          // When the Supabase URL is configured, only that origin is accepted
+          const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+          if (supabaseUrl) {
+            const allowed = new URL(supabaseUrl);
+            return parsed.hostname === allowed.hostname;
+          }
+          // Dev fallback: accept any HTTPS URL (SSRF guard at fetch time still applies)
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Avatar URL must point to application storage' }
+    ),
 });
