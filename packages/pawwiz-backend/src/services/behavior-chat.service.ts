@@ -18,7 +18,7 @@ import { logger } from '../utils/winston.js';
 class BehaviorChatService {
   /** Get all chat sessions for the authenticated user, optionally scoped to a cat */
   async getChats(supabaseUserId: string, catId?: string | null): Promise<ChatWithMessages[]> {
-    logger.info('[BehaviorChat] Fetching chats', { supabaseUserId, catId: catId ?? 'all' });
+    logger.debug('[BehaviorChat] Fetching chats', { catId: catId ?? 'all' });
     return behaviorChatRepository.findAllByUser(supabaseUserId, catId ?? undefined);
   }
 
@@ -37,7 +37,7 @@ class BehaviorChatService {
 
   /** Create a new chat session, scoped to a specific cat when catId is provided */
   async createChat(supabaseUserId: string, title?: string, catId?: string | null) {
-    logger.info('[BehaviorChat] Creating new chat', { supabaseUserId, title, catId: catId ?? null });
+    logger.info('[BehaviorChat] Creating new chat', { catId: catId ?? null });
     const chat = await behaviorChatRepository.createChat({
       supabaseUserId,
       catId: catId ?? null,
@@ -225,7 +225,7 @@ class BehaviorChatService {
       }
     }
 
-    logger.info('[BehaviorChat] Backfill complete', { supabaseUserId, created, skipped });
+    logger.info('[BehaviorChat] Backfill complete', { created, skipped });
     return { created, skipped };
   }
 
@@ -236,7 +236,7 @@ class BehaviorChatService {
       throw new AppError('Chat not found', 404);
     }
 
-    logger.info('[BehaviorChat] Deleting chat', { supabaseUserId, chatId });
+    logger.info('[BehaviorChat] Deleting chat', { chatId });
     await behaviorChatRepository.deleteChat(chatId);
   }
 

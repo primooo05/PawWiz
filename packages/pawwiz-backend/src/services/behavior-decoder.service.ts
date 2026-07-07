@@ -205,8 +205,7 @@ class BehaviorDecoderService {
     // re-running a structured behavior decode.
     const hasHistory = request.conversationHistory && request.conversationHistory.length > 0;
     if (hasHistory && isConversational(request.vocalDescription)) {
-      logger.info('[BehaviorDecoder] Conversational follow-up detected — routing to conversational AI', {
-        vocalDescription: request.vocalDescription,
+      logger.debug('[BehaviorDecoder] Conversational follow-up detected — routing to conversational AI', {
         historyLength: request.conversationHistory!.length,
       });
       const convPrompt = this.buildConversationalPrompt(request);
@@ -316,10 +315,8 @@ class BehaviorDecoderService {
     // Prompt is clear — proceed with analysis
     const prompt = this.buildPrompt(request);
 
-    logger.info('[BehaviorDecoder] Decode request received', {
-      vocalDescription: request.vocalDescription,
-      bodyLanguageSigns: request.bodyLanguageSigns,
-      context: request.context,
+    logger.debug('[BehaviorDecoder] Decode request received', {
+      bodyLanguageSignCount: request.bodyLanguageSigns.length,
     });
 
     // Tier 1: Groq (Llama 3.3) — primary
