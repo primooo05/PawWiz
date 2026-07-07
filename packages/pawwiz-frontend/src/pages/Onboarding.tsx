@@ -73,6 +73,8 @@ function OnboardingView() {
     verifyOtp,
     checkEmail,
     fetchSession,
+    addPendingCat,
+    pendingCats,
   } = useOnboardingContext();
 
   const { bubbleText, isTyping, showBubble, startTyping, showStaticBubble, hideBubble, reset: resetBubble } = useTypewriter();
@@ -237,6 +239,8 @@ function OnboardingView() {
       return;
     }
 
+    // Cat was already snapshotted into pendingCats when step 6 completed.
+    // Just clear the fields and loop back.
     { setIsTransitioning(true); setIsZIndexHigh(true); }
     setTimeout(() => {
       resetBubble();
@@ -413,6 +417,12 @@ function OnboardingView() {
             const success = await submitStep(6, { catLifeStage });
             if (success) {
               setIsStep6Dirty(false);
+
+              // Snapshot this cat immediately into pendingCats (and localStorage).
+              // This covers both the multi-cat flow and guards against page refreshes
+              // between step 6 and step 8 — the data is safe as soon as step 6 succeeds.
+              addPendingCat({ catName, catBreed, catMarking, catSex, catLifeStage });
+
               // Increment cats added counter
               setCatsAdded((prev: number) => prev + 1);
               // If only 1 cat, skip step 7 and go directly to step 8
@@ -429,7 +439,8 @@ function OnboardingView() {
         },
       });
     } else if (step === 7) {
-      // "Create Profile" on step 7 now transitions to step 8 (password)
+      // "Create Profile" on step 7 — transition to step 8 (password).
+      // All cats were already added to pendingCats when each step 6 completed.
       transitionTo(8);
     } else if (step === 8) {
       // Password (was step 7)
@@ -514,6 +525,9 @@ function OnboardingView() {
           supabaseUserId: authData.user.id,
           displayName: resolvedName,
           onboardingSessionId: sessionId,
+          // Multi-cat: send the full accumulated list. Single-cat: empty array
+          // — backend falls back to the session's flat cat fields.
+          additionalCats: pendingCats,
         }),
       });
 
@@ -524,6 +538,10 @@ function OnboardingView() {
 
       // Success — navigate to pregnancy tracker setup or other module
       localStorage.removeItem('pawwiz_onboarding_session_id');
+      localStorage.removeItem('pawwiz_pending_cats');
+      localStorage.removeItem('pawwiz_cats_added');
+      localStorage.removeItem('pawwiz_cats_count');
+      localStorage.removeItem('pawwiz_custom_cats_count');
       startTyping("Meow-velous! Your account is ready! Redirecting...", {
         onComplete: () => {
           setIsTransitioning(true);
@@ -650,6 +668,7 @@ function OnboardingView() {
           catsCount={catsCount}
           customCatsCount={customCatsCount}
           catsAdded={catsAdded}
+          pendingCats={pendingCats}
           isTyping={isTyping}
           showBubble={showBubble && step === 7}
           bubbleText={bubbleText}

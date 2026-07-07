@@ -90,3 +90,24 @@ export const postVerifyOtp = withErrorHandling(async (req: Request, res: Respons
   const session = await onboardingService.verifyOtp(id, code, sessionToken);
   res.json(session);
 });
+
+/**
+ * POST /api/onboarding/session/:id/save-cat
+ * Persists a completed cat entry to the session's Cat[] relation.
+ * Called after step 6 (life stage) on the second-and-beyond cat in a
+ * multi-cat flow so no cat data is overwritten.
+ * Requires the `X-Session-Token` header issued at session creation.
+ */
+export const postSaveCat = withErrorHandling(async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+  const sessionToken = req.headers['x-session-token'] as string | undefined;
+  const { catName, catBreed, catMarking, catSex, catLifeStage } = req.body;
+
+  if (!catName || !catSex || !catLifeStage) {
+    res.status(400).json({ error: 'catName, catSex, and catLifeStage are required' });
+    return;
+  }
+
+  await onboardingService.saveCatToSession(id, { catName, catBreed, catMarking, catSex, catLifeStage }, sessionToken);
+  res.status(201).json({ ok: true });
+});

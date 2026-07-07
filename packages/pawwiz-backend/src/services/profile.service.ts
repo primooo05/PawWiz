@@ -17,6 +17,11 @@ class ProfileService {
    * Create a new profile for a Supabase user.
    * Resolves cat fields from the onboarding session and marks it consumed.
    * Guards: all three inputs non-empty, no duplicate profile, valid unconsumed session at step 6.
+   *
+   * @param additionalCats - Full cat list accumulated on the frontend during
+   *   multi-cat onboarding. When provided (non-empty), these are used as the
+   *   authoritative source for all cats. When empty/absent, falls back to the
+   *   flat session columns (single-cat flow).
    */
   async createProfile(
     supabaseUserId: string,
@@ -28,7 +33,14 @@ class ProfileService {
       catMarking?: string | null;
       catSex: string;
       catLifeStage: string;
-    }
+    },
+    additionalCats?: Array<{
+      catName: string;
+      catBreed?: string | null;
+      catMarking?: string | null;
+      catSex: string;
+      catLifeStage: string;
+    }>
   ): Promise<Profile> {
     // 1. Guard: supabaseUserId and displayName non-empty
     assertNonEmpty(supabaseUserId, 'supabaseUserId');
@@ -83,39 +95,66 @@ class ProfileService {
 
     const profile = await profileRepository.create(data);
 
-    // 5. Create onboarding cat and its default diet profile
+    // 5. Create onboarding cat(s) and their default diet profiles.
     if (onboardingSessionId) {
       const session = await onboardingRepository.findById(onboardingSessionId);
       if (session) {
-        const cat = await prisma.cat.create({
-          data: {
-            profileId: profile.id,
-            name: session.catName!,
-            breed: session.catBreed,
-            marking: session.catMarking,
-            sex: session.catSex!,
-            lifeStage: session.catLifeStage!,
-          },
-        });
+        // Multi-cat flow: the frontend sends the full accumulated list in
+        // `additionalCats`. Single-cat flow: that array is empty/absent, so
+        // fall back to the flat session columns.
+        const allCats: Array<{
+          name: string;
+          breed: string | null | undefined;
+          marking: string | null | undefined;
+          sex: string;
+          lifeStage: string;
+        }> = (additionalCats && additionalCats.length > 0)
+          ? additionalCats.map((c) => ({
+              name: c.catName.trim(),
+              breed: c.catBreed?.trim() || null,
+              marking: c.catMarking?.trim() || null,
+              sex: c.catSex,
+              lifeStage: c.catLifeStage,
+            }))
+          : [{
+              name: session.catName!.trim(),
+              breed: session.catBreed?.trim() ?? null,
+              marking: session.catMarking?.trim() ?? null,
+              sex: session.catSex!,
+              lifeStage: session.catLifeStage!,
+            }];
 
-        await prisma.dietProfile.create({
-          data: {
-            profileId: profile.id,
-            catId: cat.id,
-            weight: 4.0,
-            isKg: true,
-            foodPreference: 'mixed',
-            isSpayedNeutered: false,
-            isTracking: false,
-            mealLogs: {
-              create: [
-                { mealName: 'Breakfast', status: 'pending', kcal: 0 },
-                { mealName: 'Lunch', status: 'pending', kcal: 0 },
-                { mealName: 'Dinner', status: 'pending', kcal: 0 },
-              ],
+        for (const catData of allCats) {
+          const cat = await prisma.cat.create({
+            data: {
+              profileId: profile.id,
+              name: catData.name,
+              breed: catData.breed,
+              marking: catData.marking,
+              sex: catData.sex,
+              lifeStage: catData.lifeStage,
             },
-          },
-        });
+          });
+
+          await prisma.dietProfile.create({
+            data: {
+              profileId: profile.id,
+              catId: cat.id,
+              weight: 4.0,
+              isKg: true,
+              foodPreference: 'mixed',
+              isSpayedNeutered: false,
+              isTracking: false,
+              mealLogs: {
+                create: [
+                  { mealName: 'Breakfast', status: 'pending', kcal: 0 },
+                  { mealName: 'Lunch', status: 'pending', kcal: 0 },
+                  { mealName: 'Dinner', status: 'pending', kcal: 0 },
+                ],
+              },
+            },
+          });
+        }
       }
 
       await onboardingRepository.markConsumed(onboardingSessionId);
