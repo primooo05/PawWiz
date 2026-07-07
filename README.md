@@ -1,112 +1,178 @@
-# PawWiz Monorepo 
+# PawWiz
 
-High-precision, mobile-first feline utility platform for plant toxicity verification, diet optimization, pregnancy tracking, and behavioral decoding.
+AI-powered cat health assistant. Covers plant toxicity verification, personalized diet planning, behavior decoding, pregnancy & heat tracking, and a unified health timeline — all in a single mobile-first web app.
 
 ---
 
-## Architecture Overview
+## Features
 
-PawWiz is architected as a decoupled monorepo managed via native **npm workspaces** using **TypeScript** across the full network boundary:
+| Feature | What it does |
+|---|---|
+| **Plant Toxicity Scanner** | Text search or photo upload → PlantNet identification → ASPCA ground-truth verdict. Unknown plants are enriched from Perenual + Wikipedia and cached. AI results are never trusted for the final safe/toxic decision — the local ASPCA dataset is authoritative. |
+| **Diet Optimizer** | Personalized nutrition plans via veterinary RER formulas + AI enrichment (Gemini). Tracks daily meals (Breakfast / Lunch / Dinner), water intake, success streaks, and per-cat avatar photos. Supports multiple cats per account. |
+| **Behavior Chat ("Wiz")** | Conversational AI companion (Groq Llama 3.3 70B → Gemini fallback → heuristic) that interprets vocalizations and body language. Conversations are persisted as sessions; behaviors are automatically extracted and logged. |
+| **Behavior Dashboard** | Weekly summaries, recurring pattern analysis, daily timelines, and AI-generated insight cards (concern flags, positive indicators, recommendations) aggregated from logged behaviors. |
+| **Health Timeline** | Unified per-cat event timeline with AI-generated health insights and PDF export. Events are sourced from diet logs, behavior logs, and pregnancy records. |
+| **Pregnancy Tracker** | 9-week gestation tracker with per-week action checklists, Flo-style daily symptom/mood logging, and AI insight cards. Supports multiple sessions per cat. |
+| **Heat Tracker** | Heat-cycle tracking for female cats. |
+| **Settings** | Profile management, cat management, avatar upload to Supabase Storage. |
 
-- **Frontend (`packages/pawwiz-frontend`)**: React 19 + Vite + Tailwind CSS v4, Supabase Auth client.
-- **Backend (`packages/pawwiz-backend`)**: Node.js (Express 5) + TypeScript + Prisma 7 (PostgreSQL).
-- **AI pipeline**: Groq (Llama 3.3 70B) as the primary model for behavior decoding and conversational text, with Google **Gemini 2.5 Flash** (`@google/genai`) as the multimodal/text fallback and for plant vision + diet enrichment. A deterministic heuristic fallback keeps every feature working when AI keys are absent.
-- **ASPCA Verification Loop**: Deterministic database interceptor that treats the local ASPCA dataset as ground truth to eliminate AI hallucinations on plant toxicity scanning.
+---
+
+## Architecture
+
+```
+pawwiz-monorepo/                  ← npm workspaces root
+├── packages/
+│   ├── pawwiz-frontend/          ← React 19 + Vite 8 + Tailwind CSS 4
+│   └── pawwiz-backend/           ← Express 5 + Prisma 7 + PostgreSQL
+└── nginx.conf                    ← Reverse proxy (TLS + API routing)
+```
+
+**Frontend** — React 19 (functional components), React Router v7, Supabase JS SDK for auth, Zod 4 for validation, `motion/react` for animations. Route-level and component-level code splitting with `React.lazy` + `Suspense`; initial JS payload is ~167 kB gzip.
+
+**Backend** — Node.js ES modules, Express 5, TypeScript 6 (strict, NodeNext). MRSC layering: Middleware → Routes → Services → Controllers, with Repositories as the sole Prisma-access layer.
+
+**AI pipeline** — Groq (Llama 3.3 70B) primary for behavior decoding and chat; Google Gemini 2.5 Flash for multimodal/text fallback, plant vision, and diet enrichment. Every AI path has a deterministic heuristic fallback so the app works without API keys.
+
+**Auth** — Supabase Auth (`signInWithPassword`). JWT verified on the backend via ES256 JWKS with an HS256 fallback. Password recovery uses the Supabase Admin API to generate recovery links, delivered by Nodemailer over Gmail.
+
+**Bot protection** — Honeypot fields, rate limiting (`express-rate-limit`), and OTP email verification on onboarding. No Cloudflare Turnstile.
+
 ---
 
 ## Getting Started
 
 ### Prerequisites
 
-Ensure you have the following installed on your machine:
-- **Node.js** (v20+ recommended)
-- **npm** (v10+ recommended)
+- Node.js v20+
+- npm v10+
+- A PostgreSQL database (Supabase project or any Postgres instance)
+
 ---
 
-### Step 1: Install Dependencies
+### 1. Install dependencies
 
-From the root directory of the monorepo, run:
 ```bash
 npm install
 ```
-This automatically links the workspaces and installs all dependencies for both the frontend and backend packages.
+
+Installs all workspace packages in one shot.
 
 ---
 
-### Step 2: Configure Environment Variables & Secrets
+### 2. Configure environment variables
 
-You can supply secrets in **either** of two ways. A local `.env` file is the simplest for local development; **Infisical** is optional and mainly used for shared/hosted environments.
-
-#### Option A — Local `.env` file (recommended for local dev)
-
-A single `.env` at the repo root serves **both** packages:
-- The backend loads the nearest `.env` walking up from its working directory (`src/lib/env.ts`), and Prisma tooling does the same (`prisma.config.ts`).
-- The frontend reads the same root `.env` via Vite (`envDir` points at the repo root); only `VITE_`-prefixed variables are exposed to the browser.
+Copy the template and fill in the values:
 
 ```bash
-# Copy the template and fill in the values
-cp .env.example .env        # macOS/Linux
+cp .env.example .env        # macOS / Linux
 copy .env.example .env      # Windows cmd
 ```
 
-Optional AI/integration keys (`GEMINI_API_KEY`, `GROQ_API_KEY`, `PLANTNET_API_KEY`, `PERENUAL_API_KEY`, Gmail) can be left blank — the app falls back to mocks/heuristics when they are absent.
+A single `.env` at the repo root serves both packages. The backend resolves it by walking up from its working directory; Vite reads it via `envDir` pointing at the repo root (only `VITE_`-prefixed variables reach the browser).
 
-#### Option B — Infisical (optional)
+**Required:**
 
-If you prefer centrally managed secrets:
-1. Install the Infisical CLI and authenticate with your project context.
-2. Run commands under `infisical run --` (see the Infisical-prefixed scripts below). Injected variables take precedence over any `.env` file.
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Pooled Postgres connection (runtime queries) |
+| `DIRECT_URL` | Direct Postgres connection (migrations — pooler lacks prepared-statement support) |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_JWT_SECRET` | HS256 JWT fallback secret |
+| `SUPABASE_SERVICE_ROLE_KEY` | Admin API + Storage uploads |
+| `VITE_SUPABASE_URL` | Supabase URL exposed to the browser |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key exposed to the browser |
+
+**Optional** (app falls back to mocks/heuristics when absent):
+
+`GEMINI_API_KEY`, `GROQ_API_KEY`, `PLANTNET_API_KEY`, `PERENUAL_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD`
+
+Alternatively, use **Infisical** for centrally managed secrets — prefix any command with `infisical run --` and injected variables take precedence over `.env`.
 
 ---
 
-### Step 3: Run Database Migrations
+### 3. Run database migrations
 
-For schema migrations, PgBouncer (port `6543`) in transaction mode cannot be used, so we connect directly to port `5432` (`DIRECT_URL`).
+Migrations connect directly to Postgres (`DIRECT_URL`) — the Supabase pooler does not support prepared statements.
 
 ```bash
-# Local .env — no Infisical
-npm run prisma:deploy -w packages/pawwiz-backend   # apply existing migrations
-npm run prisma:migrate -w packages/pawwiz-backend  # create + apply a new migration
+# Apply all pending migrations
+npm run prisma:deploy -w packages/pawwiz-backend
 
-# Or, with Infisical (Windows helper that forces DIRECT_URL)
+# Create + apply a new migration (dev only)
+npm run prisma:migrate -w packages/pawwiz-backend
+
+# Windows helper — wraps Infisical + forces DIRECT_URL
 migrate.bat <migration_name>
 ```
 
 ---
 
-### Step 4: Run the Development Servers
-
-To run the backend Express server and the frontend Vite server concurrently, from the **root** folder:
+### 4. Start development servers
 
 ```bash
-# Local .env — no Infisical
+# Using a local .env file
 npm run dev:local
 
-# Or, injecting secrets via Infisical
+# Injecting secrets via Infisical
 npm run dev
 ```
 
-This launches:
-- **Backend API**: `http://localhost:3001`
-- **Frontend App**: `http://localhost:5173`
+| Server | URL |
+|---|---|
+| Backend API | `http://localhost:3001` |
+| Frontend | `http://localhost:5173` |
 
 ---
 
-### Step 5: Build for Production
+### 5. Build for production
 
-To compile both packages for production:
 ```bash
 npm run build
 ```
-- The backend compiles into JavaScript in `packages/pawwiz-backend/dist/`.
-- The frontend compiles static assets in `packages/pawwiz-frontend/dist/`.
+
+- Backend → `packages/pawwiz-backend/dist/`
+- Frontend → `packages/pawwiz-frontend/dist/`
 
 ---
 
-## Reverse Proxy (Nginx) Gateway
+## Testing
 
-For production routing and to eliminate CORS pre-flight requests, Nginx can be configured using the [nginx.conf](file:///c:/Users/User/IdeaProjects/HackTheKitty_PawWiz/nginx.conf) at the root:
+```bash
+# Backend — Vitest + fast-check (property-based) + Supertest
+npm run test -w packages/pawwiz-backend
 
-- Requests to `/api/*` are reverse proxied to the Express backend (`http://localhost:3001/api/`).
-- Requests to `/` serve the static assets or proxy to the Vite server (`http://localhost:5173`).
-- Gzip compression is enabled for performance, and TLS/SSL termination resides on Nginx.
+# Frontend — Vitest + Testing Library + fast-check
+npm run test -w packages/pawwiz-frontend
+```
+
+---
+
+## Reverse Proxy (nginx)
+
+`nginx.conf` at the root handles production routing:
+
+- `/api/*` → Express backend (`localhost:3001`)
+- `/` → Vite static assets (or dev server on `localhost:5173`)
+- TLS termination, gzip compression, and `X-Real-IP` / `X-Forwarded-For` headers are all configured here. Backend runs with `trust proxy = 1`.
+
+---
+
+## Pages
+
+| Route | Page |
+|---|---|
+| `/` | Landing page |
+| `/login` | Sign in + password recovery |
+| `/onboarding` | Multi-step registration with OTP email verification |
+| `/reset-password` | Password reset (Supabase recovery flow) |
+| `/dashboard` | Main user dashboard |
+| `/diet-recommender` | Diet profiles + meal + water logging |
+| `/behavior-chat` | Wiz behavior chat |
+| `/behavior-dashboard` | Behavior analytics |
+| `/health-timeline/:catId` | Per-cat health timeline + PDF export |
+| `/pregnancy-tracker` | Pregnancy session + daily logs + insights |
+| `/heat-tracker` | Heat cycle tracking |
+| `/settings` | Profile + cat management |
+| `/docs` | Engineering documentation |
