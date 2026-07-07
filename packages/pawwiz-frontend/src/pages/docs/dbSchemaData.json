@@ -73,6 +73,11 @@
             "flag": "PK"
           },
           {
+            "name": "sessionToken",
+            "type": "String",
+            "flag": "UNIQUE"
+          },
+          {
             "name": "step",
             "type": "Int"
           },
