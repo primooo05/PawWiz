@@ -24,7 +24,6 @@ const Settings         = lazy(() => import('./pages/Settings'));
 const ResetPassword    = lazy(() => import('./pages/ResetPassword'));
 const Docs             = lazy(() => import('./pages/Docs'));
 const CatPregnancyTracker = lazy(() => import('./components/features/pregnancy/PregnancyTracker'));
-const CatHeatTracker   = lazy(() => import('./components/features/heat/CatHeatTracker'));
 const DietRecommender  = lazy(() => import('./components/features/diet/DietRecommender'));
 const BehaviorChat     = lazy(() => import('./components/features/behavior/BehaviorChat'));
 const BehaviorDashboard = lazy(() => import('./components/features/behavior/BehaviorDashboard'));
@@ -42,7 +41,6 @@ export function Router() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/user-dashboard" element={<Dashboard />} />
           <Route path="/pregnancy-tracker" element={<CatPregnancyTracker />} />
-          <Route path="/heat-tracker" element={<CatHeatTracker />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/diet-recommender" element={<DietRecommender />} />
           <Route path="/behavior-chat" element={<BehaviorChat />} />

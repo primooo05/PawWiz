@@ -470,7 +470,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
             <button
                 type="button"
                 onClick={() => setIsAskAiOpen(true)}
-                className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 bg-white border-2 border-slate-900 rounded-full pl-2 pr-5 py-2 shadow-[3px_3px_0_0_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-95 transition-all cursor-pointer"
+                className="fixed bottom-6 right-24 z-40 flex items-center gap-2.5 bg-white border-2 border-slate-900 rounded-full pl-2 pr-5 py-2 shadow-[3px_3px_0_0_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-95 transition-all cursor-pointer"
             >
                 <span className="w-8 h-8 rounded-full bg-[#FFB870] border-2 border-slate-900 flex items-center justify-center flex-shrink-0">
                     <Sparkles size={15} className="text-slate-900" strokeWidth={2.5} />

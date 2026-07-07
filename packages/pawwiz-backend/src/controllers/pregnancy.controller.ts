@@ -65,7 +65,8 @@ export const completeSession = withErrorHandling(async (req: Request, res: Respo
 
 export const deleteLog = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = req.user!.sub;
-  const { sessionId, dateStr } = req.params;
+  const sessionId = req.params.sessionId as string;
+  const dateStr = req.params.dateStr as string;
   await pregnancyLogService.deleteDailyLog(supabaseUserId, sessionId, dateStr);
   res.status(200).json({ success: true });
 });

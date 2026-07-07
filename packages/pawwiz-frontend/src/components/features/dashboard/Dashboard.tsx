@@ -130,7 +130,7 @@ const Dashboard: React.FC = () => {
   }, [diet.activeProfile?.name]);
 
   const handleNavigation = (item: string) => {
-    if (item === 'calendar') navigate('/pregnancy-tracker');
+    if (item === 'calendar') navigate('/pregnancy-tracker', { state: { incomingCatId: diet.activeProfile?.catId || diet.activeProfile?.id } });
     else if (item === 'dashboard') navigate('/dashboard');
     else if (item === 'diet-reco') navigate('/diet-recommender');
     else if (item === 'settings') navigate('/settings');
@@ -665,7 +665,7 @@ const Dashboard: React.FC = () => {
               {/* Pregnancy Tracker Card (only if pregnancy is being tracked) */}
               {pregnancy.hasActiveSession && (
               <div
-                onClick={() => navigate('/pregnancy-tracker')}
+                onClick={() => navigate('/pregnancy-tracker', { state: { incomingCatId: diet.activeProfile?.catId || diet.activeProfile?.id } })}
                 className="snap-center shrink-0 w-[82%] sm:w-[58%] md:w-auto cursor-pointer group bg-white border-4 border-[#1a1a1a] p-8 hover:shadow-[8px_8px_0_0_#1a1a1a] transition-all duration-300 hover:-translate-y-1 rounded-3xl"
               >
                 <div className="flex items-center justify-between mb-6">
@@ -806,7 +806,7 @@ const Dashboard: React.FC = () => {
                   </p>
 
                   <button
-                    onClick={() => navigate('/pregnancy-tracker')}
+                    onClick={() => navigate('/pregnancy-tracker', { state: { incomingCatId: diet.activeProfile?.catId || diet.activeProfile?.id } })}
                     className="mt-5 w-full bg-[#F98080] hover:bg-white text-white hover:text-[#F98080] font-black py-3 border-2 border-[#1a1a1a] rounded-2xl shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all text-sm tracking-wider uppercase"
                   >
                     Open Pregnancy Tracker
