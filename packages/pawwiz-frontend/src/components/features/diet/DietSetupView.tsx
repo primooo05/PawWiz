@@ -8,6 +8,15 @@ import AnimatedAvatarGroup from '../../ui/smoothui/animated-avatar-group';
 import { useNavigate } from 'react-router-dom';
 import { Baby, Cat, Crown } from 'lucide-react';
 
+// Age bounds per life stage — defined at module scope so they're never
+// undefined during component render regardless of prop timing.
+// Units: months for kitten, years for adult/senior.
+const AGE_BOUNDS = {
+    kitten: { min: 1, max: 12 },
+    adult:  { min: 1, max: 6 },
+    senior: { min: 7, max: 25 },
+} as const;
+
 interface DietSetupViewProps {
     catName: string;
     setCatName: (name: string) => void;
@@ -54,15 +63,16 @@ export const DietSetupModal: React.FC<DietSetupModalProps> = ({ isOpen, onClose,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fadeIn">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                 onClick={onClose}
             />
 
-            {/* Modal Content: constant width, capped to viewport to avoid horizontal scroll */}
-            <div className="relative w-[640px] max-w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto overflow-x-hidden">
+            {/* Modal Content: constant width, capped to viewport to avoid horizontal scroll.
+                pb-24 ensures the submit button clears the fixed BottomNav on small screens. */}
+            <div className="relative w-[640px] max-w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto overflow-x-hidden pb-24 sm:pb-0">
                 <DietSetupContent {...props} onClose={onClose} />
             </div>
         </div>
@@ -102,6 +112,14 @@ const DietSetupContent: React.FC<DietSetupContentProps> = ({
 
     const [onboardedCat, setOnboardedCat] = useState<{ name: string; gender: 'male' | 'female'; lifeStage: 'kitten' | 'adult' | 'senior' } | null>(null);
     const [selectedCatId, setSelectedCatId] = useState<string>('onboarding');
+
+    // Clamp age into the valid range whenever life stage changes
+    useEffect(() => {
+        const bounds = AGE_BOUNDS[lifeStage as keyof typeof AGE_BOUNDS] ?? AGE_BOUNDS.adult;
+        if (age < bounds.min) setAge(bounds.min);
+        else if (age > bounds.max) setAge(bounds.max);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [lifeStage]);
 
     // Fetch user profile from backend on mount to auto-fill onboarding details
     useEffect(() => {
@@ -187,6 +205,8 @@ const DietSetupContent: React.FC<DietSetupContentProps> = ({
 
     const lifeStageLabel = lifeStage.charAt(0).toUpperCase() + lifeStage.slice(1);
     const LifeStageIcon = lifeStage === 'kitten' ? Baby : lifeStage === 'senior' ? Crown : Cat;
+    // Safe bounds lookup — falls back to 'adult' if lifeStage is ever an unexpected value
+    const ageBounds = AGE_BOUNDS[lifeStage as keyof typeof AGE_BOUNDS] ?? AGE_BOUNDS.adult;
 
     return (
         <div className={`relative p-8 bg-white border-2 border-slate-900 rounded-[2.5rem] shadow-[6px_6px_0_0_rgba(15,23,42,1)] text-center ${onClose ? 'w-full' : 'max-w-2xl mx-auto mt-8'}`}>
@@ -357,20 +377,25 @@ const DietSetupContent: React.FC<DietSetupContentProps> = ({
                     />
                 </div>
 
-                {/* 4. Age Slider */}
+                {/* 4. Age Slider — range is constrained to the selected life stage */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-xs text-slate-500 font-bold uppercase tracking-wider">
                         <span>Age:</span>
-                        <span className="font-extrabold text-[#2ec4b6] uppercase">
-                            {age} {lifeStage === 'kitten' ? (age === 1 ? 'month' : 'months') : (age === 1 ? 'year' : 'years')}
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-[#2ec4b6] uppercase">
+                                {age} {lifeStage === 'kitten' ? (age === 1 ? 'month' : 'months') : (age === 1 ? 'year' : 'years')}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-bold">
+                                ({ageBounds.min}–{ageBounds.max} {lifeStage === 'kitten' ? 'mo' : 'yrs'})
+                            </span>
+                        </div>
                     </div>
                     <input
                         type="range"
-                        min={lifeStage === 'senior' ? "7" : "1"}
-                        max={lifeStage === 'kitten' ? "12" : (lifeStage === 'adult' ? "6" : "20")}
+                        min={ageBounds.min}
+                        max={ageBounds.max}
                         step="1"
-                        value={age}
+                        value={Math.min(ageBounds.max, Math.max(ageBounds.min, age || ageBounds.min))}
                         onChange={(e) => setAge(parseInt(e.target.value))}
                         className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#2ec4b6]"
                     />

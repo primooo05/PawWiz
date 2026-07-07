@@ -196,6 +196,9 @@ export default function Settings() {
     const [newCatLifeStage, setNewCatLifeStage] = useState<'kitten' | 'adult' | 'senior'>('adult');
     const [newCatBreed, setNewCatBreed] = useState('');
     const [newCatMarking, setNewCatMarking] = useState('');
+    // Age for edit mode only — forward-only (+1 per birthday). originalCatAge is the floor; age can never go below it.
+    const [newCatAge, setNewCatAge] = useState<number | null>(null);
+    const [originalCatAge, setOriginalCatAge] = useState<number | null>(null);
     const [breedOptions, setBreedOptions] = useState<string[]>([]);
     const [breedLoading, setBreedLoading] = useState(false);
 
@@ -256,6 +259,8 @@ export default function Settings() {
         setNewCatLifeStage('adult');
         setNewCatBreed('');
         setNewCatMarking('');
+        setNewCatAge(null);
+        setOriginalCatAge(null);
     };
 
     const openAddCatForm = () => {
@@ -271,6 +276,10 @@ export default function Settings() {
         setNewCatLifeStage(cat.lifeStage);
         setNewCatBreed(cat.breed || '');
         setNewCatMarking(cat.marking || '');
+        // Seed age from the stored profile; treat 0/undefined as unknown
+        const storedAge = cat.age || 0;
+        setNewCatAge(storedAge);
+        setOriginalCatAge(storedAge);
         setShowAddForm(true);
     };
 
@@ -333,6 +342,10 @@ export default function Settings() {
                     lifeStage: newCatLifeStage,
                     breed: newCatBreed,
                     marking: newCatMarking || 'Solid Color',
+                    // Only send age if it was incremented beyond the original — never send a lower value
+                    ...(newCatAge !== null && originalCatAge !== null && newCatAge > originalCatAge
+                        ? { age: newCatAge }
+                        : {}),
                 });
                 setToast({
                     show: true,
@@ -650,6 +663,48 @@ export default function Settings() {
                                             </button>
                                         </div>
                                     </div>
+
+                                    {/* Age — edit mode only, forward-only increments */}
+                                    {editingCatId && newCatAge !== null && originalCatAge !== null && (
+                                        <div className="col-span-1 md:col-span-2">
+                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">
+                                                Age
+                                                <span className="ml-2 text-[10px] font-semibold text-slate-400 normal-case tracking-normal">
+                                                    — {newCatLifeStage === 'kitten' ? 'months' : 'years'}
+                                                </span>
+                                            </label>
+                                            <div className="flex items-center gap-4 p-4 bg-slate-50 border-2 border-slate-200 rounded-xl">
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-black text-slate-900">
+                                                        {newCatAge} {newCatLifeStage === 'kitten'
+                                                            ? (newCatAge === 1 ? 'month old' : 'months old')
+                                                            : (newCatAge === 1 ? 'year old' : 'years old')}
+                                                    </p>
+                                                    {newCatAge > originalCatAge && (
+                                                        <p className="text-[10px] font-bold text-teal-600 mt-0.5">
+                                                            Updated from {originalCatAge} → {newCatAge} {newCatLifeStage === 'kitten' ? 'months' : 'years'}
+                                                        </p>
+                                                    )}
+                                                    {newCatAge === originalCatAge && (
+                                                        <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                                                            Tap +1 on {newCatLifeStage === 'kitten' ? "next month's" : "next year's"} birthday to update
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewCatAge(prev => (prev ?? originalCatAge) + 1)}
+                                                    className="shrink-0 w-12 h-12 bg-[#30c290] hover:bg-[#27a87b] border-2 border-slate-900 rounded-xl font-black text-white text-lg shadow-[2px_2px_0_0_#0f172a] active:shadow-none active:translate-y-[2px] transition-all cursor-pointer flex items-center justify-center"
+                                                    aria-label={`Increment age by 1 ${newCatLifeStage === 'kitten' ? 'month' : 'year'}`}
+                                                >
+                                                    +1
+                                                </button>
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 font-semibold mt-1.5 ml-1">
+                                                Age can only move forward — to correct a mistake, recreate the cat profile.
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {/* Breed */}
                                     <div className="flex flex-col space-y-1.5 w-full">

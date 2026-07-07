@@ -37,8 +37,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem = 'dashboard', onItemC
             <div className="flex items-center justify-between sm:justify-start gap-1 sm:gap-3 w-full">
                 {NAV_ITEMS.map((item) => {
                     const isActive = activeItem === item.key;
-                    // Show notification badge on diet-reco and behavior items if there are untracked cats
-                    const showNotification = hasUntracked && (item.key === 'diet-reco' || item.key === 'behavior');
+                    // Show notification badge only on diet-reco when a cat has no diet profile set up
+                    const showNotification = hasUntracked && item.key === 'diet-reco';
 
                     return (
                         <button
@@ -64,10 +64,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeItem = 'dashboard', onItemC
                                 {item.label}
                             </span>
 
-                            {/* Notification badge for untracked items */}
+                            {/* Badge: a cat needs diet setup — shown only on the Diet nav item */}
                             {showNotification && (
-                                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 border-2 border-slate-900 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-md z-[101] pointer-events-none select-none animate-pulse">
-                                    !
+                                <div
+                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-400 border-2 border-slate-900 rounded-full flex items-center justify-center text-[10px] font-black text-slate-900 shadow-md z-[101] pointer-events-none select-none"
+                                    aria-label="One or more cats need a diet profile set up"
+                                >
+                                    +
                                 </div>
                             )}
                         </button>

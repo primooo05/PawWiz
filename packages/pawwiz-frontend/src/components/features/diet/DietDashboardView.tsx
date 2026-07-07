@@ -221,6 +221,12 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
 
     const greeting = getGreeting();
 
+    // Detect if the currently active profile hasn't been set up yet
+    const activeProfile = profiles.find(p => p.id === activeProfileId);
+    const activeProfileNeedsSetup = activeProfile ? !activeProfile.isTracking : false;
+    // Count how many other profiles also need setup (excluding the active one)
+    const untrackedOtherCount = profiles.filter(p => p.id !== activeProfileId && !p.isTracking).length;
+
     const mealsLoggedToday = loggedMeals.filter(m => m.status === 'logged').length;
     const mealsPendingToday = loggedMeals.filter(m => m.status === 'pending').length;
 
@@ -249,7 +255,7 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                             onClick={onEditProfile}
                             className="px-3 py-1 bg-[#EEF9F8] border border-teal-400 text-teal-800 text-xs font-black uppercase tracking-wider rounded-xl shadow-[2px_2px_0_0_#0f172a] hover:bg-teal-50 active:translate-y-[1px] active:shadow-none transition-all cursor-pointer shrink-0"
                         >
-                            Edit Profile
+                            Edit Diet Profile
                         </button>
                     </div>
                     <p className="text-xs sm:text-sm font-bold text-slate-500 uppercase tracking-wider mt-1">{greeting.subtitle}</p>
@@ -263,6 +269,40 @@ export const DietDashboardView: React.FC<DietDashboardViewProps> = ({
                     />
                 </div>
             </div>
+
+            {/* Setup required banner — shown when the active cat has no diet profile yet */}
+            {activeProfileNeedsSetup && (
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    className="w-full flex items-start sm:items-center gap-4 p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl shadow-[3px_3px_0_0_rgba(15,23,42,0.12)]"
+                >
+                    <span className="shrink-0 w-10 h-10 rounded-xl bg-amber-400 border-2 border-slate-900 flex items-center justify-center text-slate-900 font-black text-lg shadow-[2px_2px_0_0_rgba(15,23,42,1)]">
+                        🐾
+                    </span>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black text-slate-900">
+                            {catName}'s diet profile isn't set up yet
+                        </p>
+                        <p className="text-xs font-semibold text-amber-800 mt-0.5 leading-relaxed">
+                            Add {catName}'s weight, age, and food preference so PawWiz can calculate the right portion sizes and daily calorie targets.
+                        </p>
+                        {untrackedOtherCount > 0 && (
+                            <p className="text-[11px] font-bold text-amber-700 mt-1">
+                                {untrackedOtherCount} other cat{untrackedOtherCount > 1 ? 's' : ''} also need{untrackedOtherCount === 1 ? 's' : ''} setup — tap their avatar above to switch.
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onEditProfile}
+                        className="shrink-0 px-4 py-2.5 bg-amber-400 border-2 border-slate-900 rounded-xl font-black text-xs text-slate-900 uppercase tracking-wider shadow-[2px_2px_0_0_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] active:scale-95 transition-all cursor-pointer"
+                    >
+                        Set Up Now
+                    </button>
+                </motion.div>
+            )}
 
             {/* Week Calendar (Full Width at Top) */}
             <motion.div
