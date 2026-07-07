@@ -98,10 +98,8 @@ export const DietRecommender: React.FC = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (weight > 0) {
-            setLoadingTarget('dashboard');
-            setIsLoading(true);
-        }
+        setLoadingTarget('dashboard');
+        setIsLoading(true);
     };
 
     const handleResetWithLoading = () => {

@@ -105,8 +105,11 @@ function mapProfileToFrontend(profile: any) {
     id: profile.id,
     catId: profile.catId ?? null,
     name: profile.cat ? profile.cat.name : profile.profile.catName,
-    gender: profile.cat ? profile.cat.sex : profile.profile.catSex,
-    lifeStage: profile.cat ? profile.cat.lifeStage : profile.profile.catLifeStage,
+    // Normalize to lowercase — the Profile table may store capitalized values
+    // (e.g. 'Female', 'Adult') entered during onboarding, while the Cat table
+    // and Zod schemas expect lowercase literals ('female', 'adult').
+    gender: (profile.cat ? profile.cat.sex : profile.profile.catSex)?.toLowerCase() ?? 'male',
+    lifeStage: (profile.cat ? profile.cat.lifeStage : profile.profile.catLifeStage)?.toLowerCase() ?? 'adult',
     age: profile.cat ? (profile.cat.age ?? undefined) : undefined,
     weight: profile.weight,
     isKg: profile.isKg,

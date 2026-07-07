@@ -58,34 +58,34 @@ function CatAvatarTrigger({
 
     if (variant === 'card') {
         return (
-            <div className="relative group w-full aspect-[4/3] rounded-2xl border-2 border-slate-900 bg-white flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:bg-slate-50 focus-within:ring-2 focus-within:ring-[#30c290] focus-within:ring-offset-2">
-                <button
-                    type="button"
-                    onClick={triggerUpload}
-                    disabled={uploading}
-                    aria-label={`Upload photo for ${catName}`}
-                    className="absolute inset-0 w-full h-full bg-transparent border-none cursor-pointer focus:outline-none z-10"
-                />
+            <button
+                type="button"
+                onClick={triggerUpload}
+                disabled={uploading}
+                aria-label={`Upload photo for ${catName}`}
+                className="relative group w-full aspect-[4/3] rounded-2xl border-2 border-slate-900 bg-slate-100 flex items-center justify-center overflow-hidden cursor-pointer transition-all hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-[#30c290] focus:ring-offset-2 disabled:opacity-50"
+            >
                 {uploading ? (
-                    <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin z-20" />
+                    <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
                 ) : photoUrl ? (
-                    <img src={photoUrl} alt={catName} className="w-full h-full object-cover z-0" />
+                    <>
+                        <img src={photoUrl} alt={catName} className="w-full h-full object-cover" />
+                        {/* Hover overlay — change photo */}
+                        <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                                <circle cx="12" cy="13" r="3" />
+                            </svg>
+                            <span className="text-white text-[10px] font-black uppercase tracking-wider mt-1.5">Change Photo</span>
+                        </div>
+                    </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-400 p-4 z-20">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2 text-slate-500">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                            <circle cx="12" cy="13" r="4" />
-                        </svg>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Add Photo</span>
-                    </div>
-                )}
-                {/* Camera overlay on hover */}
-                {!uploading && (
-                    <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="flex flex-col items-center justify-center text-slate-400 p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2">
                             <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
                             <circle cx="12" cy="13" r="3" />
                         </svg>
+                        <span className="text-[10px] font-black uppercase tracking-wider">Add Photo</span>
                     </div>
                 )}
                 {/* Hidden file input */}
@@ -99,11 +99,11 @@ function CatAvatarTrigger({
                 />
                 {/* Error tooltip */}
                 {error && (
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md whitespace-nowrap z-30">
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-md whitespace-nowrap">
                         {error}
                     </div>
                 )}
-            </div>
+            </button>
         );
     }
 
@@ -159,7 +159,6 @@ export default function Settings() {
     const location = useLocation();
     const {
         profiles,
-        switchProfile,
         createNewProfile,
         deleteProfile,
         updateProfile,
@@ -488,11 +487,9 @@ export default function Settings() {
                                                                 catName={cat.name}
                                                                 variant="card"
                                                                 onUploadSuccess={(url) => {
-                                                                    const updated = profiles.map(p =>
-                                                                        p.id === cat.id ? { ...p, photoUrl: url } : p
-                                                                    );
-                                                                    localStorage.setItem('diet_profiles', JSON.stringify(updated));
-                                                                    switchProfile(cat.id);
+                                                                    // Use updateProfile so the hook's profiles state is
+                                                                    // updated in-place — no page reload needed.
+                                                                    updateProfile(cat.id, { photoUrl: url });
                                                                 }}
                                                             />
                                                         </div>

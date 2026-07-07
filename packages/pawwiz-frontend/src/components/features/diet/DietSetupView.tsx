@@ -121,8 +121,13 @@ const DietSetupContent: React.FC<DietSetupContentProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [lifeStage]);
 
-    // Fetch user profile from backend on mount to auto-fill onboarding details
+    // Fetch onboarding profile details to auto-fill ONLY when there are no
+    // real diet profiles yet (hasNoUserProfile path). When real profiles exist,
+    // catName/gender/lifeStage are already synced from the active profile by
+    // the hook — running this fetch would overwrite the selected cat's data.
     useEffect(() => {
+        if (!hasNoUserProfile) return;
+
         let active = true;
 
         const fetchProfile = async (session: any) => {
@@ -142,7 +147,6 @@ const DietSetupContent: React.FC<DietSetupContentProps> = ({
                             gender,
                             lifeStage,
                         });
-                        // Prefill the form states
                         setCatName(data.catName);
                         setGender(gender);
                         setLifeStage(lifeStage);
@@ -154,25 +158,20 @@ const DietSetupContent: React.FC<DietSetupContentProps> = ({
             }
         };
 
-        // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
-            if (active && session) {
-                fetchProfile(session);
-            }
+            if (active && session) fetchProfile(session);
         });
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (active && session) {
-                fetchProfile(session);
-            }
+            if (active && session) fetchProfile(session);
         });
 
         return () => {
             active = false;
             subscription.unsubscribe();
         };
-    }, [setCatName, setGender, setLifeStage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasNoUserProfile]);
 
     const weightInKg = isKg ? weight : weight * 0.45359237;
 
