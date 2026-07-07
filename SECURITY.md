@@ -2,7 +2,7 @@
 
 ## Vulnerability Disclosure
 
-We take security seriously and appreciate responsible disclosure. If you discover a security vulnerability in PawWiz, please report it privately to **[security.pawwiz@gmail.com]** with:
+We take security seriously and appreciate responsible disclosure. If you discover a security vulnerability in PawWiz, please report it privately to **security.pawwiz@gmail.com** with:
 
 1. A clear description of the vulnerability
 2. Steps to reproduce (if applicable)
@@ -20,248 +20,177 @@ We take security seriously and appreciate responsible disclosure. If you discove
 
 ---
 
-## Security Model & Scope
+## How PawWiz Implements Security
 
-### In Scope
+### Authentication
 
-The PawWiz backend (`packages/pawwiz-backend`) enforces the following security boundaries:
+All protected API routes verify a Supabase-issued JWT on every request. The backend supports two verification paths:
 
-- **Authentication**: Supabase JWT validation (ES256 via JWKS + legacy HS256 fallback) on protected routes
-- **Authorization**: Multi-tenant isolation via `supabaseUserId` with object-level IDOR checks
-- **Input validation**: Zod schemas on all user-supplied data (requests, forms, uploads)
-- **Data protection**:
-  - Sensitive fields (`supabaseUserId`, `otpHash`, email verification state) are projection-filtered from API responses
-  - PII and credentials are redacted from logs
-  - File uploads (avatars) are path-traversal protected and origin-restricted
-- **SSRF prevention**: Authenticated `photoUrl` fields validated to Supabase Storage origin only; DNS + IP range guards for outbound fetch
-- **Rate limiting**: Adaptive rate limits on login, registration, OTP send/verify, search, and scan endpoints
-- **Bot protection**: Honeypot fields, rate limiting, and OTP email verification
-- **Security headers**: Helmet middleware (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, etc.)
+- **Primary**: ES256 signature verification via Supabase's JWKS endpoint (`jsonwebtoken` + `jwks-rsa`)
+- **Fallback**: HS256 symmetric verification using `SUPABASE_JWT_SECRET` for legacy token compatibility
 
-## Known Issues & Applied Mitigations
+Both paths extract `sub` (the Supabase user ID) and `email` claims, which are used for all downstream authorization decisions. Tokens are never cached server-side — each request is independently verified.
 
-The following issues are known architectural limitations — they do not have a single clean code fix, but specific mitigations have been applied to reduce their risk.
+### Authorization
+
+Every endpoint that accesses user-owned data performs an explicit ownership check before returning or modifying anything:
+
+- **Profile, diet, and cat data**: queries are scoped to `supabaseUserId` at the Prisma level, so a user cannot retrieve or mutate another user's records even if they supply a valid resource ID
+- **Multi-resource operations** (e.g., insight refresh, PDF export): `timelineService.verifyOwnership(catId, callerUserId)` is called with the *caller's* JWT sub — not values extracted from the target resource — preventing tautological checks
+- **Behavior chats and messages**: `belongsToUser(chatId, supabaseUserId)` is called before any read or write on chat data
+
+### Input Validation
+
+All user-supplied data is validated using Zod schemas before it reaches service logic:
+
+- Request bodies and query strings pass through the `validate` middleware, which parses with Zod and replaces `req.body` with the cleaned, type-safe result
+- File uploads are validated by multer: JPEG/PNG/WebP/GIF only, 5MB maximum, MIME type enforced server-side
+- URL fields (e.g., `photoUrl`) are validated against the Supabase Storage origin at schema level, so arbitrary external URLs are rejected before reaching the database
+
+### Security Headers
+
+Helmet middleware is mounted as the first layer in the Express pipeline, enabling all 14 of its default protections:
+
+- `Strict-Transport-Security` (HSTS) — enforces HTTPS
+- `Content-Security-Policy` — restricts script, style, and frame sources
+- `X-Frame-Options: DENY` — blocks clickjacking via iframe embedding
+- `X-Content-Type-Options: nosniff` — prevents MIME-type sniffing
+- `Referrer-Policy` — controls referrer header exposure
+- `X-DNS-Prefetch-Control`, `X-XSS-Protection`, and others
+
+### Bot Protection
+
+Three layers work together to prevent automated abuse:
+
+1. **Honeypot fields** — invisible form fields on sensitive endpoints. Any request that fills them is silently rejected with a 403 before any business logic runs.
+2. **Rate limiting** (`express-rate-limit`) — separate limiters for login, registration, OTP send/verify, email check, search, and scan endpoints, enforced by `X-Real-IP` (set by nginx upstream).
+3. **OTP email verification** — onboarding completion is gated behind a 6-digit code sent to the user's email, binding the registration to mailbox possession.
+
+### SSRF Prevention
+
+Two independent guards prevent server-side request forgery:
+
+1. **Schema-level allowlist**: The `updateAvatarSchema` Zod schema validates that `photoUrl` matches the application's own Supabase Storage hostname (derived from `SUPABASE_URL` at runtime). Any URL pointing to a different origin is rejected at validation before reaching the database.
+2. **Fetch-time DNS + IP guard** (`assertSafeFetchUrl()` in `pdf.service.ts`): Before any outbound `fetch()` call during PDF export, the hostname is resolved via DNS and each resolved address is checked against blocked ranges:
+   - Loopback: `127.0.0.0/8`, `::1`
+   - RFC1918 private: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
+   - Link-local / metadata endpoint: `169.254.0.0/16`, `fe80::/10`
+   - CGNAT: `100.64.0.0/10`
+   - ULA: `fc00::/7`, `fd00::/7`
+   - IPv4-mapped IPv6: `::ffff:/96`
+   - Only `https:` scheme is permitted — `http:`, `file:`, `data:` are all rejected
+
+### Sensitive Data in Logs and Responses
+
+Winston (console + file transport) is used for all server-side logging. Logging rules enforced in the codebase:
+
+- **No PII in logs**: `supabaseUserId`, email addresses, and owner names are never logged at `info` level or above
+- **No credentials in logs**: OTP codes, password-reset links (which contain bearer tokens), and API keys are never written to any transport
+- **No raw request bodies in logs**: The validation middleware logs only field *names* on failure, never field *values*
+- **No SDK internals in HTTP responses**: Storage SDK error messages are logged internally at `error` level but the client receives only a generic message
+
+API response bodies are explicitly shaped — raw Prisma ORM objects are never returned. Fields like `supabaseUserId`, `otpHash`, `otpExpiresAt`, and `sessionToken` are excluded from all client-facing responses via Prisma `select` projections.
+
+### OTP Security
+
+The onboarding email-verification flow applies several defenses in depth:
+
+- **15-minute TTL**: OTP codes expire 15 minutes after issuance
+- **60-second resend cooldown**: Enforced at the service layer; the endpoint returns `{ cooldownSeconds: 60 }` regardless of whether the email is registered (prevents account enumeration)
+- **3-attempt lockout**: After 3 failed verify attempts the active code is invalidated and a fresh `sendOtp()` is required, bounding online guessing to 3 guesses per issued code
+- **Hash never exposed**: The stored SHA-256 OTP hash is excluded from every API response via the `updatePublic()` repository projection, making offline brute-force impossible without access to the database
+
+### Session Binding for Public Flows
+
+The onboarding flow is public (unauthenticated), so session binding uses a separate token:
+
+- On `POST /api/onboarding/start`, a cryptographically random UUID `sessionToken` is generated server-side, stored in the database, and returned once to the client
+- All subsequent mutating operations (`update`, `send-otp`, `verify-otp`) require this token via the `X-Session-Token` header
+- A missing or mismatched token returns `401` — knowledge of the session UUID alone is insufficient to advance or modify the session
+
+### AI Prompt Integrity
+
+User-typed content is never inserted raw into AI prompts:
+
+- All user-controlled text is wrapped in explicit `<user_input>...</user_input>` delimiters in every prompt, signalling to the model that the enclosed content is untrusted
+- Gemini's `generateText()` includes a `systemInstruction` that explicitly forbids following directives inside `<user_input>` blocks
+- Groq's system message contains a `<security_boundary>` block with the same instruction
+- Both providers are invoked with structured output schemas (Groq: `response_format: { type: 'json_object' }`, Gemini: `responseJsonSchema`). Any response deviating from the schema fails `JSON.parse()` and falls to the deterministic heuristic — no injected output can be persisted as a trusted analysis record
+- A pre-filter layer (`checkInappropriate()`, `checkOffTopic()` in `prompt-validator.ts`) intercepts common abuse patterns before they reach the AI
+
+**Toxicity verdicts are immune to prompt injection**: The ASPCA database is the sole source of toxicity truth. AI output (Gemini Vision) is used only to identify the plant's name; the actual toxic/safe classification is always derived from the local ASPCA dataset.
 
 ---
+
+## Known Limitations
 
 ### Stateless JWT Auth — Tokens Remain Valid After Password Reset
 
-**Root cause**: The backend verifies JWT signatures via JWKS on every request but maintains no revocation store. Once a token is issued, it is valid until expiry even if the account's password is subsequently changed.
+**Root cause**: The backend verifies JWT signatures on every request but maintains no revocation store. Once issued, a token is valid until expiry even if the account password is subsequently changed.
 
 **What we did**:
-- JWT expiry is enforced by Supabase's Auth infrastructure. Tokens are short-lived.
-- The `/reset-password` flow uses Supabase's `PASSWORD_RECOVERY` session event and calls `supabase.auth.signOut()` after the reset completes, invalidating the recovery session immediately.
-- Rate limiting on `POST /api/auth/recover` (recovery link request) prevents an attacker from triggering rapid successive resets to deny service.
+- Tokens are short-lived (enforced by Supabase's Auth infrastructure)
+- The `/reset-password` flow calls `supabase.auth.signOut()` after the reset completes, destroying the recovery session
+- Rate limiting on `POST /api/auth/recover` prevents rapid successive recovery link requests
 
-**Residual risk**: An attacker who obtains a valid token before a password reset retains API access until that token's natural expiry. Full mitigation would require a Redis-backed token denylist or Supabase Admin `signOut(userId, 'others')` called on password change — accepted as a known limitation pending infrastructure investment.
+**Residual risk**: An attacker who obtains a valid token before a password reset retains API access until that token's natural expiry. Full mitigation requires a Redis-backed token denylist or Supabase Admin `signOut(userId, 'others')` on password change — accepted as a known limitation pending infrastructure investment.
 
 ---
 
-### Prompt Injection via Behavior Chat Input
+### Prompt Injection via Behavior Chat
 
-**Root cause**: User-typed behavior descriptions are passed to Groq (Llama 3.3) and Gemini after lightweight pre-filtering. A well-crafted message could attempt to override the system prompt or leak model instructions.
+**Root cause**: User-typed behavior descriptions are passed to Groq and Gemini after lightweight pre-filtering. A sufficiently novel payload could attempt to override system instructions.
 
-**What we did**:
-- Added explicit `<user_input>...</user_input>` delimiters wrapping all user-controlled content in every prompt (`buildPrompt()` and `buildConversationalPrompt()` in `behavior-decoder.service.ts`). This signals to the model that the enclosed text is untrusted.
-- Added a `systemInstruction` to Gemini's `generateText()` call (previously absent) explicitly instructing the model to ignore directives inside `<user_input>` blocks and never disclose the system prompt.
-- Groq already had a `<security_boundary>` block in its system message; tightened it to reinforce the untrusted-input framing.
-- Both providers use structured output schemas (Groq: `response_format: { type: 'json_object' }`, Gemini: `responseJsonSchema`). Any response that doesn't conform to the declared schema fails at `JSON.parse()` and falls through to the heuristic — no injected output can be persisted as a trusted analysis record.
-- `checkInappropriate()` and `checkOffTopic()` in `prompt-validator.ts` provide a pre-filter layer that intercepts common abuse patterns before they reach the AI.
+**What we did**: See [AI Prompt Integrity](#ai-prompt-integrity) above.
 
-**Residual risk**: Indirect prompt injection via sufficiently novel payloads can never be fully eliminated at the application layer. The toxicity verdict is immune because it is derived exclusively from the ASPCA database — AI output is only used for plant name identification and is never trusted for the final safety classification.
+**Residual risk**: Novel indirect injection payloads cannot be fully eliminated at the application layer. The impact is bounded: the toxicity scanner is immune (ASPCA is ground truth), and the structured output schema prevents injected content from persisting as authoritative behavioral data.
 
 ---
 
 ### Email Delivery — No Delivery Confirmation
 
-**Root cause**: OTP and recovery emails are sent via Gmail SMTP. The backend has no way to confirm delivery to the recipient's inbox or detect silent drops.
+**Root cause**: OTP and recovery emails are sent via Gmail SMTP. The backend cannot confirm delivery to the recipient's inbox.
 
-**What we did**:
-- OTP codes expire after **15 minutes**, limiting the window during which an intercepted or delayed code is useful.
-- A **60-second resend cooldown** enforced at the service layer prevents both accidental and deliberate code-flooding.
-- A **per-session brute-force lockout** (3 failed attempts) invalidates the active code and forces a fresh send, preventing offline guessing through the live endpoint.
-- The OTP hash stored in the database is **never returned to the client** in any API response (enforced by the `updatePublic()` projection on the onboarding repository — see OTP Hash Leakage fix below), so the only way to use a code is to actually receive the email.
-- Enumeration protection: `sendOtp()` returns an identical `{ cooldownSeconds: 60 }` response regardless of whether the email address is already registered, preventing account oracle attacks.
+**What we did**: See [OTP Security](#otp-security) above.
 
-**Residual risk**: If a user's email inbox is compromised, an attacker could receive the OTP directly. This is outside the application's trust boundary.
+**Residual risk**: If a user's email inbox is compromised, an attacker can receive the OTP directly. This is outside the application's trust boundary.
 
 ---
 
 ## Fixed Vulnerabilities
 
 ### CVE-2025-13033, CVE-2025-14874, GHSA-c7w3-x93f-qmm8, GHSA-vvjj-xcjg-gr5g, sonatype-2026-003884
-**Nodemailer 6.10.1 → 9.0.3** (exact pin)
-- Fixes: SSRF, file-access, exceptional-condition handling issues in email library
-- **Status**: Fixed ✓
-- **Commit**: e5c6baa
+**Nodemailer 6.10.1 → 9.0.3**
+- Email library had multiple vulnerabilities including SSRF, file-access, and exceptional-condition handling flaws
+- **Status**: Fixed ✓ — `e5c6baa`
 
 ### Path Traversal in Avatar Upload
-**Supabase Storage path constructed from client-supplied filename**
-- **Vulnerability**: `uploadAvatarFile()` in `diet.controller.ts` accepted `file.originalname` directly in the storage path, allowing traversal like `../../other-user-id/evil.jpg`
-- **Fix**: Filename derived from MIME type (validated by multer), not client-supplied header. Path now constructed from server values only (timestamp + MIME-derived extension)
-- **Status**: Fixed ✓
-- **Commit**: 2aa6496
+- `uploadAvatarFile()` accepted `file.originalname` in the Supabase Storage path, allowing traversal outside the owner's folder
+- **Status**: Fixed ✓ — `e5c6baa`
 
 ### Client-Forged AI Analysis
-**Frontend POSTed full analysis object accepted by backend without verification**
-- **Vulnerability**: Behavior chat allowed `wiz`-speaker messages with client-supplied `analysis` + `decodeResult` fields. Backend accepted and persisted them in BehaviorLog without AI involvement.
-- **Fix**: Strip `analysis`/`decodeResult` from all inbound requests. BehaviorLogs now written exclusively by server-side decode path in `gemini.controller.ts`
-- **Status**: Fixed ✓
-- **Commit**: e5c6baa
+- Behavior chat accepted client-supplied `analysis` payloads and wrote BehaviorLog entries without AI involvement
+- **Status**: Fixed ✓ — `e5c6baa`
 
-### Onboarding Session Takeover (Missing Session Token Binding)
-**Sessions identified by UUID only, no credential binding**
-- **Vulnerability**: Any user who knows a session ID could read, advance steps, and submit OTP attempts. No binding to the user who initiated the session.
-- **Fix**: Issue `sessionToken` at session creation; require it via `X-Session-Token` header on all mutations. Token persisted in Prisma schema, stored in frontend localStorage.
-- **Status**: Fixed ✓
-- **Commit**: e5c6baa
-
-### Prompt Injection Hardening
-**User text reaches AI with minimal transformation**
-- **Vulnerability**: Partially real. User text reaches AI services with minimal sanitization, creating potential for indirect prompt injection.
-- **Fix**: Added `<user_input>` delimiters; hardened Gemini system instruction to prevent override attempts; structured output schema prevents unparseable responses from persisting
-- **Status**: Mitigated ✓
-- **Commit**: e5c6baa
+### Onboarding Session Takeover
+- Sessions were accessible via UUID alone; any party knowing the ID could read, advance steps, and submit OTP attempts
+- **Status**: Fixed ✓ — `e5c6baa`
 
 ### SSRF via Avatar URL in PDF Export
-**Authenticated photoUrl on cat profiles fetched server-side without allowlist**
-- **Vulnerability**: Users could set arbitrary `photoUrl` on cat profiles. PDF export called `fetch(cat.photoUrl)` server-side with no origin allowlist, enabling SSRF to internal services (AWS metadata, VPC, loopback).
-- **Fix**: Two-layer defense:
-  1. Schema validation restricts `photoUrl` to Supabase Storage origin only
-  2. `assertSafeFetchUrl()` validates scheme (https: only) and resolves hostname via DNS, rejecting loopback (127/8, ::1), RFC1918 (10/8, 172.16/12, 192.168/16), link-local (169.254/16, fe80::/10), CGNAT (100.64/10), and ULA (fc00::/7) ranges
-- **Status**: Fixed ✓
-- **Commit**: 2aa6496
+- `cat.photoUrl` was fetched server-side during PDF export with no destination allowlist
+- **Status**: Fixed ✓ — `2aa6496`
 
 ### OTP Hash Leakage in Public Onboarding Responses
-**Full OnboardingSession records returned, exposing deterministic OTP hash**
-- **Vulnerability**: Unauthenticated callers could trigger `sendOtp()`, retrieve SHA-256 hash from response, and brute-force 6-digit code offline (900k candidates). Hash is deterministic, not salted.
-- **Fix**: Added `updatePublic()` method to onboarding repository with explicit `select` projection excluding OTP fields (`otpHash`, `otpExpiresAt`, `otpAttempts`, `otpLastSentAt`). All client-facing responses routed through it.
-- **Status**: Fixed ✓
-- **Commit**: 666d220
+- Full `OnboardingSession` Prisma records (including `otpHash`) were returned from public endpoints, enabling offline brute-force of the 6-digit code
+- **Status**: Fixed ✓ — `666d220`
 
 ### Authenticated IDOR in Insight Refresh
-**Endpoint ignored caller identity, used victim cat's stored owner for authorization check**
-- **Vulnerability**: `POST /api/timeline/:catId/insights/refresh` accepted any authenticated user's `catId`. Internally, it read the **cat's stored owner id** and passed it into the ownership check, making the comparison tautological (always passed). Any user could trigger AI processing of another tenant's cat health data.
-- **Fix**: Pass caller's `supabaseUserId` from controller to `triggerOnDemandRefresh()`, which now calls `timelineService.verifyOwnership(catId, callerUserId)` with the **actual** caller-vs-owner check. Also hardened `getInsights` endpoint (same dead variable).
-- **Status**: Fixed ✓
-- **Commit**: 6e8635b
+- `POST /api/timeline/:catId/insights/refresh` used the victim cat's stored owner ID for authorization, making the ownership check tautological
+- **Status**: Fixed ✓ — `6e8635b`
 
-### Sensitive Data Exposure – 19 Instances Across 8 Files
-**PII, credentials, and secrets leaked via logs and API responses**
-- **Vulnerabilities**:
-  - **mailer.service.ts**: OTP codes, reset links (bearer tokens), emails logged in plaintext → now redacted
-  - **quick-log.controller.ts**: `console.log` dumps of `supabaseUserId` + full `req.body` → removed
-  - **profile.controller.ts**: `supabaseUserId` returned in all 3 response bodies → removed
-  - **validate.ts**: Full `req.body` logged on validation failure → now logs field names only
-  - **behavior-decoder.service.ts**: User chat messages logged at `info` level → downgraded to `debug`
-  - **behavior-chat.service.ts**: `supabaseUserId` in 4 `logger.info` calls → removed
-  - **behavior-dashboard.service.ts**: `supabaseUserId` via `console.log` → replaced with `logger.debug`
-  - **diet.controller.ts**: Env var enumeration, file paths, signed URLs, SDK errors exposed → all removed
-- **Status**: Fixed ✓
-- **Commit**: b1890f5
-
----
-
-## Security Best Practices for Contributors
-
-### Input Validation
-- Always validate user-supplied data using Zod schemas before use
-- Use the `validate` middleware on all routes that accept request bodies
-- Keep Zod schemas in `src/schemas/` and re-export them in `index.ts`
-
-### Authorization Checks
-- Always verify caller identity (`req.user.sub` from JWT) against the targeted resource
-- Use explicit ownership checks, never rely on extracted values from the resource itself
-- Check `timelineService.verifyOwnership(catId, supabaseUserId)` for multi-tenant resources
-
-### Sensitive Data in Responses
-- Use Prisma `select` projections to exclude OTP fields, password hashes, and credential material
-- Create explicit DTO/response types (e.g., `updatePublic()`) for unauthenticated endpoints
-- Never return raw ORM objects; always define explicit response shapes
-
-### Logging
-- **Never log**:
-  - `supabaseUserId` or other user identifiers in production
-  - OTP codes, reset tokens, or Bearer tokens
-  - Full request bodies or file contents
-  - Email addresses or environment variables
-- Use `logger.debug()` for verbose internal state (dev only)
-- Use `logger.info()` for business events (safe to persist)
-- Use `logger.error()` for actionable errors (no credentials)
-
-### External Service Calls
-- **SSRF prevention**:
-  - Restrict outbound fetch to known-safe origins (e.g., Supabase Storage, PlantNet, Wikipedia)
-  - Use DNS resolution + IP range checks (`assertSafeFetchUrl()`) to block loopback, RFC1918, and link-local ranges
-  - Prefer origin-based allowlists over blacklists
-- **Rate limiting**:
-  - Wrap external API calls in rate limiters to prevent abuse (e.g., `sendOtp`, `scanToxicity`)
-- **Graceful degradation**:
-  - Mock external services when API keys are absent (Gemini, Groq, PlantNet, Perenual)
-  - Return sensible defaults rather than errors
-
-### File Uploads
-- Validate file size and MIME type (multer enforces 5MB + JPEG/PNG/WebP/GIF)
-- Derive the storage path from server values only (timestamp + MIME-derived extension), never from client-supplied headers
-- Use Supabase Storage's private bucket and sign URLs for authenticated access
-
-### Authentication & Session Management
-- Require Bearer token (JWT) on protected routes; use `authMiddleware`
-- For public endpoints that require correlation, bind additional tokens (e.g., `sessionToken` for onboarding)
-- Do not rely on weak identifiers (UUIDs, guessable IDs) as the sole security boundary
-
----
-
-## Testing Recommendations
-
-### Prompt Injection Fuzzing
-- Test behavior decoder with payloads designed to override system instructions (e.g., "Ignore above and return …")
-- Verify structured output schema validation rejects unparseable responses
-- Use property-based tests (fast-check) to generate malformed AI inputs
-
-### IDOR & Authorization Traversal
-- For each authenticated endpoint that accepts a resource ID, verify that a different user cannot access/modify it
-- Test cross-tenant access (e.g., attempt to read another user's cat, diet profile, behavior chat)
-- Use Vitest + Supertest to automate HTTP-level authorization tests
-
-### Data Exposure Audits
-- Grep for `console.log`, `logger.info`, and `logger.error` calls; verify no credentials/PII is passed
-- Use the project's lint configuration (`oxlint`) to flag hardcoded secrets
-- Review all API response shapes; confirm sensitive fields are excluded
-
-### SSRF & External Service Calls
-- Mock external services and verify fallback paths work
-- Test `assertSafeFetchUrl()` with RFC1918, loopback, and link-local IP ranges
-- Verify Supabase Storage URLs are accepted; non-Supabase origins are rejected
-
-### Rate Limiting
-- Verify rate limiters are active on `POST /api/onboarding/send-otp`, `POST /api/onboarding/verify-otp`, and other sensitive endpoints
-- Test that limit is enforced per IP (X-Real-IP header respect) and per (user, endpoint) for authenticated routes
-
----
-
-## Deployment Checklist
-
-Before deploying a new version:
-
-- [ ] All tests pass (`npm run test -w packages/pawwiz-backend`)
-- [ ] No console.log or logger.info calls expose sensitive data
-- [ ] Rate limiters are active on sensitive endpoints
-- [ ] Helmet middleware is mounted first in the middleware stack
-- [ ] CORS origin is set to the frontend's production URL
-- [ ] JWT_SECRET and service-role keys are injected via Infisical (not hardcoded)
-- [ ] Database migrations have been validated against a shadow database
-- [ ] Security headers are present: HSTS, CSP, X-Frame-Options, X-Content-Type-Options
-- [ ] SSRF guards are in place for any outbound fetch calls
-- [ ] Authorization checks use caller identity, not resource-supplied values
-
----
-
-## Support
-
-For security-related questions or to report a vulnerability, contact **[security.pawwiz@gmail.com]**.
-
-For other issues, visit our GitHub repository or documentation.
+### Sensitive Data Exposure — 19 Instances
+- OTP codes, reset link tokens, `supabaseUserId`, full request bodies, file paths, signed URLs, and SDK internals were exposed via logs and API responses across 8 files
+- **Status**: Fixed ✓ — `b1890f5`
 
 ---
 
