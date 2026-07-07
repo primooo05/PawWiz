@@ -54,8 +54,10 @@ export default function Docs() {
 
   return (
     <div className="min-h-screen bg-slate-200 pb-24">
-      {/* Sticky in-page nav */}
-      <nav className="sticky top-0 z-30 bg-slate-200/95 backdrop-blur-md border-b-2 border-slate-900 shadow-[0_2px_0_0_rgba(15,23,42,1)]">
+      {/* Fixed in-page nav — sticky doesn't work here because App.tsx has
+          overflow-x-hidden on the root, which creates a new scroll container
+          and breaks position:sticky. Fixed + pt offset on content is reliable. */}
+      <nav className="fixed top-0 left-0 right-0 z-30 bg-slate-200/95 backdrop-blur-md border-b-2 border-slate-900 shadow-[0_2px_0_0_rgba(15,23,42,1)]">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
           <Link
             to="/"
@@ -87,7 +89,8 @@ export default function Docs() {
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6 pt-10 space-y-10">
+      {/* pt-[57px] matches the nav height (py-3 × 2 + text line ≈ 57px) */}
+      <div className="max-w-5xl mx-auto px-4 md:px-6 pt-[72px] space-y-10">
         {/* SECTION 1 — HERO & OVERVIEW */}
         <OverviewSection />
 

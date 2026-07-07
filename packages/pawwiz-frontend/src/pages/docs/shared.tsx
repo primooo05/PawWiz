@@ -15,7 +15,7 @@ export function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28">
+    <section id={id} className="scroll-mt-20">
       <div className="relative p-6 md:p-10 bg-white border-2 border-slate-900 rounded-[2rem] md:rounded-[2.5rem] shadow-[6px_6px_0_0_rgba(15,23,42,1)]">
         <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em]" style={{ color: TEAL }}>
           {eyebrow}
