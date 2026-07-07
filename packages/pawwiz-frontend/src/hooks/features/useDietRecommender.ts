@@ -131,6 +131,23 @@ export const useDietRecommender = () => {
         return localStorage.getItem('diet_active_profile_id') || '';
     });
 
+    useEffect(() => {
+        const handleSync = () => {
+            const stored = localStorage.getItem('diet_profiles');
+            if (stored) {
+                try {
+                    setProfiles(JSON.parse(stored));
+                } catch (e) {}
+            }
+            const activeId = localStorage.getItem('diet_active_profile_id');
+            if (activeId) {
+                setActiveProfileId(activeId);
+            }
+        };
+        window.addEventListener('diet-profile-sync', handleSync);
+        return () => window.removeEventListener('diet-profile-sync', handleSync);
+    }, []);
+
     const activeProfileRaw = profiles.find(p => p.id === activeProfileId) || profiles[0];
 
     const sanitizeProfileMeals = (profile?: CatProfile): CatProfile | undefined => {
@@ -300,6 +317,7 @@ export const useDietRecommender = () => {
 
     const saveProfilesToStorage = (updatedList: CatProfile[]) => {
         localStorage.setItem('diet_profiles', JSON.stringify(updatedList));
+        window.dispatchEvent(new Event('diet-profile-sync'));
     };
 
     const switchProfile = (id: string) => {
@@ -308,6 +326,7 @@ export const useDietRecommender = () => {
         setActiveProfileId(id);
         localStorage.setItem('diet_active_profile_id', id);
         syncStatesToSetup(nextProfile);
+        window.dispatchEvent(new Event('diet-profile-sync'));
     };
 
     const createNewProfile = async (name: string, customDetails?: Partial<Omit<CatProfile, 'id' | 'loggedMeals'>>) => {
