@@ -50,18 +50,20 @@ pawwiz-monorepo/                  ← npm workspaces root
 ---
 
 ### 1. Install dependencies
-
+Installs all workspace packages in one shot.
 ```bash
 npm install
 ```
-Installs all workspace packages in one shot.
+Or install each package individually:
 ```bash
+# Backend
 cd packages/pawwiz-backend
 npm install
+
+# Frontend
 cd packages/pawwiz-frontend
 npm install
 ```
-Installs all packages from different workspace.
 ---
 
 ### 2. Configure environment variables
