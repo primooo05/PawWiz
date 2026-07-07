@@ -14,7 +14,7 @@ import { profileService } from '../services/profile.service.js';
  */
 export const createProfile = withErrorHandling(async (req: Request, res: Response) => {
   const supabaseUserId = (req as any).user?.sub;
-  const { displayName, onboardingSessionId, catName, catBreed, catMarking, catSex, catLifeStage } = req.body;
+  const { displayName, onboardingSessionId, catName, catBreed, catMarking, catSex, catLifeStage, additionalCats } = req.body;
 
   const profile = await profileService.createProfile(supabaseUserId, displayName, onboardingSessionId, {
     catName,
@@ -22,7 +22,7 @@ export const createProfile = withErrorHandling(async (req: Request, res: Respons
     catMarking,
     catSex,
     catLifeStage,
-  });
+  }, additionalCats);
 
   res.status(201).json({
     id: profile.id,

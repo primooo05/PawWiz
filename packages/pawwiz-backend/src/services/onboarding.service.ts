@@ -133,6 +133,40 @@ class OnboardingService {
   }
 
   /**
+   * Saves a completed cat (name + breed + marking + sex + lifeStage) as a Cat
+   * row linked to this onboarding session. Called after the user finishes
+   * step 6 (life stage) when they are adding additional cats in a multi-cat
+   * flow. The first cat is already captured on the flat session columns and
+   * will be created by profile.service.ts at registration time; this endpoint
+   * stores subsequent cats so none are lost.
+   *
+   * Requires the session token issued at creation.
+   */
+  async saveCatToSession(
+    id: string,
+    catData: { catName: string; catBreed?: string | null; catMarking?: string | null; catSex: string; catLifeStage: string },
+    sessionToken?: string,
+  ): Promise<void> {
+    const session = await this.getSession(id);
+    await this.verifySessionToken(session, sessionToken);
+
+    if (session.step < 7) {
+      throw AppError.badRequest('Complete the cat details steps before saving a cat');
+    }
+
+    await prisma.cat.create({
+      data: {
+        onboardingSessionId: id,
+        name: catData.catName.trim(),
+        breed: catData.catBreed?.trim() || null,
+        marking: catData.catMarking?.trim() || null,
+        sex: catData.catSex,
+        lifeStage: catData.catLifeStage,
+      },
+    });
+  }
+
+  /**
    * Sends a 6-digit OTP to the session's ownerEmail.
    * Enforces a 60-second cooldown between sends.
    * Requires the session token issued at creation.

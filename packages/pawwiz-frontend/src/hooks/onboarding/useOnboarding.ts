@@ -18,13 +18,47 @@ export function useOnboarding() {
   // Form states
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
-  const [catsCount, setCatsCount] = useState('');
-  const [customCatsCount, setCustomCatsCount] = useState('');
+  const [catsCount, setCatsCount] = useState<string>(() => {
+    return localStorage.getItem('pawwiz_cats_count') ?? '';
+  });
+  const [customCatsCount, setCustomCatsCount] = useState<string>(() => {
+    return localStorage.getItem('pawwiz_custom_cats_count') ?? '';
+  });
   const [catName, setCatName] = useState('');
   const [catBreed, setCatBreed] = useState('');
   const [catMarking, setCatMarking] = useState('');
   const [catSex, setCatSex] = useState('');
   const [catLifeStage, setCatLifeStage] = useState('');
+
+  // Persisting wrappers for catsCount/customCatsCount — these drive the
+  // totalCats calculation on step 7 and must survive a page refresh.
+  const setCatsCountPersisted = useCallback((v: string) => {
+    localStorage.setItem('pawwiz_cats_count', v);
+    setCatsCount(v);
+  }, []);
+  const setCustomCatsCountPersisted = useCallback((v: string) => {
+    localStorage.setItem('pawwiz_custom_cats_count', v);
+    setCustomCatsCount(v);
+  }, []);
+
+  // Accumulated cats for multi-cat onboarding. Each entry is a complete cat
+  // snapshot. Populated after each life-stage step and sent to the backend in
+  // one shot at profile-creation time — no staging DB rows needed.
+  // Persisted to localStorage so a page refresh doesn't lose entries.
+  const [pendingCats, setPendingCats] = useState<Array<{
+    catName: string;
+    catBreed: string;
+    catMarking: string;
+    catSex: string;
+    catLifeStage: string;
+  }>>(() => {
+    try {
+      const stored = localStorage.getItem('pawwiz_pending_cats');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const initializeSession = useCallback(async () => {
     setLoading(true);
@@ -71,8 +105,8 @@ export function useOnboarding() {
       setSessionStep(data.step);
       setOwnerName(data.ownerName || '');
       setOwnerEmail(data.ownerEmail || '');
-      setCatsCount(data.catsCount || '');
-      setCustomCatsCount(data.customCatsCount || '');
+      setCatsCountPersisted(data.catsCount || '');
+      setCustomCatsCountPersisted(data.customCatsCount || '');
       setCatName(data.catName || '');
       setCatBreed(data.catBreed || '');
       setCatMarking(data.catMarking || '');
@@ -135,6 +169,10 @@ export function useOnboarding() {
   const resetSession = useCallback(() => {
     localStorage.removeItem('pawwiz_onboarding_session_id');
     localStorage.removeItem('pawwiz_onboarding_session_token');
+    localStorage.removeItem('pawwiz_pending_cats');
+    localStorage.removeItem('pawwiz_cats_added');
+    localStorage.removeItem('pawwiz_cats_count');
+    localStorage.removeItem('pawwiz_custom_cats_count');
     setSessionId(null);
     setSessionToken(null);
     setSessionStep(1);
@@ -147,6 +185,7 @@ export function useOnboarding() {
     setCatMarking('');
     setCatSex('');
     setCatLifeStage('');
+    setPendingCats([]);
   }, []);
 
   const sendOtp = useCallback(async (id: string): Promise<{ cooldownSeconds: number } | null> => {
@@ -221,6 +260,20 @@ export function useOnboarding() {
     }
   }, [sessionToken]);
 
+  const addPendingCat = useCallback((cat: {
+    catName: string;
+    catBreed: string;
+    catMarking: string;
+    catSex: string;
+    catLifeStage: string;
+  }) => {
+    setPendingCats((prev) => {
+      const next = [...prev, cat];
+      localStorage.setItem('pawwiz_pending_cats', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   return {
     sessionId,
     sessionToken,
@@ -232,9 +285,9 @@ export function useOnboarding() {
     ownerEmail,
     setOwnerEmail,
     catsCount,
-    setCatsCount,
+    setCatsCount: setCatsCountPersisted,
     customCatsCount,
-    setCustomCatsCount,
+    setCustomCatsCount: setCustomCatsCountPersisted,
     catName,
     setCatName,
     catBreed,
@@ -252,5 +305,8 @@ export function useOnboarding() {
     verifyOtp,
     checkEmail,
     resetSession,
+    pendingCats,
+    setPendingCats,
+    addPendingCat,
   };
 }

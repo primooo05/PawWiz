@@ -7,6 +7,7 @@ interface OnboardingScreen6Props {
   catsCount: string;
   customCatsCount: string;
   catsAdded: number;
+  pendingCats: Array<{ catName: string; catBreed: string; catMarking: string; catSex: string; catLifeStage: string }>;
   isTyping: boolean;
   showBubble: boolean;
   bubbleText: string;
@@ -18,10 +19,10 @@ interface OnboardingScreen6Props {
 
 export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
   active,
-  catName,
   catsCount,
   customCatsCount,
   catsAdded,
+  pendingCats,
   isTyping,
   showBubble,
   bubbleText,
@@ -51,7 +52,11 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
   };
 
   const totalCats = getResolvedCatsCount(catsCount, customCatsCount);
-  const showAddMore = catsAdded < totalCats;
+  // Use pendingCats.length as the authoritative count of cats added — it's
+  // persisted to localStorage so it survives page refreshes correctly.
+  // Fall back to catsAdded only when pendingCats hasn't loaded yet.
+  const catsRegistered = pendingCats.length > 0 ? pendingCats.length : catsAdded;
+  const showAddMore = catsRegistered < totalCats;
 
   return (
     <div className={`flex flex-col md:grid md:grid-cols-2 md:items-start justify-center items-center w-full max-w-5xl gap-6 md:gap-12 z-0 pt-6 pb-6 md:pb-28 transition-opacity duration-300 ease-in-out absolute ${
@@ -59,15 +64,12 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
     }`}>
       {/* 1. ChatBubble & Mascot SVG */}
       <div className="md:col-start-2 md:row-start-1 md:row-span-2 flex justify-center items-center relative w-full">
-        {/* Custom Speech Bubble */}
         {showBubble && (
           <div className="absolute -top-4 left-4 md:-top-16 md:left-12 bg-white border-2 border-slate-900 px-6 py-4 rounded-3xl shadow-[4px_4px_0_0_rgba(15,23,42,0.15)] text-slate-800 text-sm md:text-base font-extrabold max-w-[220px] md:max-w-[280px] z-10 animate-fade-in">
             <p className="leading-relaxed whitespace-pre-wrap">{bubbleText}</p>
-            {/* Speech Bubble Tail */}
             <div className="absolute right-12 md:right-16 -bottom-2 w-4 h-4 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
           </div>
         )}
-
         <div className="animate-float">
           <img
             src={catScreen6}
@@ -78,15 +80,26 @@ export const OnboardingScreen6: React.FC<OnboardingScreen6Props> = ({
         </div>
       </div>
 
-      {/* 2. Cat Confirmation */}
+      {/* 2. Cat Confirmation — list all accumulated cats */}
       <div className="md:col-start-1 md:row-start-1 md:row-span-2 flex-1 w-full max-w-md flex flex-col justify-center items-center md:items-stretch text-center md:text-left space-y-4">
         <label className="text-xl md:text-2xl text-slate-400 font-extrabold italic pl-1 tracking-wide block text-center md:text-left">
-          Cat Added!
+          {pendingCats.length > 1 ? 'Cats Added!' : 'Cat Added!'}
         </label>
-        <div className="flex flex-col gap-4 w-full">
-          <div className="w-full py-4 px-6 rounded-2xl bg-[#2ec4b6] text-white font-extrabold text-lg md:text-xl text-center shadow-[0_4px_0_0_#209f93] select-none">
-            {catName}
-          </div>
+        <div className="flex flex-col gap-3 w-full">
+          {pendingCats.map((cat, i) => (
+            <div
+              key={i}
+              className="w-full py-4 px-6 rounded-2xl bg-[#2ec4b6] text-white font-extrabold text-lg md:text-xl text-center shadow-[0_4px_0_0_#209f93] select-none"
+            >
+              {cat.catName}
+            </div>
+          ))}
+          {pendingCats.length === 0 && (
+            // Fallback: pendingCats not yet populated (shouldn't happen, but safe)
+            <div className="w-full py-4 px-6 rounded-2xl bg-[#2ec4b6] text-white font-extrabold text-lg md:text-xl text-center shadow-[0_4px_0_0_#209f93] select-none opacity-50">
+              Loading...
+            </div>
+          )}
           {showAddMore && (
             <button
               type="button"

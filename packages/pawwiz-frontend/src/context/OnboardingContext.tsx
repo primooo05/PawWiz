@@ -49,6 +49,8 @@ interface OnboardingContextValue {
   verifyOtp: (id: string, code: string) => Promise<boolean>;
   checkEmail: (email: string) => Promise<boolean>;
   resetSession: () => void;
+  pendingCats: Array<{ catName: string; catBreed: string; catMarking: string; catSex: string; catLifeStage: string }>;
+  addPendingCat: (cat: { catName: string; catBreed: string; catMarking: string; catSex: string; catLifeStage: string }) => void;
 
   // Navigation
   step: number;
@@ -64,12 +66,28 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   // Password state (local to frontend, never persisted to backend session)
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  // Track how many cats the user has actually added profiles for
-  const [catsAdded, setCatsAdded] = useState(0);
+  // Track how many cats the user has actually added profiles for.
+  // Restored from localStorage so a page refresh doesn't reset the counter.
+  const [catsAdded, setCatsAdded] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('pawwiz_cats_added');
+      return stored ? parseInt(stored, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
 
   // Clamp step to valid range [1..8]
   const rawStep = parseInt(searchParams.get('step') || '1', 10);
   const step = Number.isNaN(rawStep) || rawStep < 1 || rawStep > 8 ? 1 : rawStep;
+
+  const setCatsAddedPersisted = (v: number | ((prev: number) => number)) => {
+    setCatsAdded((prev) => {
+      const next = typeof v === 'function' ? v(prev) : v;
+      localStorage.setItem('pawwiz_cats_added', String(next));
+      return next;
+    });
+  };
 
   const setStep = useCallback(
     (newStep: number | ((prev: number) => number)) => {
@@ -109,7 +127,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         confirmPassword,
         setConfirmPassword,
         catsAdded,
-        setCatsAdded,
+        setCatsAdded: setCatsAddedPersisted,
         initializeSession: onboarding.initializeSession,
         fetchSession: onboarding.fetchSession,
         submitStep: onboarding.submitStep,
@@ -117,6 +135,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         verifyOtp: onboarding.verifyOtp,
         checkEmail: onboarding.checkEmail,
         resetSession: onboarding.resetSession,
+        pendingCats: onboarding.pendingCats,
+        addPendingCat: onboarding.addPendingCat,
         step,
         setStep,
       }}
