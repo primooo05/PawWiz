@@ -153,9 +153,17 @@ class InsightService {
 
   /**
    * Awaitable on-demand refresh.
+   * Verifies that the caller owns the cat before running the refresh — prevents
+   * any authenticated user from triggering AI processing of another tenant's
+   * cat health data by supplying an arbitrary catId.
    * Sets the in-flight flag then runs the refresh.
    */
-  async triggerOnDemandRefresh(catId: string): Promise<void> {
+  async triggerOnDemandRefresh(catId: string, callerUserId: string): Promise<void> {
+    // Ownership check using the caller's identity — NOT the cat's stored owner id.
+    // This replaces the tautological check that previously supplied cat.profile.supabaseUserId
+    // into a comparison against itself, which always succeeded for any existing cat.
+    await timelineService.verifyOwnership(catId, callerUserId);
+
     this.inFlightMap.set(catId, true);
     await this._runRefresh(catId);
   }
