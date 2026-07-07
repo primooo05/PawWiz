@@ -4,7 +4,7 @@
 > **Requested by:** Primooo
 > **Audit Date:** July 7, 2026 · 7:22 PM
 > **Repository:** PawWiz
-> **Overall Status:** ✅ No open issues — all confirmed vulnerabilities resolved
+> **Overall Status:** No open issues — all confirmed vulnerabilities resolved
 
 ---
 
@@ -186,7 +186,7 @@ Upgraded nodemailer 6.10.1 → 9.0.3 (exact pin). Email library had SSRF, file-a
 
 `uploadAvatarFile()` accepted `file.originalname` in the Supabase Storage path, allowing traversal outside the owner's folder. Filename is now derived from the multer-verified MIME type only.
 
-✅ Fixed · commit `e5c6baa`
+Fixed · commit `e5c6baa`
 
 ---
 
@@ -194,7 +194,7 @@ Upgraded nodemailer 6.10.1 → 9.0.3 (exact pin). Email library had SSRF, file-a
 
 Behavior chat accepted client-supplied `analysis` payloads on `wiz`-speaker messages and wrote BehaviorLog entries without AI involvement. Analysis fields are now stripped from all inbound requests.
 
-✅ Fixed · commit `e5c6baa`
+Fixed · commit `e5c6baa`
 
 ---
 
@@ -202,7 +202,7 @@ Behavior chat accepted client-supplied `analysis` payloads on `wiz`-speaker mess
 
 Sessions were accessible via UUID alone. Any party knowing the ID could read the session, advance steps, and submit OTP attempts. A `sessionToken` is now issued at creation and required on all mutations.
 
-✅ Fixed · commit `e5c6baa`
+Fixed · commit `e5c6baa`
 
 ---
 
@@ -210,7 +210,7 @@ Sessions were accessible via UUID alone. Any party knowing the ID could read the
 
 User text reached AI providers without explicit untrusted-input markers or a Gemini system instruction. `<user_input>` delimiters and a hardened `systemInstruction` were added.
 
-✅ Mitigated · commit `e5c6baa`
+Mitigated · commit `e5c6baa`
 
 ---
 
@@ -218,7 +218,7 @@ User text reached AI providers without explicit untrusted-input markers or a Gem
 
 `cat.photoUrl` was fetched server-side during PDF export with no destination allowlist, enabling SSRF to internal services. Fixed with a schema-level origin allowlist and a fetch-time DNS/IP range guard.
 
-✅ Fixed · commit `2aa6496`
+Fixed · commit `2aa6496`
 
 ---
 
@@ -226,7 +226,7 @@ User text reached AI providers without explicit untrusted-input markers or a Gem
 
 Full `OnboardingSession` Prisma records (including `otpHash`) were returned from public endpoints, enabling offline brute-force of the 6-digit code (900k candidates). All client-facing responses now use the `updatePublic()` projection.
 
-✅ Fixed · commit `666d220`
+Fixed · commit `666d220`
 
 ---
 
@@ -234,7 +234,7 @@ Full `OnboardingSession` Prisma records (including `otpHash`) were returned from
 
 `POST /api/timeline/:catId/insights/refresh` used the victim cat's stored owner ID for authorization, making the ownership check tautological. The endpoint now uses the caller's JWT `sub`.
 
-✅ Fixed · commit `6e8635b`
+Fixed · commit `6e8635b`
 
 ---
 
@@ -242,7 +242,7 @@ Full `OnboardingSession` Prisma records (including `otpHash`) were returned from
 
 OTP codes, reset link tokens, `supabaseUserId`, full request bodies, file paths, signed URLs, and SDK error internals were exposed via logs and API responses.
 
-✅ Fixed · commit `b1890f5`
+Fixed · commit `b1890f5`
 
 ---
 
