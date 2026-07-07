@@ -189,21 +189,24 @@ const AnimatedAvatarGroup = ({
                 {content}
               </div>
 
+              {/* "Needs setup" badge — shown when diet profile hasn't been configured yet */}
               {avatar.isNew && (
-                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 border-2 border-slate-900 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-md z-[101] pointer-events-none select-none">
-                  !
+                <div
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-400 border-2 border-slate-900 rounded-full flex items-center justify-center text-[10px] font-black text-slate-900 shadow-md z-[101] pointer-events-none select-none"
+                  aria-label="Diet profile not set up"
+                >
+                  +
                 </div>
               )}
 
-              {/* Status dot (e.g. "logged today" or active profile indicator) */}
-              {(avatar.statusDot || avatar.isActive) && (
+              {/* Status dot (e.g. "logged today" indicator on pregnancy tracker) */}
+              {avatar.statusDot && (
                 <div
                   className={cn(
                     "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm z-[101] pointer-events-none",
-                    avatar.statusDot === 'green' ? 'bg-emerald-400' :
-                    avatar.statusDot === 'amber' ? 'bg-amber-400' : 'bg-[#FFB870]'
+                    avatar.statusDot === 'green' ? 'bg-emerald-400' : 'bg-amber-400'
                   )}
-                  aria-label={avatar.statusDot ? (avatar.statusDot === 'green' ? 'Logged today' : 'Not logged yet') : 'Active profile'}
+                  aria-label={avatar.statusDot === 'green' ? 'Logged today' : 'Not logged yet'}
                 />
               )}
 
@@ -218,7 +221,8 @@ const AnimatedAvatarGroup = ({
                     className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-slate-900 border border-slate-800 text-white font-black text-[10px] tracking-wider uppercase rounded-xl shadow-xl whitespace-nowrap z-[1000] pointer-events-none"
                   >
                     {avatar.name}
-                    {avatar.isActive && <span className="text-[#30c290] ml-1.5 font-bold">✓</span>}
+                    {avatar.isActive && <span className="text-[#30c290] ml-1.5 font-bold" aria-hidden="true">✓ Active</span>}
+                    {avatar.isNew && !avatar.isActive && <span className="text-amber-400 ml-1.5 font-bold" aria-hidden="true">Tap to set up</span>}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900" />
                   </motion.div>
                 )}

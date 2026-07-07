@@ -502,9 +502,11 @@ export const useDietRecommender = () => {
                     });
                     if (res.ok) {
                         const updatedProf = await res.json();
-                        const updatedProfiles = profiles.map(p => p.id === activeProfileId ? updatedProf : p);
-                        setProfiles(updatedProfiles);
-                        saveProfilesToStorage(updatedProfiles);
+                        setProfiles(prev => {
+                            const updatedProfiles = prev.map(p => p.id === activeProfileId ? updatedProf : p);
+                            saveProfilesToStorage(updatedProfiles);
+                            return updatedProfiles;
+                        });
                         syncStatesToSetup(updatedProf);
                     }
                 }
