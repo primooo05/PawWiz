@@ -181,6 +181,5 @@ npm run test -w packages/pawwiz-frontend
 | `/behavior-dashboard` | Behavior analytics |
 | `/health-timeline/:catId` | Per-cat health timeline + PDF export |
 | `/pregnancy-tracker` | Pregnancy session + daily logs + insights |
-| `/heat-tracker` | Heat cycle tracking |
 | `/settings` | Profile + cat management |
 | `/docs` | Engineering documentation |
