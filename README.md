@@ -183,3 +183,6 @@ npm run test -w packages/pawwiz-frontend
 | `/pregnancy-tracker` | Pregnancy session + daily logs + insights |
 | `/settings` | Profile + cat management |
 | `/docs` | Engineering documentation |
+
+## PawWiz Demo
+https://www.youtube.com/watch?v=dz9MooCDN-Y&t=8s
