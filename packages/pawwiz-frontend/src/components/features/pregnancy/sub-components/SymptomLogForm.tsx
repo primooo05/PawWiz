@@ -53,7 +53,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
     logs,
     saveLogForDate,
     onDeleteLog,
-    setIsWeightPickerOpen,
+    setIsWeightPickerOpen: _setIsWeightPickerOpen,
     hasVetWarningForSelected,
     hasNauseaInEarlyWeeksForSelected,
     registeredWeight,
@@ -69,12 +69,7 @@ export const SymptomLogForm: React.FC<SymptomLogFormProps> = ({
         }
     }, [isOpen, selectedDateStr, logs]);
 
-    const activeLog = {
-        symptoms: [],
-        moods: [],
-        symptomSeverities: {},
-        ...draftLog
-    };
+    const activeLog: DailyLog = draftLog;
 
     const selectedDateWeek = elapsedDayForSelected !== null ? Math.ceil(elapsedDayForSelected / 7) : currentWeek;
     const hasLog = !!(

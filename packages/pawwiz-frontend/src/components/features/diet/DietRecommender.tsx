@@ -32,7 +32,6 @@ export const DietRecommender: React.FC = () => {
         setIsSpayedNeutered,
         isTracking,
         activeLifeStage,
-        ageBracketInfo,
         handleStartDietTracking,
         toggleUnit,
         addMeal,
@@ -100,10 +99,6 @@ export const DietRecommender: React.FC = () => {
         e.preventDefault();
         setLoadingTarget('dashboard');
         setIsLoading(true);
-    };
-
-    const handleResetWithLoading = () => {
-        setIsSetupModalOpen(true);
     };
 
     const handleLoadingComplete = useCallback(() => {

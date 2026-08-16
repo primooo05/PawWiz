@@ -22,7 +22,6 @@ export const MealsTracker: React.FC<MealsTrackerProps> = ({
     onEditMeal,
     onAddMeal,
     onUndoSkip,
-    catName = 'Your cat',
 }) => {
     // Pending meals aren't rendered until the owner actually logs them via the
     // (+) button — the list only shows meals that have been logged or skipped.

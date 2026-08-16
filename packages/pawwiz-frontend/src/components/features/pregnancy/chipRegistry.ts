@@ -34,6 +34,11 @@ export const SYMPTOM_META: Record<SymptomChip, ChipMeta> = {
   nesting: { label: 'Nesting', prominentWeeks: [7, 9] },
   nipple_swelling: { label: 'Nipple swelling', prominentWeeks: [3, 4] },
   weight_gain: { label: 'Weight gain' },
+  nausea: { label: 'Nausea', prominentWeeks: [1, 3] },
+  nipple_changes: { label: 'Nipple changes', prominentWeeks: [3, 5] },
+  appetite_changes: { label: 'Appetite changes' },
+  milk_production: { label: 'Milk production', prominentWeeks: [8, 10] },
+  nesting_behavior: { label: 'Nesting behavior', prominentWeeks: [7, 9] },
 };
 
 export const MOOD_META: Record<MoodChip, ChipMeta> = {
@@ -46,6 +51,8 @@ export const MOOD_META: Record<MoodChip, ChipMeta> = {
   grooming_more: { label: 'Grooming more' },
   grooming_less: { label: 'Grooming less' },
   seeking_solitude: { label: 'Seeking solitude', prominentWeeks: [7, 9] },
+  restless: { label: 'Restless' },
+  quiet: { label: 'Quiet' },
 };
 
 export const APPETITE_META: Record<AppetiteLevel, string> = {

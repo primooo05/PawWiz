@@ -186,14 +186,14 @@ const QuickLogBar: React.FC<QuickLogBarProps> = ({
   };
 
   const handleMealSubmit = (
-    mealName: MealName,
+    mealName: string,
     foodType: string,
     amount: number,
     unit: MealUnit,
     timestamp: string,
     kcal: number
   ) => {
-    const targetMealId = MEAL_IDS[mealName];
+    const targetMealId = MEAL_IDS[mealName as MealName] || mealName;
     // If the meal type was changed while editing, clear the original slot.
     if (isEditingMeal && editingMealId && editingMealId !== targetMealId) {
       resetMealLog(editingMealId);
