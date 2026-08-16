@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import jwksClient from 'jwks-rsa';
+import * as jose from 'jose';
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/winston.js';
 
@@ -31,13 +31,8 @@ const verifyOptions = (algorithms: jwt.Algorithm[]): jwt.VerifyOptions => ({
   ...(EXPECTED_ISSUER ? { issuer: EXPECTED_ISSUER } : {}),
 });
 
-const client = supabaseUrl
-  ? jwksClient({
-      jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
-      cache: true,
-      rateLimit: true,
-      jwksRequestsPerMinute: 10,
-    })
+const JWKS = supabaseUrl
+  ? jose.createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`))
   : null;
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -53,28 +48,21 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     const decodedHeader = jwt.decode(token, { complete: true }) as jwt.JwtPayload | null;
     const alg = decodedHeader?.header?.alg;
 
-    let decoded: jwt.JwtPayload;
+    let decodedSub: string | undefined;
+    let decodedEmail: string | undefined;
+    let decodedRole: string | undefined;
 
     if (alg === 'ES256') {
-      if (!client) {
+      if (!JWKS) {
         throw new Error('JWKS client is not initialized (SUPABASE_URL is missing)');
       }
-      const kid = decodedHeader?.header?.kid;
-      if (!kid) {
-        throw new Error('Missing kid in token header');
-      }
-      const key = await new Promise<string>((resolve, reject) => {
-        client.getSigningKey(kid, (err, key) => {
-          if (err) {
-            reject(err);
-          } else if (!key) {
-            reject(new Error('Signing key not found'));
-          } else {
-            resolve(key.getPublicKey());
-          }
-        });
+      const { payload } = await jose.jwtVerify(token, JWKS, {
+        issuer: EXPECTED_ISSUER,
+        audience: EXPECTED_AUDIENCE,
       });
-      decoded = jwt.verify(token, key, verifyOptions(['ES256'])) as jwt.JwtPayload;
+      decodedSub = payload.sub;
+      decodedEmail = payload.email as string | undefined;
+      decodedRole = payload.role as string | undefined;
     } else {
       // Fallback to legacy symmetric HS256
       const secret = process.env.SUPABASE_JWT_SECRET;
@@ -82,18 +70,21 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         throw new Error('SUPABASE_JWT_SECRET is not configured');
       }
       const secretBuffer = Buffer.from(secret, 'base64');
-      decoded = jwt.verify(token, secretBuffer, verifyOptions(['HS256'])) as jwt.JwtPayload;
+      const decoded = jwt.verify(token, secretBuffer, verifyOptions(['HS256'])) as jwt.JwtPayload;
+      decodedSub = decoded.sub;
+      decodedEmail = decoded.email;
+      decodedRole = decoded.role;
     }
 
-    if (!decoded.sub) {
+    if (!decodedSub) {
       res.status(401).json({ error: 'Unauthorized - Missing sub in token' });
       return;
     }
 
     req.user = {
-      sub: decoded.sub,
-      email: decoded.email,
-      role: decoded.role,
+      sub: decodedSub,
+      email: decodedEmail,
+      role: decodedRole,
     };
     next();
   } catch (error) {
