@@ -92,4 +92,9 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-bootstrap();
+if (!process.env.VERCEL) {
+  bootstrap();
+}
+
+export { app };
+export default app;
