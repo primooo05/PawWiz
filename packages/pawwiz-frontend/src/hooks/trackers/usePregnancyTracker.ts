@@ -38,6 +38,7 @@ export function usePregnancyTracker() {
     const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
     const [isBottomSheetOpen, setIsBottomSheetOpen] = useState<boolean>(false);
 
+    const trackedDate = matingDate ? new Date(matingDate) : null;
     const [calendarMonthIndex, setCalendarMonthIndex] = useState<number>(new Date().getMonth());
     const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
 
