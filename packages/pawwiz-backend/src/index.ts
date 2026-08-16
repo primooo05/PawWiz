@@ -2,7 +2,7 @@ import './lib/env.js';
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { connectDatabase, disconnectDatabase } from './lib/prisma.js';
+import { prisma, connectDatabase, disconnectDatabase } from './lib/prisma.js';
 import { registerRoutes } from './routes/index.js';
 
 import { helmetMiddleware } from './middleware/helmet.js';
@@ -48,9 +48,46 @@ app.use(sanitizerMiddleware);
 // Register MRSC routes (profile, etc.)
 registerRoutes(app);
 
-// Health Check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+// Root redirect to health check
+app.get('/', (req, res) => {
+  res.redirect('/api/health');
+});
+
+// Deep Health Check with Database Ping & Latency Telemetry
+app.get(['/api/health', '/health'], async (req, res) => {
+  const start = Date.now();
+  let dbStatus = 'connected';
+  let dbLatencyMs: number | null = null;
+  let dbError: string | undefined;
+
+  try {
+    const dbStart = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    dbLatencyMs = Date.now() - dbStart;
+  } catch (error) {
+    dbStatus = 'disconnected';
+    dbError = (error as Error).message;
+  }
+
+  const isHealthy = dbStatus === 'connected';
+  const totalDurationMs = Date.now() - start;
+
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'healthy' : 'unhealthy',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    durationMs: totalDurationMs,
+    services: {
+      api: 'healthy',
+      database: {
+        status: dbStatus,
+        latencyMs: dbLatencyMs,
+        ...(dbError ? { error: dbError } : {}),
+      },
+    },
+    environment: process.env.NODE_ENV || 'development',
+    serverless: !!process.env.VERCEL,
+  });
 });
 
 // Legacy scan route — redirects to the new toxicity pipeline for backward compatibility.
