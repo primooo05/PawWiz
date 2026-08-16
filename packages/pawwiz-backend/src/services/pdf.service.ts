@@ -338,9 +338,9 @@ function donutTwo(
   const startRad = -Math.PI / 2;
   const endRad   = startRad + (angleA / 180) * Math.PI;
   doc.save()
-    .moveTo(cx, cy)
-    .arc(cx, cy, r, startRad, endRad)
-    .lineTo(cx, cy)
+    .moveTo(cx, cy);
+  (doc as any).arc(cx, cy, r, startRad, endRad);
+  doc.lineTo(cx, cy)
     .fill(colorA)
     .restore();
 
@@ -688,13 +688,13 @@ async function renderMainContent(
     // Draw full circle in severe color first, then overlay other segments
     doc.save().circle(donutCX, donutCY, 38).fill('#EF4444').restore(); // severe (red)
     const modEnd = -Math.PI / 2 + (mild_pct + mod_pct) * 2 * Math.PI;
-    doc.save().moveTo(donutCX, donutCY)
-      .arc(donutCX, donutCY, 38, -Math.PI / 2, modEnd)
-      .lineTo(donutCX, donutCY).fill(WARN).restore(); // moderate
+    doc.save().moveTo(donutCX, donutCY);
+    (doc as any).arc(donutCX, donutCY, 38, -Math.PI / 2, modEnd);
+    doc.lineTo(donutCX, donutCY).fill(WARN).restore(); // moderate
     const mildEnd = -Math.PI / 2 + mild_pct * 2 * Math.PI;
-    doc.save().moveTo(donutCX, donutCY)
-      .arc(donutCX, donutCY, 38, -Math.PI / 2, mildEnd)
-      .lineTo(donutCX, donutCY).fill('#10B981').restore(); // mild
+    doc.save().moveTo(donutCX, donutCY);
+    (doc as any).arc(donutCX, donutCY, 38, -Math.PI / 2, mildEnd);
+    doc.lineTo(donutCX, donutCY).fill('#10B981').restore(); // mild
     // Hole
     doc.save().circle(donutCX, donutCY, 22).fill(WHITE).restore();
     // Center label
@@ -901,7 +901,7 @@ async function renderMainContent(
         .restore();
 
       doc.save().fontSize(8.5).font('Helvetica-Bold').fillColor(DARK)
-        .text(insight.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), mx + 10, my + 6, { width: MAIN_W - 70 })
+        .text(insight.type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()), mx + 10, my + 6, { width: MAIN_W - 70 })
         .restore();
       doc.save().fontSize(7.5).font('Helvetica').fillColor(GRAY)
         .text(insight.summary, mx + 10, my + 18, { width: MAIN_W - 70, lineGap: 1 })
